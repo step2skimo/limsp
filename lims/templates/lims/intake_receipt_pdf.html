@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; margin: 40px; color: #222; }
+        .header { border-bottom: 2px solid #555; margin-bottom: 20px; }
+        .header h2 { margin-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; font-size: 0.9em; }
+        th { background: #f0f0f0; }
+        .footer { margin-top: 30px; font-size: 0.85em; color: #666; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h2>Sample Submission Receipt</h2>
+    <p><strong>Client:</strong> {{ client.name }} ({{ client.organization }})<br>
+       <strong>Client ID:</strong> {{ client.client_id_code }} &nbsp; | &nbsp;
+       <strong>Token:</strong> {{ client.token }}<br>
+       <strong>Email:</strong> {{ client.email }} &nbsp; | &nbsp;
+       <strong>Date:</strong> {{ now }}</p>
+</div>
+
+{% for sample in samples %}
+<h4>Sample {{ forloop.counter }}: {{ sample.sample_code }} ({{ sample.sample_type }})</h4>
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Method</th>
+            <th>Price (₦)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for test in sample.testassignment_set.all %}
+        <tr>
+            <td>{{ test.parameter.name }}</td>
+            <td>{{ test.parameter.method }}</td>
+            <td>{{ test.parameter.default_price|floatformat:2 }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endfor %}
+
+<p><strong>Total Tests:</strong> {{ total_tests }}<br>
+   <strong>Total Price:</strong> ₦{{ total_price|floatformat:2 }}</p>
+
+<div class="footer">
+    <p>Thank you for submitting your samples to JGL Labs. This receipt confirms intake only — test results will follow within the stipulated COA delivery timeframe.</p>
+</div>
+
+</body>
+</html>

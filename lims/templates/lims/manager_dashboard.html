@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manager Dashboard</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 30px; }
+    canvas { max-width: 100%; }
+    .accordion-button:not(.collapsed) { background-color: #f1f1f1; }
+  </style>
+</head>
+<body>
+
+<h1 class="mb-4">📋 Manager Lab Dashboard</h1>
+
+<div class="mb-3 d-flex flex-wrap gap-2">
+  <a href="{% url 'qc_overview_all_parameters' %}" class="btn btn-secondary">📊 QC Trends</a>
+  <a href="{% url 'test_assignment_list' %}" class="btn btn-secondary">📋 Test Assignments</a>
+  <a href="{% url 'manager_coa_tools' %}" class="btn btn-success">🧰 COA Tools</a>
+  <a href="{% url 'result_review_page' %}" class="btn btn-primary">🧪 Review Results</a>
+  <a href="{% url 'manager_report' %}" class="btn btn-outline-primary">📈 View Lab Reports</a>
+  {% if latest_client %}
+    <a href="{% url 'assign_by_parameter_overview' latest_client.client_id %}" class="btn btn-outline-secondary">➕ Assign by Parameter</a>
+  {% endif %}
+</div>
+
+<div class="accordion" id="dashboardAccordion">
+
+  <!-- QC Overview Accordion -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingQC">
+      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseQC" aria-expanded="true">
+        🔬 QC Overview
+      </button>
+    </h2>
+    <div id="collapseQC" class="accordion-collapse collapse show" data-bs-parent="#dashboardAccordion">
+      <div class="accordion-body">
+
+        <p>✅ Passed: {{ qc_summary.pass }} ❌ Failed: {{ qc_summary.fail }}</p>
+        <p>📦 QC assigned for <strong>{{ qc_param_count }}</strong> of <strong>{{ total_parameters }}</strong> parameters</p>
+
+        {% if failed_qc_param_names %}
+          <div class="alert alert-warning">
+            🚨 <strong>{{ failed_qc_param_names|length }} parameter{{ failed_qc_param_names|length|pluralize }} with failed QC:</strong>
+            <ul>
+              {% for param in failed_qc_param_names %}
+                <li>❌ {{ param.name }}</li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+
+        <!-- Filter Dropdowns -->
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <label for="analystFilter" class="form-label">🔍 Filter by Analyst:</label>
+            <select class="form-select" id="analystFilter" onchange="renderCharts()">
+              <option value="all">All Analysts</option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <label for="parameterFilter" class="form-label">🔍 Filter by Parameter:</label>
+            <select class="form-select" id="parameterFilter" onchange="renderCharts()">
+              <option value="all">All Parameters</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Dynamic Charts -->
+        <div id="chartContainer"></div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Verified Client Samples -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingSamples">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSamples">
+        🧾 Verified Client Samples
+      </button>
+    </h2>
+    <div id="collapseSamples" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
+      <div class="accordion-body">
+        <table class="table table-bordered">
+          <thead>
+            <tr><th>Client</th><th>Samples</th><th>COA</th></tr>
+          </thead>
+          <tbody>
+            {% for entry in client_data %}
+              <tr>
+                <td>
+                  <strong>{{ entry.client.name }}</strong><br>
+                  <small>{{ entry.client.organization }}</small><br>
+                  <small>ID: {{ entry.client.client_id_code }}</small>
+                </td>
+                <td>
+                  <ul>
+                    {% for sample in entry.samples %}
+                      <li><strong>{{ sample.sample_code }}</strong> – {{ sample.sample_type }} ({{ sample.weight }}g)</li>
+                    {% endfor %}
+                  </ul>
+                </td>
+                <td><!-- COA links go here --></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Equipment Overview -->
+  <div class="accordion-item">
+    <h2 class="accordion-header" id="headingEquip">
+      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEquip">
+        🛠️ Equipment Calibration
+      </button>
+    </h2>
+    <div id="collapseEquip" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
+      <div class="accordion-body">
+        <table class="table table-striped">
+          <thead>
+            <tr><th>Name</th><th>Serial</th><th>Last Calibrated</th><th>Expires</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            {% for eq in equipment_list %}
+              {% with latest=eq.calibrations.first %}
+                <tr>
+                  <td><a href="{% url 'equipment_usage' eq.id %}">{{ eq.name }}</a></td>
+                  <td>{{ eq.serial_number }}</td>
+                  <td>{{ latest.calibration_date|default:"—" }}</td>
+                  <td>{{ latest.expires_on|default:"—" }}</td>
+                  <td>
+                    {% if latest.expires_on %}
+                      {% if latest.expires_on >= today %}
+                        ✅ Valid
+                      {% else %}
+                        ❌ Expired
+                      {% endif %}
+                    {% else %}
+                      ⚠️ Not Set
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endwith %}
+            {% endfor %}
+          </tbody>
+        </table>
+
+        {% if expiring_calibrations %}
+          <div class="alert alert-warning">
+            ⚠️ <strong>{{ expiring_calibrations|length }} equipment item{{ expiring_calibrations|length|pluralize }} expiring within 7 days:</strong>
+            <ul>
+              {% for record in expiring_calibrations %}
+                <li>{{ record.equipment.name }} — expires on <strong>{{ record.expires_on }}</strong></li>
+              {% endfor %}
+            </ul>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+const raw = {{ qc_chart_data|safe }};
+const analysts = [...new Set(raw.map(r => r['test_assignment__analyst__username']))];
+const parameters = [...new Set(raw.map(r => r['test_assignment__parameter__name']))];
+const months = [...new Set(raw.map(r => r.month))];
+
+window.addEventListener('DOMContentLoaded', () => {
+  const analystSelect = document.getElementById('analystFilter');
+  const paramSelect = document.getElementById('parameterFilter');
+
+  analysts.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    analystSelect.appendChild(opt);
+  });
+
+  parameters.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    paramSelect.appendChild(opt);
+  });
+
+  renderCharts();
+});
+
+function renderCharts() {
+  const selectedAnalyst = document.getElementById('analystFilter').value;
+  const selectedParam = document.getElementById('parameterFilter').value;
+
+  const container = document.getElementById('chartContainer');
+  container.innerHTML = "";
+
+  const grouped = {};
+
+  raw.forEach(row => {
+    const analyst = row['test_assignment__analyst__username'];
+    const param = row['test_assignment__parameter__name'];
+    const label = `${analyst} – ${param}`;
+    const month = row.month;
+    const result = row.avg_result;
+
+    if (
+      (selectedAnalyst === "all" || selectedAnalyst === analyst) &&
+      (selectedParam === "all" || selectedParam === param)
+    ) {
+      if (!grouped[label]) grouped[label] = {};
+      grouped[label][month] = result;
+    }
+  });
+
+  let idx = 0;
+  Object.entries(grouped).forEach(([label, data

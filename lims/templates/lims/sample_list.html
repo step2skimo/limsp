@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}All Samples{% endblock %}
+{% block content %}
+<h2>🧪 Sample Registry</h2>
+<table class="table table-bordered mt-3">
+  <thead>
+    <tr>
+      <th>Sample Code</th>
+      <th>Type</th>
+      <th>Client</th>
+      <th>Status</th>
+      <th>Received</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in samples %}
+    <tr>
+      <td>{{ s.sample_code }}</td>
+      <td>{{ s.sample_type }}</td>
+      <td>{{ s.client.name }}</td>
+      <td><span class="badge bg-secondary">{{ s.get_status_display }}</span></td>
+      <td>{{ s.received_date }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

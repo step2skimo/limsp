@@ -1,0 +1,70 @@
+[
+  { "model": "lims.parametergroup", "pk": 1, "fields": { "name": "Proximate", "is_extension": false }},
+  { "model": "lims.parameter", "pk": 101, "fields": {
+    "group": 1, "name": "Protein", "unit": "%", "method": "AOAC 984.13", "ref_limit": "≥ 10.0", "default_price": "5000.00"
+  }},
+  { "model": "lims.parameter", "pk": 102, "fields": {
+    "group": 1, "name": "Fat", "unit": "%", "method": "AOAC 963.15", "ref_limit": "≥ 1.0", "default_price": "5000.00"
+  }},
+  { "model": "lims.parameter", "pk": 103, "fields": {
+    "group": 1, "name": "Ash", "unit": "%", "method": "AOAC 942.05", "ref_limit": "≤ 5.0", "default_price": "5000.00"
+  }},
+  { "model": "lims.parameter", "pk": 104, "fields": {
+    "group": 1, "name": "Moisture", "unit": "%", "method": "AOAC 925.10", "ref_limit": "≤ 15.0", "default_price": "5000.00"
+  }},
+  { "model": "lims.parameter", "pk": 105, "fields": {
+    "group": 1, "name": "Fiber", "unit": "%", "method": "AOAC 962.09", "ref_limit": "≤ 10.0", "default_price": "5000.00"
+  }},
+  { "model": "lims.parameter", "pk": 106, "fields": {
+    "group": 1, "name": "Carbohydrate", "unit": "%", "method": "Calculated", "ref_limit": "", "default_price": "0.00"
+  }},
+  { "model": "lims.parameter", "pk": 107, "fields": {
+    "group": 1, "name": "ME", "unit": "kcal/kg", "method": "Calculated", "ref_limit": "", "default_price": "0.00"
+  }},
+
+  { "model": "lims.parametergroup", "pk": 2, "fields": { "name": "Gross Energy", "is_extension": false }},
+  { "model": "lims.parameter", "pk": 201, "fields": {
+    "group": 2, "name": "Gross Energy", "unit": "kcal/kg", "method": "Bomb Calorimetry", "ref_limit": "≥ 3000", "default_price": "5000.00"
+  }},
+
+  { "model": "lims.parametergroup", "pk": 3, "fields": { "name": "Aflatoxin", "is_extension": false }},
+  { "model": "lims.parameter", "pk": 301, "fields": {
+    "group": 3, "name": "Aflatoxin B1", "unit": "ppb", "method": "AOAC 991.31 (HPLC)", "ref_limit": "≤ 5.0", "default_price": "15000.00"
+  }},
+  { "model": "lims.parameter", "pk": 302, "fields": {
+    "group": 3, "name": "Total Aflatoxin", "unit": "ppb", "method": "Neogen Reveal Q+", "ref_limit": "≤ 20.0", "default_price": "20000.00"
+  }},
+
+  { "model": "lims.parametergroup", "pk": 4, "fields": { "name": "Vitamins", "is_extension": false }},
+  { "model": "lims.parameter", "pk": 401, "fields": {
+    "group": 4, "name": "Vitamin A", "unit": "IU/kg", "method": "AOAC 992.04 (HPLC)", "ref_limit": "≥ 10000", "default_price": "1300.00"
+  }},
+  { "model": "lims.parameter", "pk": 402, "fields": {
+    "group": 4, "name": "Vitamin B1", "unit": "mg/kg", "method": "AOAC 942.23", "ref_limit": "≥ 1.0", "default_price": "1100.00"
+  }},
+  { "model": "lims.parameter", "pk": 403, "fields": {
+    "group": 4, "name": "Vitamin B2", "unit": "mg/kg", "method": "AOAC 970.65", "ref_limit": "≥ 2.0", "default_price": "1100.00"
+  }},
+  { "model": "lims.parameter", "pk": 404, "fields": {
+    "group": 4, "name": "Vitamin C", "unit": "mg/kg", "method": "AOAC 967.21", "ref_limit": "≥ 100.0", "default_price": "1150.00"
+  }},
+  { "model": "lims.parameter", "pk": 405, "fields": {
+    "group": 4, "name": "Vitamin D", "unit": "IU/kg", "method": "AOAC 2002.05", "ref_limit": "≥ 500", "default_price": "1350.00"
+  }},
+
+  { "model": "lims.parametergroup", "pk": 5, "fields": { "name": "Water Analysis", "is_extension": true }},
+  { "model": "lims.parameter", "pk": 501, "fields": {
+    "group": 5, "name": "pH", "unit": "", "method": "Potentiometric", "ref_limit": "6.5–8.5", "default_price": "600.00"
+  }},
+  { "model": "lims.parameter", "pk": 502, "fields": {
+    "group": 5, "name": "TDS", "unit": "mg/L", "method": "Gravimetric", "ref_limit": "≤ 1000", "default_price": "650.00"
+  }},
+
+  { "model": "lims.parametergroup", "pk": 6, "fields": { "name": "Microbial Analysis", "is_extension": true }},
+  { "model": "lims.parameter", "pk": 601, "fields": {
+    "group": 6, "name": "Total Plate Count", "unit": "cfu/g", "method": "AOAC 990.12", "ref_limit": "≤ 100000", "default_price": "900.00"
+  }},
+  { "model": "lims.parameter", "pk": 602, "fields": {
+    "group": 6, "name": "E. coli", "unit": "cfu/g", "method": "AOAC 991.14", "ref_limit": "Absent", "default_price": "950.00"
+  }}
+]

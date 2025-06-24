@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratory Information Management System - Secure Access</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1e3a5f;
+            --accent-blue: #2c5aa0;
+            --light-blue: #e8f4fd;
+            --success-green: #28a745;
+            --warning-orange: #fd7e14;
+            --text-dark: #2c3e50;
+            --border-light: #dee2e6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--light-blue) 0%, #ffffff 100%);
+            min-height: 100vh;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 80%, rgba(30, 58, 95, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(44, 90, 160, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+
+        .main-container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 2rem 0;
+        }
+
+        .portal-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 
+                0 20px 40px rgba(30, 58, 95, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            overflow: hidden;
+            max-width: 480px;
+            margin: 0 auto;
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            color: white;
+            padding: 2.5rem 2rem 2rem;
+            text-align: center;
+            position: relative;
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .logo-placeholder {
+            width: 80px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .logo-placeholder i {
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header-subtitle {
+            font-size: 0.95rem;
+            opacity: 0.9;
+            font-weight: 400;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-section {
+            padding: 2.5rem 2rem;
+        }
+
+        .section-title {
+            color: var(--text-dark);
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            text-align: center;
+        }
+
+        .section-description {
+            color: #6c757d;
+            font-size: 0.9rem;
+            text-align: center;
+            margin-bottom: 2rem;
+            line-height: 1.5;
+        }
+
+        .token-input-group {
+            position: relative;
+            margin-bottom: 1.5rem;
+        }
+
+        .token-input {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            border: 2px solid var(--border-light);
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: rgba(248, 249, 250, 0.8);
+        }
+
+        .token-input:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+            background: white;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #6c757d;
+            font-size: 1.1rem;
+        }
+
+        .access-btn {
+            width: 100%;
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--accent-blue) 0%, var(--primary-blue) 100%);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .access-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(44, 90, 160, 0.3);
+        }
+
+        .access-btn:active {
+            transform: translateY(0);
+        }
+
+        .security-badges {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .security-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+        }
+
+        .badge-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--light-blue);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 0.5rem;
+            color: var(--accent-blue);
+        }
+
+        .badge-text {
+            font-size: 0.8rem;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .footer-info {
+            background: #f8f9fa;
+            padding: 1.5rem 2rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: #6c757d;
+            border-top: 1px solid var(--border-light);
+        }
+
+        .help-link {
+            color: var(--accent-blue);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .help-link:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 576px) {
+            .main-container {
+                padding: 1rem;
+            }
+            
+            .portal-card {
+                margin: 0 1rem;
+            }
+            
+            .header-section, .form-section {
+                padding: 2rem 1.5rem;
+            }
+            
+            .security-badges {
+                gap: 1rem;
+            }
+        }
+
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(44, 90, 160, 0.4);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(44, 90, 160, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(44, 90, 160, 0);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-container">
+        <div class="container">
+            <div class="portal-card">
+                <!-- Header Section -->
+                <div class="header-section">
+                    <div class="logo-placeholder pulse-animation">
+                        <i class="fas fa-flask"></i>
+                    </div>
+                    <h1 class="header-title">Laboratory Portal</h1>
+                    <p class="header-subtitle">ISO 17025 Certified Testing & Calibration</p>
+                </div>
+
+                <!-- Form Section -->
+                <div class="form-section">
+                    <h2 class="section-title">Secure Access Required</h2>
+                    <p class="section-description">
+                        Enter your unique client token to access your laboratory results, 
+                        certificates, and testing documentation in our secure LIMS portal.
+                    </p>
+
+                    <form method="post" id="tokenForm">
+                       {% csrf_token %}
+
+                        
+                        <div class="token-input-group">
+                            <i class="fas fa-key input-icon"></i>
+                            <input 
+                                type="text" 
+                                name="token" 
+                                class="token-input" 
+                                placeholder="Enter your client access token"
+                                required
+                                autocomplete="off"
+                                maxlength="50"
+                            />
+                        </div>
+
+                        <button type="submit" class="access-btn">
+                            <i class="fas fa-sign-in-alt me-2"></i>
+                            Access Laboratory Portal
+                        </button>
+                    </form>
+
+                    <!-- Security Badges -->
+                    <div class="security-badges">
+                        <div class="security-badge">
+                            <div class="badge-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <div class="badge-text">ISO 17025<br>Certified</div>
+                        </div>
+                        <div class="security-badge">
+                            <div class="badge-icon">
+                                <i class="fas fa-lock"></i>
+                            </div>
+                            <div class="badge-text">256-bit<br>Encryption</div>
+                        </div>
+                        <div class="security-badge">
+                            <div class="badge-icon">
+                                <i class="fas fa-certificate"></i>
+                            </div>
+                            <div class="badge-text">Validated<br>Results</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="footer-info">
+                    <p class="mb-1">
+                        <strong>Need assistance?</strong> Contact our laboratory support team
+                    </p>
+                    <p class="mb-0">
+                        <a href="#" class="help-link">
+                            <i class="fas fa-phone me-1"></i>Laboratory Support
+                        </a>
+                        <span class="mx-2">•</span>
+                        <a href="#" class="help-link">
+                            <i class="fas fa-envelope me-1"></i>Technical Help
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Form enhancement
+        document.getElementById('tokenForm').addEventListener('submit', function(e) {
+            const submitBtn = this.querySelector('.access-btn');
+            const originalText = submitBtn.innerHTML;
+            
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Authenticating...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after 3 seconds (for demo purposes)
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 3000);
+        });
+
+        // Token input formatting (optional - adds dashes for readability)
+        document.querySelector('input[name="token"]').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
+            
+            // Optional: Format with dashes every 4 characters for readability
+            // value = value.replace(/(.{4})/g, '$1-').replace(/-$/, '');
+            
+            e.target.value = value.toUpperCase();
+        });
+
+        // Add subtle animations on load
+        window.addEventListener('load', function() {
+            const card = document.querySelector('.portal-card');
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                card.style.transition = 'all 0.6s ease';
+                card.style.opacity = '1';
+                card.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

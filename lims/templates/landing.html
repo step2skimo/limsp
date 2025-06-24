@@ -1,0 +1,650 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JaaGee Laboratories | ISO 17025 Accredited Testing</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #1a3a6e;
+            --accent-blue: #2a5aa7;
+            --light-blue: #e8f2fc;
+            --dark-blue: #0d2444;
+            --success-green: #28a745;
+            --white: #ffffff;
+            --light-gray: #f8f9fa;
+            --dark-gray: #343a40;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--light-gray);
+            color: var(--dark-gray);
+            line-height: 1.6;
+        }
+
+        /* Header/Navigation */
+        .navbar {
+            background-color: var(--white);
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 1rem 0;
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary-blue);
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar-brand img {
+            height: 40px;
+            margin-right: 10px;
+        }
+
+        .nav-link {
+            font-weight: 500;
+            color: var(--dark-gray);
+            margin: 0 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-link:hover {
+            color: var(--accent-blue);
+        }
+
+        .btn-accent {
+            background-color: var(--accent-blue);
+            color: white;
+            border-radius: 50px;
+            padding: 0.5rem 1.5rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .btn-accent:hover {
+            background-color: var(--primary-blue);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(42,90,167,0.3);
+        }
+
+        /* Hero Section */
+        .hero-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--accent-blue) 100%);
+            color: var(--white);
+            padding: 5rem 0;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><pattern id="grid" width="50" height="50" patternUnits="userSpaceOnUse"><path d="M 50 0 L 0 0 0 50" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="1"/></pattern></defs><rect width="1000" height="1000" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .hero-title {
+            font-size: 3.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            line-height: 1.2;
+        }
+
+        .hero-subtitle {
+            font-size: 1.4rem;
+            font-weight: 400;
+            opacity: 0.9;
+            margin-bottom: 2.5rem;
+            max-width: 700px;
+        }
+
+        .hero-badge {
+            background-color: rgba(255,255,255,0.15);
+            color: white;
+            padding: 0.5rem 1.5rem;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .hero-badge i {
+            margin-right: 0.5rem;
+        }
+
+        /* Services Section */
+        .services-section {
+            padding: 5rem 0;
+            background-color: var(--white);
+        }
+
+        .section-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 3rem;
+            position: relative;
+            text-align: center;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue), var(--accent-blue));
+            border-radius: 2px;
+        }
+
+        .service-card {
+            background-color: var(--white);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            height: 100%;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .service-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+        }
+
+        .service-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, var(--light-blue) 0%, var(--white) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            color: var(--accent-blue);
+            font-size: 1.8rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        .service-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 1rem;
+        }
+
+        .service-list {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .service-list li {
+            margin-bottom: 0.5rem;
+            position: relative;
+            padding-left: 1.5rem;
+        }
+
+        .service-list li::before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: var(--success-green);
+            font-weight: bold;
+        }
+
+        /* Accreditation Section */
+        .accreditation-section {
+            background-color: var(--light-blue);
+            padding: 5rem 0;
+        }
+
+        .accreditation-badge {
+            max-width: 200px;
+            margin: 0 auto 2rem;
+            display: block;
+        }
+
+        .parameter-card {
+            background-color: var(--white);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.03);
+            border-left: 4px solid var(--accent-blue);
+        }
+
+        .parameter-title {
+            font-weight: 600;
+            color: var(--primary-blue);
+            margin-bottom: 0.5rem;
+        }
+
+        /* CTA Section */
+        .cta-section {
+            background: linear-gradient(135deg, var(--primary-blue) 0%, var(--dark-blue) 100%);
+            color: var(--white);
+            padding: 4rem 0;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000"><defs><pattern id="dots" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="1000" height="1000" fill="url(%23dots)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .cta-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Footer */
+        .footer {
+            background-color: var(--dark-blue);
+            color: var(--white);
+            padding: 3rem 0 1rem;
+        }
+
+        .footer-logo {
+            height: 50px;
+            margin-bottom: 1.5rem;
+        }
+
+        .footer-links h5 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--white);
+        }
+
+        .footer-links ul {
+            list-style-type: none;
+            padding-left: 0;
+        }
+
+        .footer-links li {
+            margin-bottom: 0.8rem;
+        }
+
+        .footer-links a {
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: var(--white);
+            padding-left: 5px;
+        }
+
+        .copyright {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 1.5rem;
+            margin-top: 2rem;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 992px) {
+            .hero-title {
+                font-size: 2.8rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.2rem;
+            }
+            
+            .section-title {
+                font-size: 2.2rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-section {
+                padding: 4rem 0;
+                text-align: center;
+            }
+            
+            .hero-title {
+                font-size: 2.4rem;
+            }
+            
+            .hero-buttons {
+                flex-direction: column;
+            }
+            
+            .hero-buttons .btn {
+                width: 100%;
+                max-width: 300px;
+                margin: 0 auto 1rem;
+            }
+            
+            .section-title {
+                font-size: 2rem;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .hero-title {
+                font-size: 2rem;
+            }
+            
+            .hero-subtitle {
+                font-size: 1.1rem;
+            }
+            
+            .section-title {
+                font-size: 1.8rem;
+            }
+            
+            .cta-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade {
+            animation: fadeIn 1s ease forwards;
+        }
+
+        .delay-1 { animation-delay: 0.2s; }
+        .delay-2 { animation-delay: 0.4s; }
+        .delay-3 { animation-delay: 0.6s; }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <img src="{% static 'images/logo.jpg' %}" alt="JaaGee Laboratories">
+                JaaGee Laboratories
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#services">Services</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#accreditation">Accreditation</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About Us</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                    <li class="nav-item ms-lg-2">
+                        <a href="{% url 'login' %}" class="btn btn-accent">Staff Login</a>
+                    </li>
+                    <li class="nav-item ms-lg-2 mt-2 mt-lg-0">
+                        <a href="{% url 'enter_token' %}" class="btn btn-accent">Client Portal</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6 animate-fade">
+                    <span class="hero-badge">
+                        <i class="fas fa-certificate"></i> ISO 17025 Accredited Laboratory
+                    </span>
+                    <h1 class="hero-title">Precision Food & Feed Analysis</h1>
+                    <p class="hero-subtitle">
+                        Trusted laboratory testing services with scientifically validated methods and 
+                        internationally recognized accreditation for accurate, reliable results.
+                    </p>
+                    <div class="hero-buttons">
+                        <a href="#contact" class="btn btn-light btn-lg me-3">Request Analysis</a>
+                        <a href="tel:+1234567890" class="btn btn-outline-light btn-lg">Contact Us</a>
+                    </div>
+                </div>
+                <div class="col-lg-6 animate-fade delay-1">
+                    <img src="{% static 'images/hero.jpg' %}" alt="Laboratory Analysis" class="img-fluid rounded-3 shadow">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="services-section">
+        <div class="container">
+            <h2 class="section-title animate-fade">Our Testing Services</h2>
+            
+            <div class="row g-4">
+                <div class="col-md-4 animate-fade delay-1">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <h3 class="service-title">Food Analysis</h3>
+                        <ul class="service-list">
+                            <li>Nutritional composition</li>
+                            <li>Moisture content</li>
+                            <li>Protein analysis</li>
+                            <li>Fat content</li>
+                            <li>Ash determination</li>
+                            <li>Vitamin profiling</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 animate-fade delay-2">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <h3 class="service-title">Feed Analysis</h3>
+                        <ul class="service-list">
+                            <li>Crude fiber</li>
+                            <li>Gross energy</li>
+                            <li>Protein quality</li>
+                            <li>Mineral content</li>
+                            <li>Feed safety</li>
+                            <li>Additive verification</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 animate-fade delay-3">
+                    <div class="service-card">
+                        <div class="service-icon">
+                            <i class="fas fa-biohazard"></i>
+                        </div>
+                        <h3 class="service-title">Safety Testing</h3>
+                        <ul class="service-list">
+                            <li>Aflatoxin screening</li>
+                            <li>Microbial analysis</li>
+                            <li>Water quality</li>
+                            <li>Contaminant detection</li>
+                            <li>Pathogen testing</li>
+                            <li>Shelf-life studies</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Accreditation Section -->
+    <section id="accreditation" class="accreditation-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-5 animate-fade">
+                    <img src="{% static 'images/iso-badge.jpg' %}" alt="ISO 17025 Accredited" class="accreditation-badge">
+                    <h2 class="section-title text-start">ISO 17025 Accredited Parameters</h2>
+                    <p>
+                        Our laboratory maintains rigorous quality standards with internationally recognized 
+                        accreditation for the following test parameters:
+                    </p>
+                </div>
+                <div class="col-lg-7 animate-fade delay-1">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Proximate Analysis</h4>
+                                <p>Moisture, Ash, Protein, Fat, Fiber, Gross Energy</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Mycotoxin Analysis</h4>
+                                <p>Aflatoxin B1, B2, G1, G2, Total Aflatoxin</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Vitamin Analysis</h4>
+                                <p>Vitamin A, B-complex, C, D, E, K</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Microbiological Tests</h4>
+                                <p>Total Plate Count, Coliforms, E. coli, Salmonella, Yeast & Mold</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Water Analysis</h4>
+                                <p>pH, Conductivity, TDS, Microbial Contamination</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="parameter-card">
+                                <h4 class="parameter-title">Physical Tests</h4>
+                                <p>Particle Size, Bulk Density, Water Activity</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <h2 class="cta-title animate-fade">Ready to Submit Samples?</h2>
+            <p class="lead mb-4 animate-fade delay-1">
+                Our team of experts is ready to assist with your food and feed analysis needs.
+            </p>
+            <div class="animate-fade delay-2">
+                <a href="#contact" class="btn btn-light btn-lg me-3">Request Analysis</a>
+                <a href="tel:+1234567890" class="btn btn-outline-light btn-lg">Call Our Lab</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-4">
+                    <img src="{% static 'images/logo.jpg' %}" alt="JaaGee Laboratories" class="footer-logo">
+                    <p>
+                        ISO 17025 accredited laboratory specializing in food and feed analysis with 
+                        scientifically validated methods and reliable results.
+                    </p>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4">
+                    <div class="footer-links">
+                        <h5>Services</h5>
+                        <ul>
+                            <li><a href="#">Food Analysis</a></li>
+                            <li><a href="#">Feed Analysis</a></li>
+                            <li><a href="#">Safety Testing</a></li>
+                            <li><a href="#">Method Development</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-4">
+                    <div class="footer-links">
+                        <h5>Company</h5>
+                        <ul>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Accreditation</a></li>
+                            <li><a href="#">Quality Policy</a></li>
+                            <li><a href="#">Careers</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4 col-md-4 mb-4">
+                    <div class="footer-links">
+                        <h5>Contact Us</h5>
+                        <ul>
+                            <li><i class="fas fa-map-marker-alt me-2"></i> 88 JaaGee House, Olode, Ibadan</li>
+                            <li><i class="fas fa-phone me-2"></i> +1 (234) 567-8900</li>
+                            <li><i class="fas fa-envelope me-2"></i> info@jaageelabs.com</li>
+                            <li><i class="fas fa-clock me-2"></i> Mon-Fri: 8AM - 5PM</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright text-center">
+                &copy; 2023 JaaGee Laboratories. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Simple animation trigger
+        document.addEventListener('DOMContentLoaded', function() {
+            const animateElements = document.querySelectorAll('.animate-fade');
+            
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = 1;
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+            
+            animateElements.forEach(element => {
+                element.style.opacity = 0;
+                element.style.transform = 'translateY(20px)';
+                element.style.transition = 'all 0.6s ease';
+                observer.observe(element);
+            });
+        });
+    </script>
+</body>
+</html>

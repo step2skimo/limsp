@@ -1,0 +1,541 @@
+{% extends 'base.html' %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --iso-blue: #1e3a5f;
+        --iso-light-blue: #2c5aa0;
+        --iso-accent: #4a90e2;
+        --iso-success: #28a745;
+        --iso-warning: #ffc107;
+        --iso-danger: #dc3545;
+        --iso-light: #f8f9fa;
+        --iso-dark: #343a40;
+        --iso-border: #e9ecef;
+        --iso-shadow: rgba(30, 58, 95, 0.1);
+        --iso-shadow-hover: rgba(30, 58, 95, 0.15);
+    }
+
+    body {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        min-height: 100vh;
+    }
+
+    .assignments-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+
+    .page-header {
+        background: linear-gradient(135deg, var(--iso-blue) 0%, var(--iso-light-blue) 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 2.5rem 2rem;
+        margin-bottom: 2rem;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 32px var(--iso-shadow);
+    }
+
+    .page-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 200px;
+        height: 200px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+        transform: translate(50%, -50%);
+    }
+
+    .page-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        width: 150px;
+        height: 150px;
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 50%;
+        transform: translate(-50%, 50%);
+    }
+
+    .page-title {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 0;
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .page-title .icon {
+        width: 60px;
+        height: 60px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.8rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .page-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        margin: 0.5rem 0 0 0;
+        position: relative;
+        z-index: 2;
+    }
+
+    .client-section {
+        margin-bottom: 3rem;
+        background: white;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px var(--iso-shadow);
+        border: 1px solid var(--iso-border);
+        transition: all 0.3s ease;
+    }
+
+    .client-section:hover {
+        box-shadow: 0 8px 30px var(--iso-shadow-hover);
+        transform: translateY(-2px);
+    }
+
+    .client-header {
+        background: linear-gradient(135deg, var(--iso-accent) 0%, var(--iso-light-blue) 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .client-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="client-pattern" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23client-pattern)"/></svg>');
+        opacity: 0.3;
+    }
+
+    .client-info {
+        position: relative;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .client-icon {
+        width: 50px;
+        height: 50px;
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .client-details h4 {
+        margin: 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .client-meta {
+        font-size: 0.95rem;
+        opacity: 0.9;
+        margin-top: 0.25rem;
+    }
+
+    .client-id-badge {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .assignments-table {
+        margin: 0;
+        border: none;
+        background: white;
+    }
+
+    .assignments-table thead {
+        background: linear-gradient(135deg, var(--iso-dark) 0%, #495057 100%);
+    }
+
+    .assignments-table thead th {
+        color: white;
+        font-weight: 600;
+        padding: 1rem 1.25rem;
+        border: none;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        position: relative;
+    }
+
+    .assignments-table thead th:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 1px;
+        height: 60%;
+        background: rgba(255, 255, 255, 0.2);
+    }
+
+    .assignments-table tbody tr {
+        transition: all 0.2s ease;
+        border: none;
+    }
+
+    .assignments-table tbody tr:hover {
+        background: rgba(74, 144, 226, 0.05);
+        transform: scale(1.01);
+    }
+
+    .assignments-table tbody td {
+        padding: 1rem 1.25rem;
+        border: none;
+        border-bottom: 1px solid #f1f3f4;
+        vertical-align: middle;
+        font-size: 0.95rem;
+    }
+
+    .sample-code {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+        color: var(--iso-blue);
+        background: rgba(74, 144, 226, 0.1);
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.9rem;
+    }
+
+    .parameter-name {
+        font-weight: 500;
+        color: var(--iso-dark);
+    }
+
+    .analyst-info {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .analyst-assigned {
+        background: rgba(40, 167, 69, 0.1);
+        color: var(--iso-success);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .analyst-unassigned {
+        background: rgba(220, 53, 69, 0.1);
+        color: var(--iso-danger);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .control-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.85rem;
+    }
+
+    .control-yes {
+        background: rgba(255, 193, 7, 0.1);
+        color: #b8860b;
+    }
+
+    .control-no {
+        background: rgba(108, 117, 125, 0.1);
+        color: #6c757d;
+    }
+
+    .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.4rem 1rem;
+        border-radius: 25px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .status-complete {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+    }
+
+    .status-pending {
+        background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        color: white;
+        box-shadow: 0 2px 8px rgba(255, 193, 7, 0.3);
+        animation: pulse-status 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse-status {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+
+    .assigned-date {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: var(--iso-dark);
+        font-size: 0.9rem;
+    }
+
+    .date-time {
+        display: block;
+        font-weight: 500;
+    }
+
+    .no-assignments {
+        text-align: center;
+        padding: 3rem;
+        color: var(--iso-dark);
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px var(--iso-shadow);
+        margin: 2rem 0;
+    }
+
+    .no-assignments .icon {
+        font-size: 3rem;
+        color: var(--iso-accent);
+        margin-bottom: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1200px) {
+        .assignments-container {
+            padding: 1.5rem 1rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .page-header {
+            padding: 2rem 1.5rem;
+        }
+        
+        .page-title {
+            font-size: 1.8rem;
+            flex-direction: column;
+            text-align: center;
+            gap: 0.5rem;
+        }
+        
+        .client-info {
+            justify-content: center;
+            text-align: center;
+        }
+        
+        .assignments-table {
+            font-size: 0.85rem;
+        }
+        
+        .assignments-table thead th,
+        .assignments-table tbody td {
+            padding: 0.75rem 0.5rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .assignments-table thead th,
+        .assignments-table tbody td {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.8rem;
+        }
+        
+        .sample-code {
+            font-size: 0.75rem;
+        }
+        
+        .status-badge,
+        .control-badge,
+        .analyst-assigned,
+        .analyst-unassigned {
+            font-size: 0.75rem;
+            padding: 0.2rem 0.5rem;
+        }
+    }
+
+    /* Print Styles */
+    @media print {
+        .assignments-container {
+            max-width: none;
+            padding: 0;
+        }
+        
+        .client-section {
+            break-inside: avoid;
+            box-shadow: none;
+            border: 1px solid #ddd;
+        }
+        
+        .page-header,
+        .client-header {
+            background: #f8f9fa !important;
+            color: #333 !important;
+        }
+        
+        .assignments-table thead {
+            background: #f8f9fa !important;
+        }
+        
+        .assignments-table thead th {
+            color: #333 !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="assignments-container">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h1 class="page-title">
+            <div class="icon">📋</div>
+            <div>
+                <div>Test Assignments Dashboard</div>
+                <div class="page-subtitle">ISO 17025 Compliance • Quality Assured Testing</div>
+            </div>
+        </h1>
+    </div>
+
+    <!-- Client Assignments -->
+    {% for client_id, assignments in grouped_assignments.items %}
+        {% with assignments.0.sample.client as client %}
+            <div class="client-section">
+                <div class="client-header">
+                    <div class="client-info">
+                        <div class="client-icon">🧾</div>
+                        <div class="client-details">
+                            <h4>
+                                <strong>{{ client.name }}</strong>
+                                <span class="client-id-badge">ID: {{ client.client_id }}</span>
+                            </h4>
+                            <div class="client-meta">{{ client.organization }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table assignments-table">
+                    <thead>
+                        <tr>
+                            <th>Sample Code</th>
+                            <th>Test Parameter</th>
+                            <th>Assigned Analyst</th>
+                            <th>Control Sample</th>
+                            <th>Status</th>
+                            <th>Assignment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for assignment in assignments %}
+                            <tr>
+                                <td>
+                                    <span class="sample-code">{{ assignment.sample.sample_code }}</span>
+                                </td>
+                                <td>
+                                    <span class="parameter-name">{{ assignment.parameter.name }}</span>
+                                </td>
+                                <td>
+                                    <div class="analyst-info">
+                                        {% if assignment.analyst %}
+                                            <span class="analyst-assigned">
+                                                👨‍🔬 {{ assignment.analyst.get_full_name }}
+                                            </span>
+                                        {% else %}
+                                            <span class="analyst-unassigned">
+                                                ⚠️ Unassigned
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="control-badge {% if assignment.sample.is_control %}control-yes{% else %}control-no{% endif %}">
+                                        {% if assignment.sample.is_control %}
+                                            🔬 Control
+                                        {% else %}
+                                            📊 Sample
+                                        {% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if assignment.testresult %}
+                                        <span class="status-badge status-complete">
+                                            ✅ Complete
+                                        </span>
+                                    {% else %}
+                                        <span class="status-badge status-pending">
+                                            ⏳ In Progress
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="assigned-date">
+                                        {% if assignment.analyst %}
+                                            <span class="date-time">{{ assignment.assigned_date|date:"M d, Y" }}</span>
+                                            <small style="color: #6c757d;">{{ assignment.assigned_date|date:"H:i" }}</small>
+                                        {% else %}
+                                            <span style="color: #6c757d;">—</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endwith %}
+    {% empty %}
+        <div class="no-assignments">
+            <div class="icon">📋</div>
+            <h3>No Test Assignments Found</h3>
+            <p>There are currently no test assignments in the system.</p>
+        </div>
+    {% endfor %}
+</div>
+{% endblock %}

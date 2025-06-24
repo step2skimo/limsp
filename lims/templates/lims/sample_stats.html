@@ -1,0 +1,121 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Sample Status Overview</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      background-color: #f7f9fc;
+      color: #2c3e50;
+    }
+    h1 {
+      margin-bottom: 30px;
+      color: #34495e;
+    }
+    .chart-container {
+      width: 60%;
+      margin: 0 auto 50px auto;
+    }
+    table {
+      width: 60%;
+      margin: 0 auto;
+      border-collapse: collapse;
+      font-size: 1em;
+      background: white;
+      box-shadow: 0 0 8px rgba(0,0,0,0.05);
+    }
+    th, td {
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #ecf0f1;
+    }
+    tr:nth-child(even) {
+      background-color: #f9fbfc;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>📊 Sample Status Dashboard</h1>
+
+  <div class="chart-container">
+    <canvas id="statusChart"></canvas>
+  </div>
+
+  <table id="statusTable">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Number of Samples</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in status_counts %}
+      <tr>
+        <td>{{ item.label }}</td>
+        <td>{{ item.total }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      const ctx = document.getElementById('statusChart').getContext('2d');
+
+      const statusChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Samples per Status',
+            data: [],
+            backgroundColor: ['#3498db', '#f1c40f', '#2ecc71', '#e74c3c', '#9b59b6', '#95a5a6'],
+            borderColor: '#fff',
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { position: 'top' },
+            title: {
+              display: true,
+              text: 'Sample Counts by Status'
+            }
+          }
+        }
+      });
+
+      function fetchStatusData() {
+        fetch("{% url 'sample_status_json' %}")
+          .then(res => res.json())
+          .then(data => {
+            statusChart.data.labels = data.labels;
+            statusChart.data.datasets[0].data = data.counts;
+            statusChart.update();
+
+            // Update HTML table
+            const tbody = document.querySelector('#statusTable tbody');
+            tbody.innerHTML = '';
+            data.labels.forEach((label, i) => {
+              const row = `<tr><td>${label}</td><td>${data.counts[i]}</td></tr>`;
+              tbody.innerHTML += row;
+            });
+          });
+      }
+
+      fetchStatusData();
+      setInterval(fetchStatusData, 10000); // every 10 seconds
+    });
+  </script>
+
+</body>
+</html>

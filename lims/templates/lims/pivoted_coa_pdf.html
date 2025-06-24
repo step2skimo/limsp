@@ -1,0 +1,177 @@
+{% load static %}
+{% load nested_dict %}
+
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>COA Pivot – {{ client.name }}</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 60px;
+      color: #2c3e50;
+      background-image: url("{% static 'images/letterhead.png' %}");
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: top left;
+      padding-top: 180px; /* Adjust to clear logo/header zone on letterhead */
+    }
+
+    h1, h2 {
+      text-align: center;
+      margin: 0;
+    }
+
+    .group-title {
+      margin-top: 50px;
+      font-size: 1.1em;
+      font-weight: bold;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 0.9em;
+      background: rgba(255,255,255,0.96);
+    }
+
+    th, td {
+      border: 1px solid #ccc;
+      padding: 6px 8px;
+    }
+
+    th {
+      background: #f1f1f1;
+    }
+
+    .meta-table {
+      margin-top: 30px;
+    }
+
+    .footer {
+      margin-top: 30px;
+      font-size: 0.85em;
+      text-align: right;
+      color: #777;
+      background: rgba(255,255,255,0.8);
+      padding: 10px;
+    }
+
+    .pivot-header {
+      font-weight: bold;
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+
+<h1>JGL Laboratories</h1>
+<h2>Combined Certificate of Analysis (Pivot Layout)</h2>
+
+<p>
+  <strong>Client:</strong> {{ client.name }} ({{ client.organization }})<br>
+  <strong>Client ID:</strong> {{ client.client_id_code }}<br>
+  <strong>Email:</strong> {{ client.email }}
+</p>
+
+<!-- Pivot Results Table -->
+<div class="group-title">🧪 Test Results Summary</div>
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Method</th>
+      <th>Unit</th>
+      {% for sample in samples %}
+        <th>{{ sample.sample_code }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for param in parameters %}
+    <tr>
+      <td class="pivot-header">{{ param.name }}</td>
+      <td>{{ param.method }}</td>
+      <td>{{ param.unit }}</td>
+      {% for sample in samples %}
+        <td>
+          {% with sample_result=results_dict|dict_get:sample.id %}
+            {% with value=sample_result|dict_get:param.id %}
+              {% if value %}
+                {{ value|floatformat:2 }}
+              {% else %}
+                —
+              {% endif %}
+            {% endwith %}
+          {% endwith %}
+        </td>
+      {% endfor %}
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Sample Metadata -->
+<div class="group-title">📦 Sample Metadata</div>
+<table class="meta-table">
+  <thead>
+    <tr>
+      <th>Sample Code</th>
+      <th>Type</th>
+      <th>Weight (g)</th>
+      <th>Received</th>
+      <th>Temp (°C)</th>
+      <th>Humidity (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sample in samples %}
+    <tr>
+      <td>{{ sample.sample_code }}</td>
+      <td>{{ sample.sample_type }}</td>
+      <td>{{ sample.weight }}</td>
+      <td>{{ sample.received_date|default:"—" }}</td>
+      <td>{{ sample.environmental_data.temperature|default:"—" }}</td>
+      <td>{{ sample.environmental_data.humidity|default:"—" }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<!-- Environmental Conditions Per Test -->
+<div class="group-title">🌡️ Environmental Conditions per Test</div>
+<table>
+  <thead>
+    <tr>
+      <th>Sample</th>
+      <th>Parameter</th>
+      <th>Temp (°C)</th>
+      <th>RH (%)</th>
+      <th>Instrument</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sample in samples %}
+      {% for param in parameters %}
+        {% with env=env_dict|dict_get:sample.id|dict_get:param.id %}
+        <tr>
+          <td>{{ sample.sample_code }}</td>
+          <td>{{ param.name }}</td>
+          <td>{{ env.temperature|default:"—" }}</td>
+          <td>{{ env.humidity|default:"—" }}</td>
+          <td>{{ env.instrument.name|default:"—" }}</td>
+        </tr>
+        {% endwith %}
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+
+<div class="footer">
+  Generated on {{ now|date:"Y-m-d H:i" }} by {{ generated_by.username }}
+</div>
+
+</body>
+</html>

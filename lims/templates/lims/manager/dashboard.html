@@ -1,0 +1,23 @@
+<h3>🔧 Equipment Calibration Overview</h3>
+<table class="table">
+  <thead>
+    <tr><th>Name</th><th>Serial</th><th>Last Calibrated</th><th>Expires</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+    {% for eq in equipment_list %}
+      {% with latest=eq.calibrations.first %}
+        <tr>
+          <td>{{ eq.name }}</td>
+          <td>{{ eq.serial_number }}</td>
+          <td>{{ latest.calibration_date }}</td>
+          <td>{{ latest.expires_on }}</td>
+          <td>
+            {% if latest.expires_on >= today %}✅ Valid
+            {% else %}❌ Expired
+            {% endif %}
+          </td>
+        </tr>
+      {% endwith %}
+    {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="alert alert-success mt-4">
+    ✅ <strong>Result Submitted Successfully</strong>
+  </div>
+
+  <p><strong>Sample:</strong> {{ assignment.sample.sample_code }}</p>
+  <p><strong>Parameter:</strong> {{ assignment.parameter.name }}</p>
+
+  {% if assignment.is_qc and assignment.qc_metrics %}
+    <div class="mt-3">
+      <h5>🔬 QC Evaluation</h5>
+      <p><strong>Status:</strong> 
+        {% if assignment.qc_metrics.status == 'pass' %}
+          <span class="text-success">Passed ✅</span>
+        {% else %}
+          <span class="text-danger">Failed ❌</span>
+        {% endif %}
+      </p>
+      <p><strong>Recovery:</strong> {{ assignment.qc_metrics.recovery_percent }}%</p>
+      <p><strong>Notes:</strong> {{ assignment.qc_metrics.notes|default:"—" }}</p>
+    </div>
+  {% endif %}
+
+  <a href="{% url 'lims:test_assignment_list' %}" class="btn btn-primary mt-4">← Back to Assignments</a>
+{% endblock %}

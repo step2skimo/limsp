@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Intake Confirmation</title>
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; margin: 40px; color: #333; }
+    .header { margin-bottom: 20px; }
+    .sample-block { margin-bottom: 25px; border-bottom: 1px solid #ddd; padding-bottom: 10px; }
+    ul { padding-left: 20px; }
+    .button {
+      background: #4b7bec;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 4px;
+      display: inline-block;
+      margin-right: 10px;
+      margin-top: 20px;
+    }
+    .button:hover { background: #3867d6; }
+  </style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>✅ Samples Logged Successfully</h2>
+  <p>Client: <strong>{{ client.name }}</strong> ({{ client.organization }})</p>
+  <p>Client ID: {{ client.client_id }} &nbsp; | &nbsp; Token: <strong>{{ client.token }}</strong></p>
+</div>
+
+{% for sample in samples %}
+  <div class="sample-block">
+    <h4>Sample {{ forloop.counter }}: {{ sample.sample_code }}</h4>
+    <p><strong>Type:</strong> {{ sample.sample_type }} &nbsp; | &nbsp; <strong>Weight:</strong> {{ sample.weight }}g</p>
+    <p><strong>Tests Assigned:</strong></p>
+    <ul>
+      {% for test in sample.testassignment_set.all %}
+        <li>{{ test.parameter.name }} (₦{{ test.parameter.default_price|floatformat:2 }})</li>
+      {% empty %}
+        <li>No tests assigned.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endfor %}
+
+<p><strong>Total Tests:</strong> {{ total_tests }}</p>
+<p><strong>Total Price:</strong> ₦{{ total_price|floatformat:2 }}</p>
+
+<a href="{% url 'sample_intake' %}" class="button">➕ Log New Samples</a>
+<a href="{% url 'intake_receipt_pdf' client.id %}" class="button" target="_blank">📄 Download PDF Receipt</a>
+
+</body>
+</html>

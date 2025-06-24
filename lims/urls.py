@@ -1,0 +1,111 @@
+from django.urls import path
+from . import views
+from django.shortcuts import redirect
+from lims.views.dashboard_views import dashboard_redirect
+from .views.manager import *
+from .views.reports import *
+from .views.analyst import analyst_dashboard_view
+from .views.clerk_views import clerk_dashboard_view
+from lims.views.client import enter_token_view
+from lims.views.sample_confirm import intake_confirmation_view
+from .views.assign_test import *
+from django.contrib.auth.views import LogoutView
+  
+urlpatterns = [
+
+     path("", views.landing_view, name="home"),
+     
+     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+
+     path("dashboard/", dashboard_redirect, name="dashboard"),
+     
+     path("client/token-entry/", enter_token_view, name="enter_token"),
+     path("clerk/dashboard/", views.clerk_dashboard_view, name="clerk_dashboard"),
+     path("clients/", views.view_all_clients, name="view_all_clients"),
+     path("samples/", views.sample_list, name="sample_list"),
+     path("samples/search/", views.search_sample_by_code, name="search_sample_by_code"),
+     path("samples/status-stats/", views.sample_status_stats, name="sample_stats"),
+     path("clerk/summary/", views.clerk_activity_summary, name="clerk_activity_summary"),
+     path("intake/", views.sample_intake_view, name="sample_intake"),
+     
+
+
+
+
+
+    path('manager/assign-overview/<str:client_id>/', views.assign_by_parameter_overview, name='assign_by_parameter_overview'),
+    path('manager/export-assignments/csv/<str:client_id>/', views.export_assignments_csv, name='export_parameter_assignments_csv'),
+    path('manager/export-assignments/pdf/<str:client_id>/', views.export_assignments_pdf, name='export_parameter_assignments_pdf'),
+
+    path('result-success/<int:assignment_id>/', views.result_success, name='result_success'),
+
+    path('intake/confirmation/<str:client_id>/', views.intake_confirmation_view, name='intake_confirmation'),
+
+
+    path("manager/reports/pdf/", export_report_pdf, name="export_report_pdf"),
+    path("manager/reports/excel/", export_report_excel, name="export_report_excel"),
+
+
+   
+
+
+    path("manager/reports/", manager_report_view, name="manager_report"),
+
+
+
+    path('analyst/dashboard/', views.analyst_dashboard_view, name='analyst_dashboard'),
+    path("portal/<str:token>/", views.client_tracking_view, name="client_tracking"),
+
+
+    path('receipt/download/<int:client_id>/', views.intake_pdf_download, name='intake_receipt_pdf'),
+    path('analyst/result/<int:assignment_id>/submit/', views.enter_result_view, name='enter_result'),
+    path('manager/sample/<str:sample_id>/review/', views.result_review_view, name='result_review'),
+    path('manager/results/review/', views.result_review_page, name='result_review_page'),
+
+    path('manager/sample/<str:sample_id>/coa/', views.generate_coa_pdf, name='generate_coa'),
+    path("manager/client/<str:client_id>/combined_coa/", views.generate_combined_coa_pdf, name="generate_combined_coa_pdf"),
+    path("manager/coa/<str:client_id>/", views.manager_coa_dashboard, name="manager_coa_dashboard"),
+    path('manager/coa_tools', views.manager_coa_tools_view, name ='manager_coa_tools'),  
+    path("api/sample_status/", views.sample_status_json, name="sample_status_json"),
+    path("api/autocomplete_samples/", views.autocomplete_sample_codes, name="autocomplete_sample_codes"),
+
+
+
+
+
+
+
+    path("manager/dashboard/", views.manager_dashboard, name="manager_dashboard"),
+    path("manager/client/<str:client_id>/single_coa/<int:sample_id>/", views.generate_coa_pdf, name="generate_coa_pdf"),
+    path("manager/client/strt:client_id>/combined_coa/", views.generate_combined_coa_pdf, name="generate_combined_coa_pdf"),
+    path("manager/client/<str:client_id>/pivoted_coa/", views.generate_pivoted_coa_pdf, name="generate_pivoted_coa_pdf"),
+    path("qc/chart/<int:parameter_id>/", views.qc_chart, name="qc_chart"),
+    path("manager/qc/charts/", views.qc_overview_all_parameters, name="qc_overview_all_parameters"),
+    path("analyst/qc/charts/", views.analyst_qc_dashboard, name="analyst_qc_dashboard"),
+    path("qc/chart/<int:parameter_id>/", views.qc_chart_data, name="qc_chart"),
+    path("manager/test-assignments/", views.test_assignment_list, name="test_assignment_list"),
+    path('manager/assign-by-parameter/<str:client_id>/<int:parameter_id>/', views.assign_parameter_tests, name='assign_parameter_tests'),
+    path('manager/assign-overview/<str:client_id>/', views.assign_by_parameter_overview, name='assign_by_parameter_overview'),
+
+
+
+    path("equipment/<int:equipment_id>/usage/", views.equipment_usage_view, name="equipment_usage"),
+
+
+
+
+
+
+
+
+]
+
+
+
+
+
+
+
+
+
+

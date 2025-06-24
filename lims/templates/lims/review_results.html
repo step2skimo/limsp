@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Review Results – Sample {{ sample.sample_code }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #f5f7fa;
+            margin: 40px;
+            color: #222;
+        }
+        h2 {
+            color: #2c3e50;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            background: white;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+        th, td {
+            padding: 10px 12px;
+            border: 1px solid #ddd;
+            font-size: 0.95em;
+        }
+        th {
+            background: #ecf0f1;
+            text-align: left;
+        }
+        tr:nth-child(even) {
+            background-color: #fafafa;
+        }
+        .status-pill {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85em;
+            color: white;
+            display: inline-block;
+        }
+        .status-completed {
+            background: #2ecc71;
+        }
+        .status-verified {
+            background: #1abc9c;
+        }
+        .meta {
+            margin-bottom: 20px;
+        }
+        .approve-btn {
+            margin-top: 30px;
+            background: #2980b9;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            font-size: 1em;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+        .approve-btn:hover {
+            background: #2471a3;
+        }
+        .note {
+            font-size: 0.85em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>📋 Review Test Results – Sample {{ sample.sample_code }}</h2>
+
+    <div class="meta">
+        <p><strong>Client:</strong> {{ sample.client.name }} ({{ sample.client.organization }})</p>
+        <p>
+            <strong>Sample Type:</strong> {{ sample.sample_type }} &nbsp; | &nbsp;
+            <strong>Weight:</strong> {{ sample.weight }}g
+        </p>
+    </div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Result (value)</th>
+                <th>Source</th>
+                <th>Recorded By</th>
+                <th>Recorded At</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr>
+                <td>{{ test.parameter.name }}</td>
+                <td>
+                    {% if test.testresult %}
+                        {{ test.testresult.value|floatformat:2 }}
+                    {% else %}
+                        <em>Not entered</em>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if test.testresult %}
+                        {{ test.testresult.source|title }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if test.testresult and test.testresult.recorded_by %}
+                        {{ test.testresult.recorded_by.username }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if test.testresult %}
+                        {{ test.testresult.recorded_at|date:"Y-m-d H:i" }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="status-pill status-{{ test.status }}">{{ test.status|title }}</span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    {% if sample.status == "results_verified" %}
+    <h3>📄 Certificate of Analysis</h3>
+    <p>You can download the COA for this sample or for all verified samples from this client.</p>
+    <ul>
+        <li>
+            <a href="{% url 'generate_coa' sample.id %}" target="_blank">
+                📥 COA for Sample {{ sample.sample_code }}
+            </a>
+        </li>
+        <li>
+            <a href="{% url 'generate_combined_coa' sample.client.id %}" target="_blank">
+                📚 Combined COA for {{ sample.client.name }}
+            </a>
+        </li>
+    </ul>
+    {% endif %}
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="approve-btn">✅ Approve & Lock All Results</button>
+    </form>
+
+    <p class="note">🔒 Once approved, results become read-only and eligible for COA generation.</p>
+
+</body>
+</html>

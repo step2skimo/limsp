@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Analyst QC Control Charts | JGL Labs</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      background: #f4f6f8;
+      color: #333;
+    }
+    h2 {
+      color: #2c3e50;
+    }
+    canvas {
+      background: white;
+      border: 1px solid #ccc;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    }
+    a.back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      text-decoration: none;
+      color: #2980b9;
+    }
+    a.back-link:hover {
+      text-decoration: underline;
+    }
+    section {
+      margin-bottom: 50px;
+    }
+  </style>
+</head>
+<body>
+
+<a href="{% url 'analyst_dashboard' %}" class="back-link">← Back to Analyst Dashboard</a>
+
+<h2>📊 QC Control Charts – Analyst View</h2>
+
+{% if chart_parameters %}
+  {% for chart in chart_parameters %}
+    <section>
+      <h3>🔬 {{ chart.name|default:"Unnamed Parameter" }}</h3>
+      <canvas id="qc-chart-{{ chart.parameter_id }}" height="180"></canvas>
+      <script>
+        document.addEventListener('DOMContentLoaded', function () {
+          const values = {{ chart.values|default:"[]"|safe }};
+          const labels = {{ chart.labels|default:"[]"|safe }};
+          const min = {{ chart.min|default:"null" }};
+          const max = {{ chart.max|default:"null" }};
+
+          const labelFallback = ['Awaiting QC'];
+
+          const displayLabels = labels.length ? labels : labelFallback;
+          const displayValues = values.length ? values : [null];
+
+          const pointColors = values.map(v => (v < min || v > max) ? 'red' : 'blue');
+
+          const ctx = document.getElementById("qc-chart-{{ chart.parameter_id }}").getContext("2d");
+
+          new Chart(ctx, {
+            type: 'line',
+            data: {
+              labels: displayLabels,
+              datasets: [
+                {
+                  label: 'Measured Value',
+                  data: displayValues,
+                  borderColor: 'blue',
+                  backgroundColor: 'rgba(0, 0, 255, 0.1)',
+                  pointBackgroundColor: pointColors,
+                  pointBorderColor: pointColors,
+                  fill: false,
+                  tension: 0.2
+                },
+                {
+                  label: 'Min Acceptable',
+                  data: Array(displayLabels.length).fill(min),
+                  borderColor: 'green',
+                  borderDash: [5, 5],
+                  pointRadius: 0,
+                  fill: false
+                },
+                {
+                  label: 'Max Acceptable',
+                  data: Array(displayLabels.length).fill(max),
+                  borderColor: 'red',
+                  borderDash: [5, 5],
+                  pointRadius: 0,
+                  fill: false
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              plugins: {
+                legend: { position: 'top' },
+                tooltip: {
+                  callbacks: {
+                    label: function(ctx) {
+                      if (ctx.raw === null) return 'Awaiting QC data';
+                      const value = ctx.raw;
+                      const status = (value < min || value > max) ? ' ❌ Out of Spec' : ' ✅ OK';
+                      return `${ctx.dataset.label}: ${value}${status}`;
+                    }
+                  }
+                }
+              },
+              scales: {
+                y: { title: { display: true, text: 'Measured Value' }},
+                x: { title: { display: true, text: 'Sample Code' }}
+              }
+            }
+          });
+        });
+      </script>
+    </section>
+  {% endfor %}
+{% else %}
+  <p>📭 No parameters found with defined control specs.</p>
+{% endif %}
+
+</body>
+</html>

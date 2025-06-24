@@ -1,0 +1,67 @@
+<canvas id="qc-chart-{{ parameter.id }}" height="180"></canvas>
+<script>
+  (function() {
+    const values = {{ chart.values|safe }};
+    const labels = {{ chart.labels|safe }};
+    const min = {{ chart.min }};
+    const max = {{ chart.max }};
+
+    const pointColors = values.map(v => (v < min || v > max) ? 'red' : 'blue');
+
+    const ctx = document.getElementById("qc-chart-{{ parameter.id }}").getContext("2d");
+
+    new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Measured Value',
+            data: values,
+            borderColor: 'blue',
+            backgroundColor: 'rgba(0, 0, 255, 0.1)',
+            pointBackgroundColor: pointColors,
+            pointBorderColor: pointColors,
+            fill: false,
+            tension: 0.2
+          },
+          {
+            label: 'Min Acceptable',
+            data: Array(values.length).fill(min),
+            borderColor: 'green',
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+          },
+          {
+            label: 'Max Acceptable',
+            data: Array(values.length).fill(max),
+            borderColor: 'red',
+            borderDash: [5, 5],
+            pointRadius: 0,
+            fill: false
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            callbacks: {
+              label: function(ctx) {
+                const value = ctx.raw;
+                const status = (value < min || value > max) ? ' ❌ Out of Spec' : ' ✅ OK';
+                return `${ctx.dataset.label}: ${value}${status}`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: { title: { display: true, text: 'Measured Value' }},
+          x: { title: { display: true, text: 'Sample Code' }}
+        }
+      }
+    });
+  })();
+</script>

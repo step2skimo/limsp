@@ -1,0 +1,513 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sample Intake Form | ISO 17025 Laboratory</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #34495e;
+      --accent-color: #3498db;
+      --success-color: #27ae60;
+      --light-gray: #ecf0f1;
+      --dark-gray: #7f8c8d;
+    }
+    
+    body {
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      color: var(--primary-color);
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 30px;
+      border-left: 5px solid var(--accent-color);
+    }
+    
+    h1 {
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: var(--dark-gray);
+      font-size: 1.1rem;
+    }
+    
+    .form-container {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    
+    fieldset {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+    
+    legend {
+      font-weight: 600;
+      color: var(--primary-color);
+      padding: 0 10px;
+      width: auto;
+      font-size: 1.2rem;
+      margin-bottom: 15px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 8px;
+      width: 100%;
+    }
+    
+    .form-section {
+      background-color: #f9f9f9;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .sample-form {
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+      position: relative;
+      background-color: white;
+    }
+    
+    .parameter-group {
+      margin-bottom: 15px;
+      background-color: white;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      overflow: hidden;
+    }
+    
+    .parameter-group-header {
+      padding: 12px 15px;
+      background-color: #f8f9fa;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .parameter-group-header:hover {
+      background-color: #f1f3f5;
+    }
+    
+    .parameter-list {
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+    
+    .parameter-item {
+      padding: 12px 15px;
+      border-bottom: 1px solid #f0f0f0;
+      display: flex;
+      align-items: center;
+    }
+    
+    .parameter-item:last-child {
+      border-bottom: none;
+    }
+    
+    .parameter-checkbox {
+      margin-right: 10px;
+    }
+    
+    .parameter-price {
+      margin-left: auto;
+      color: var(--success-color);
+      font-weight: 500;
+    }
+    
+    .sample-price {
+      font-weight: 600;
+      color: var(--primary-color);
+      background-color: #f8f9fa;
+      padding: 10px 15px;
+      border-radius: 6px;
+      margin-top: 15px;
+      display: inline-block;
+    }
+    
+    .total-price {
+      font-size: 1.2rem;
+      font-weight: 600;
+      color: var(--primary-color);
+      text-align: right;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #e0e0e0;
+    }
+    
+    .remove-sample-btn {
+      position: absolute;
+      top: 15px;
+      right: 15px;
+    }
+    
+    .form-control, .form-select {
+      border-radius: 6px;
+      padding: 10px 15px;
+      border: 1px solid #ddd;
+    }
+    
+    .form-label {
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+    
+    .parameter-group-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+    
+    .parameter-group.active .parameter-group-content {
+      max-height: 1000px;
+    }
+    
+    .dashboard-link {
+      display: inline-flex;
+      align-items: center;
+      color: var(--accent-color);
+      text-decoration: none;
+      margin-bottom: 15px;
+      transition: color 0.2s;
+      font-weight: 500;
+    }
+    
+    .dashboard-link:hover {
+      color: var(--secondary-color);
+      text-decoration: underline;
+    }
+    
+    .dashboard-link i {
+      margin-right: 8px;
+    }
+    
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Dashboard Link -->
+    <a href="{% url 'clerk_dashboard' %}" class="dashboard-link">
+      <i class="fas fa-arrow-left"></i> Back to Clerk Dashboard
+    </a>
+
+    <!-- Header Section -->
+    <div class="header">
+      <h1>
+        <i class="fas fa-flask me-2"></i>Sample Intake Form
+        <span class="compliance-badge">ISO 17025</span>
+      </h1>
+      <p class="subtitle">
+        Register new samples and clients following chain of custody protocols
+      </p>
+    </div>
+
+    <div class="form-container">
+      <form method="post" id="sample-intake-form" name="sample-intake-form">
+        {% csrf_token %}
+
+        <!-- Client Information Section -->
+        <fieldset class="mb-4">
+          <legend><i class="fas fa-user-circle me-2"></i>Client Information</legend>
+          <div class="form-section">
+            <div class="form-grid">
+              {% for field in client_form %}
+                <div class="form-group">
+                  <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                  {{ field }}
+                  {% if field.help_text %}
+                    <small class="text-muted">{{ field.help_text }}</small>
+                  {% endif %}
+                  {% for error in field.errors %}
+                    <div class="invalid-feedback d-block">{{ error }}</div>
+                  {% endfor %}
+                </div>
+              {% endfor %}
+            </div>
+          </div>
+        </fieldset>
+
+        <!-- Sample Details Section -->
+        <fieldset class="mb-4">
+          <legend><i class="fas fa-vial me-2"></i>Sample Details</legend>
+          
+          <!-- Management form MUST be inside the <form> -->
+          {{ sample_formset.management_form }}
+
+          <div id="sample-forms-container">
+            {% for form in sample_formset %}
+              <div class="sample-form" data-index="{{ forloop.counter0 }}">
+                <button type="button" class="btn btn-sm btn-outline-danger remove-sample-btn">
+                  <i class="fas fa-times"></i> Remove
+                </button>
+                
+                <h5 class="mb-4">Sample {{ forloop.counter }}</h5>
+                
+                <div class="form-section">
+                  <div class="form-grid">
+                    {% for field in form.visible_fields %}
+                      {% if field.name != 'parameters' %}
+                        <div class="form-group">
+                          <label for="{{ field.id_for_label }}" class="form-label">{{ field.label }}</label>
+                          {{ field }}
+                          {% if field.help_text %}
+                            <small class="text-muted">{{ field.help_text }}</small>
+                          {% endif %}
+                          {% for error in field.errors %}
+                            <div class="invalid-feedback d-block">{{ error }}</div>
+                          {% endfor %}
+                        </div>
+                      {% endif %}
+                    {% endfor %}
+                  </div>
+
+                  <!-- Parameters for this specific sample -->
+                  <div class="sample-parameters mt-4">
+                    <h6 class="mb-3">Test Parameters for This Sample</h6>
+                    
+                    {% for group in parameter_groups %}
+                      <div class="parameter-group">
+                        <div class="parameter-group-header">
+                          <div class="form-check">
+                            <input class="form-check-input group-check" type="checkbox" 
+                                   data-group="{{ group.name }}" data-sample="{{ forloop.parentloop.counter0 }}">
+                            <label class="form-check-label fw-bold">{{ group.name }}</label>
+                          </div>
+                          <i class="fas fa-chevron-down toggle-arrow"></i>
+                        </div>
+                        
+                        <div class="parameter-group-content">
+                          <ul class="parameter-list">
+                            {% for param in group.parameters %}
+                              <li class="parameter-item">
+                                <input type="checkbox" class="parameter-checkbox form-check-input" 
+                                       name="samples-{{ forloop.parentloop.parentloop.counter0 }}-parameters" 
+                                       value="{{ param.id }}" 
+                                       id="param-{{ forloop.parentloop.parentloop.counter0 }}-{{ param.id }}">
+                                <label class="form-check-label" for="param-{{ forloop.parentloop.parentloop.counter0 }}-{{ param.id }}">
+                                  {{ param.name }}
+                                </label>
+                                <span class="parameter-price">₦{{ param.default_price }}</span>
+                                <input type="hidden" class="param-price" value="{{ param.default_price }}">
+                              </li>
+                            {% endfor %}
+                          </ul>
+                        </div>
+                      </div>
+                    {% endfor %}
+                    
+                    <div class="sample-price mt-3">
+                      Sample Price: ₦<span class="sample-price-value">0.00</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            {% endfor %}
+          </div>
+
+          <button type="button" id="add-sample-btn" class="btn btn-outline-primary mt-3">
+            <i class="fas fa-plus"></i> Add Another Sample
+          </button>
+        </fieldset>
+
+        <div class="total-price">
+          Total Estimated Price: ₦<span id="total-price">0.00</span>
+        </div>
+
+        <!-- Optional: Repeat csrf_token here as safety -->
+        {% csrf_token %}
+        <div class="d-flex justify-content-between mt-4">
+          <button type="reset" class="btn btn-outline-secondary">
+            <i class="fas fa-undo"></i> Reset Form
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-paper-plane"></i> Submit Intake
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      let totalForms = {{ sample_formset.total_form_count }};
+      const container = document.getElementById('sample-forms-container');
+      const managementInput = document.getElementById('id_samples-TOTAL_FORMS');
+      const originalForm = container.children[0]?.cloneNode(true);
+      
+      // Add new sample form
+      document.getElementById('add-sample-btn').addEventListener('click', function() {
+        if (!originalForm) return;
+        
+        const newForm = originalForm.cloneNode(true);
+        const formIndex = totalForms;
+        
+        // Update all field names/IDs with new index
+        const regex = /samples-(\d+)-/g;
+        newForm.innerHTML = newForm.innerHTML.replace(regex, `samples-${formIndex}-`);
+        newForm.dataset.index = formIndex;
+        
+        // Reset form values
+        newForm.querySelectorAll('input, select').forEach(field => {
+          if (field.type !== 'hidden') {
+            field.value = '';
+            field.checked = false;
+          }
+        });
+        
+        // Reset price display
+        newForm.querySelector('.sample-price-value').textContent = '0.00';
+        
+        container.appendChild(newForm);
+        totalForms++;
+        managementInput.value = totalForms;
+        
+        renumberSamples();
+        wireUpForm(newForm);
+      });
+
+      // Remove sample form
+      function removeSampleForm(btn) {
+        if (container.children.length <= 1) {
+          alert('You must have at least one sample.');
+          return;
+        }
+        
+        btn.closest('.sample-form').remove();
+        totalForms--;
+        managementInput.value = totalForms;
+        
+        renumberSamples();
+        updateTotalPrice();
+      }
+
+      // Renumber sample headings
+      function renumberSamples() {
+        document.querySelectorAll('.sample-form').forEach((form, i) => {
+          form.querySelector('h5').textContent = `Sample ${i + 1}`;
+          form.dataset.index = i;
+          
+          // Update all parameter names with new index
+          form.querySelectorAll('[name*="parameters"]').forEach(input => {
+            input.name = input.name.replace(/samples-(\d+)-parameters/, `samples-${i}-parameters`);
+          });
+        });
+      }
+
+      // Calculate and update price for a single sample
+      function updateSamplePrice(form) {
+        let total = 0;
+        
+        form.querySelectorAll('.parameter-checkbox:checked').forEach(checkbox => {
+          const priceInput = checkbox.closest('.parameter-item').querySelector('.param-price');
+          if (priceInput) {
+            total += parseFloat(priceInput.value) || 0;
+          }
+        });
+        
+        const priceDisplay = form.querySelector('.sample-price-value');
+        priceDisplay.textContent = total.toFixed(2);
+        
+        return total;
+      }
+
+      // Update total price across all samples
+      function updateTotalPrice() {
+        let grandTotal = 0;
+        
+        document.querySelectorAll('.sample-form').forEach(form => {
+          grandTotal += updateSamplePrice(form);
+        });
+        
+        document.getElementById('total-price').textContent = grandTotal.toFixed(2);
+      }
+
+      // Toggle parameter group visibility
+      function toggleParameterGroup(header) {
+        const group = header.closest('.parameter-group');
+        group.classList.toggle('active');
+        
+        const arrow = header.querySelector('.toggle-arrow');
+        arrow.classList.toggle('fa-chevron-down');
+        arrow.classList.toggle('fa-chevron-up');
+      }
+
+      // Toggle all parameters in a group
+      function toggleGroupParameters(checkbox) {
+        const group = checkbox.closest('.parameter-group');
+        const parameters = group.querySelectorAll('.parameter-checkbox');
+        
+        parameters.forEach(param => {
+          param.checked = checkbox.checked;
+          param.dispatchEvent(new Event('change'));
+        });
+      }
+
+      // Initialize event handlers for a form
+      function wireUpForm(form) {
+        // Remove sample button
+        const removeBtn = form.querySelector('.remove-sample-btn');
+        if (removeBtn) {
+          removeBtn.addEventListener('click', function() {
+            removeSampleForm(this);
+          });
+        }
+        
+        // Parameter group headers
+        form.querySelectorAll('.parameter-group-header').forEach(header => {
+          header.addEventListener('click', function() {
+            toggleParameterGroup(this);
+          });
+        });
+        
+        // Group checkboxes
+        form.querySelectorAll('.group-check').forEach(checkbox => {
+          checkbox.addEventListener('change', function() {
+            toggleGroupParameters(this);
+          });
+        });
+        
+        // Parameter checkboxes
+        form.querySelectorAll('.parameter-checkbox').forEach(checkbox => {
+          checkbox.addEventListener('change', updateTotalPrice);
+        });
+      }
+
+      // Initialize all existing forms
+      document.querySelectorAll('.sample-form').forEach(wireUpForm);
+      
+      // Initialize total price
+      updateTotalPrice();
+    });
+  </script>
+</body>
+</html>

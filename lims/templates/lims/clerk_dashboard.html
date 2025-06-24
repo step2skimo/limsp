@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISO 17025 Laboratory - Clerk Dashboard</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --info-color: #95a5a6;
+            --light-gray: #ecf0f1;
+            --dark-gray: #7f8c8d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f5f7fa;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .glass-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+            border-color: #d0d0d0;
+        }
+
+        .header-card {
+            background: white;
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            background: var(--primary-color);
+            border-radius: 10px;
+            padding: 30px;
+            color: white;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .status-online {
+            background: var(--success-color);
+        }
+
+        .status-compliant {
+            background: var(--accent-color);
+        }
+
+        .action-card {
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .card-header-gradient {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 20px 25px;
+            border-radius: 10px 10px 0 0;
+        }
+
+        .card-header-success {
+            background: var(--success-color);
+        }
+
+        .card-header-warning {
+            background: var(--warning-color);
+        }
+
+        .card-header-info {
+            background: var(--info-color);
+            color: #333;
+        }
+
+        .card-header-dark {
+            background: var(--secondary-color);
+        }
+
+        .action-btn {
+            background: var(--light-gray);
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 20px;
+            color: var(--primary-color);
+            text-decoration: none;
+            display: block;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.01);
+            background: #e0e0e0;
+            border-color: #ccc;
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .action-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            display: block;
+            color: var(--accent-color);
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            margin: 10px 0;
+            border: 1px solid #e0e0e0;
+        }
+
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .metric-label {
+            font-size: 0.9rem;
+            color: var(--dark-gray);
+            margin-top: 5px;
+        }
+
+        .compliance-badge {
+            background: var(--accent-color);
+            color: #fff;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .notification-banner {
+            background: var(--light-gray);
+            color: var(--primary-color);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            text-align: center;
+            font-weight: 600;
+            border-left: 4px solid var(--accent-color);
+        }
+
+        .footer-info {
+            background: var(--light-gray);
+            color: var(--primary-color);
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .header-content {
+                padding: 20px;
+            }
+            
+            .action-btn {
+                padding: 15px;
+            }
+            
+            .metric-number {
+                font-size: 2rem;
+            }
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            animation: fadeOut 2s ease-in-out 1s forwards;
+        }
+
+        .loader {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #fff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                visibility: hidden;
+            }
+        }
+
+        .text-white-50 {
+            color: rgba(255, 255, 255, 0.8);
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div class="loading-overlay">
+        <div class="loader"></div>
+    </div>
+
+    <div class="main-container">
+        <!-- Notification Banner -->
+
+
+        <!-- Header Section -->
+        <div class="glass-card header-card">
+            <div class="header-content">
+                <div class="row align-items-center">
+                    <div class="col-lg-8">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="fas fa-microscope me-3" style="font-size: 2.5rem;"></i>
+                            <div>
+                                <h1 class="mb-0 fw-bold">ISO 17025 Laboratory Management System</h1>
+                                <p class="mb-0 text-white-50">Clerk Operations Dashboard - Quality Assured Testing Services</p>
+                            </div>
+                        </div>
+                        <div class="text-end mb-3">
+                            <a href="{% url 'logout' %}" class="btn btn-outline-light btn-sm">
+                              <i class="fas fa-sign-out-alt me-1"></i> Logout
+                                   </a>
+                                      </div>
+
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h3 class="text-white fw-semibold">Welcome, {{ user.get_full_name }}</h3>
+                                <div class="mb-2">
+                                    <span class="badge bg-light text-dark me-2">
+                                        <i class="fas fa-user-tie me-1"></i>Laboratory Clerk
+                                    </span>
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-shield-alt me-1"></i>Sample Management Access
+                                    </span>
+                                </div>
+                                <p class="mb-0 text-white-50">
+                                    Authorized for sample intake, client registration, and laboratory workflow coordination 
+                                    in accordance with ISO/IEC 17025:2017 standards.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-lg-4">
+                        <div class="stats-grid">
+                            <div class="metric-card">
+                                <div class="metric-number">
+                                    <span class="status-indicator status-online"></span>99.8%
+                                </div>
+                                <div class="metric-label">System Uptime</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-number">
+                                    <span class="status-indicator status-compliant"></span>Active
+                                </div>
+                                <div class="metric-label">ISO 17025 Status</div>
+                            </div>
+                        </div>
+                        <div class="text-center">
+                            <span class="compliance-badge">
+                                <i class="fas fa-certificate me-1"></i>
+                                LIMS Certified
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Primary Operations -->
+        <div class="mb-4">
+            <h2 class="text-dark fw-bold mb-3">
+                <i class="fas fa-clipboard-list me-2"></i>Primary Operations
+            </h2>
+            <p class="text-muted mb-4">Core laboratory management functions for sample processing, client management, and quality assurance workflows.</p>
+        </div>
+
+        <!-- Action Cards Grid -->
+        <div class="row g-4 mb-5">
+            <!-- Sample & Client Management -->
+            <div class="col-lg-6">
+                <div class="glass-card action-card">
+                    <div class="card-header-gradient card-header-success">
+                        <h4 class="mb-0 fw-bold">
+                            <i class="fas fa-plus-circle me-2"></i>Sample & Client Management
+                        </h4>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-4 text-muted">
+                            Register new clients and intake samples following chain of custody protocols. 
+                            Ensure proper documentation and traceability as required by ISO 17025.
+                        </p>
+                        <a href="{% url 'sample_intake' %}" class="action-btn">
+                            <i class="fas fa-file-import action-icon"></i>
+                            <strong class="d-block fs-5">Register New Client & Sample</strong>
+                            <small class="text-muted">Complete intake process with COC documentation</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Management -->
+            <div class="col-lg-6">
+                <div class="glass-card action-card">
+                    <div class="card-header-gradient card-header-info">
+                        <h4 class="mb-0 fw-bold">
+                            <i class="fas fa-database me-2"></i>Data Management & Reporting
+                        </h4>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-4 text-muted">
+                            Access comprehensive client and sample databases. Generate reports and track 
+                            laboratory performance metrics for quality management.
+                        </p>
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <a href="{% url 'view_all_clients' %}" class="action-btn">
+                                    <i class="fas fa-users action-icon"></i>
+                                    <strong class="d-block">View All Clients</strong>
+                                    <small class="text-muted">Client database and contact management</small>
+                                </a>
+                            </div>
+                            <div class="col-12">
+                                <a href="{% url 'sample_list' %}" class="action-btn">
+                                    <i class="fas fa-vials action-icon"></i>
+                                    <strong class="d-block">View All Samples</strong>
+                                    <small class="text-muted">Complete sample inventory and status tracking</small>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Analytics & Tracking Row -->
+        <div class="row g-4 mb-5">
+            <!-- Sample Tracking -->
+            <div class="col-lg-4">
+                <div class="glass-card action-card h-100">
+                    <div class="card-header-gradient card-header-warning">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-search me-2"></i>Sample Tracking
+                        </h5>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-4 text-muted">
+                            Quick sample lookup and chain of custody verification using unique sample identifiers.
+                        </p>
+                        <a href="{% url 'search_sample_by_code' %}" class="action-btn">
+                            <i class="fas fa-barcode action-icon"></i>
+                            <strong class="d-block">Search Sample by Code</strong>
+                            <small class="text-muted">Instant sample status & COC lookup</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Laboratory Analytics -->
+            <div class="col-lg-4">
+                <div class="glass-card action-card h-100">
+                    <div class="card-header-gradient">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-chart-line me-2"></i>Laboratory Analytics
+                        </h5>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-4 text-muted">
+                            Monitor sample processing status and laboratory workload distribution across testing phases.
+                        </p>
+                        <a href="{% url 'sample_stats' %}" class="action-btn">
+                            <i class="fas fa-analytics action-icon"></i>
+                            <strong class="d-block">Sample Status Summary</strong>
+                            <small class="text-muted">Workflow analytics & bottleneck ID</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="col-lg-4">
+                <div class="glass-card action-card h-100">
+                    <div class="card-header-gradient card-header-dark">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="fas fa-tachometer-alt me-2"></i>Performance Metrics
+                        </h5>
+                    </div>
+                    <div class="p-4">
+                        <p class="mb-4 text-muted">
+                            Daily operational statistics and key performance indicators for quality management review.
+                        </p>
+                        <a href="{% url 'clerk_activity_summary' %}" class="action-btn">
+                            <i class="fas fa-chart-pie action-icon"></i>
+                            <strong class="d-block">Today's Statistics</strong>
+                            <small class="text-muted">Daily KPIs & productivity metrics</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compliance Information -->
+        <div class="glass-card mb-4">
+            <div class="card-header-gradient card-header-dark">
+                <h4 class="mb-0 fw-bold">
+                    <i class="fas fa-certificate me-2"></i>ISO/IEC 17025:2017 Compliance Framework
+                </h4>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-lg-6">
+                        <h5 class="text-warning fw-semibold mb-3">
+                            <i class="fas fa-tasks me-2"></i>Quality Management Responsibilities
+                        </h5>
+                        <ul class="text-muted list-unstyled">
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Maintain accurate and complete sample records</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Ensure proper chain of custody documentation</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Verify client information and sample integrity</li>
+                            <li class="mb-2"><i class="fas fa-check-circle text-success me-2"></i>Follow documented procedures for sample handling</li>
+                        </ul>
+                    </div>
+                    <div class="col-lg-6">
+                        <h5 class="text-info fw-semibold mb-3">
+                            <i class="fas fa-shield-alt me-2"></i>Data Integrity & Traceability
+                        </h5>
+                        <ul class="text-muted list-unstyled">
+                            <li class="mb-2"><i class="fas fa-lock text-warning me-2"></i>All entries must be traceable and auditable</li>
+                            <li class="mb-2"><i class="fas fa-lock text-warning me-2"></i>Sample codes must be unique and sequential</li>
+                            <li class="mb-2"><i class="fas fa-lock text-warning me-2"></i>Maintain confidentiality of client information</li>
+                            <li class="mb-2"><i class="fas fa-lock text-warning me-2"></i>Report any non-conformities immediately</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>System Notice:</strong> This Laboratory Information Management System (LIMS) is designed to support 
+                    ISO/IEC 17025:2017 requirements for competence of testing and calibration laboratories. 
+                    All operations are logged for quality assurance and regulatory compliance.
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer-info">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h6 class="mb-2">
+                        <i class="fas fa-flask me-2"></i>Laboratory Information Management System
+                    </h6>
+                    <p class="mb-0 small">
+                        Version 2.1 | Last Updated: <span id="currentDate"></span><br>
+                        For technical support or quality issues, contact Laboratory Quality Manager
+                    </p>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <div class="d-flex justify-content-md-end gap-3">
+                        <span class="badge bg-success">
+                            <i class="fas fa-heart-pulse me-1"></i>System Healthy
+                        </span>
+                        <span class="badge bg-info">
+                            <i class="fas fa-users me-1"></i>{{ active_users|default:"12" }} Active Users
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.2/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Set current date
+        document.getElementById('currentDate').textContent = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
+
+        // Initialize animations and effects
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add entrance animations to cards
+            const cards = document.querySelectorAll('.glass-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100 + 500);
+            });
+
+            // Add hover effects
+            const actionBtns = document.querySelectorAll('.action-btn');
+            actionBtns.forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    this.style.transform = 'scale(1.01)';
+                });
+                
+                btn.addEventListener('mouseleave', function() {
+                    this.style.transform = 'scale(1)';
+                });
+            });
+        });
+
+        // Real-time clock update (optional enhancement)
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('en-US', {
+                hour12: true,
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Update every second
+        setInterval(updateClock, 1000);
+    </script>
+</body>
+</html>

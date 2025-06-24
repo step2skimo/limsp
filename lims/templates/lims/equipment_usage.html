@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h2>🔧 Equipment Usage: {{ equipment.name }}</h2>
+
+  <p>
+    <strong>Model:</strong> {{ equipment.model }} |
+    <strong>Serial #:</strong> {{ equipment.serial_number }} |
+    <strong>Category:</strong> {{ equipment.category }}
+  </p>
+
+  {% if usage_records %}
+    <table class="table table-striped">
+      <thead>
+        <tr>
+          <th>Sample</th>
+          <th>Parameter</th>
+          <th>Temperature (°C)</th>
+          <th>Humidity (%)</th>
+          <th>Pressure (hPa)</th>
+          <th>Date Recorded</th>
+          <th>Analyst</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for record in usage_records %}
+          <tr>
+            <td>{{ record.test_assignment.sample.sample_code }}</td>
+            <td>{{ record.test_assignment.parameter.name }}</td>
+            <td>{{ record.temperature }}</td>
+            <td>{{ record.humidity }}</td>
+            <td>{{ record.pressure|default:"—" }}</td>
+            <td>{{ record.recorded_at|date:"Y-m-d H:i" }}</td>
+            <td>{{ record.recorded_by.get_full_name|default:record.recorded_by.username }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No test records found for this equipment yet.</p>
+  {% endif %}
+{% endblock %}

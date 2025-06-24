@@ -1,0 +1,40 @@
+<canvas id="qcChart"></canvas>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+
+<div id="qcChart" style="width: 100%; height: 500px;"></div>
+
+<script>
+  const trace = {
+    x: {{ labels|safe }},
+    y: {{ data|safe }},
+    mode: 'lines+markers',
+    name: '{{ parameter.name }}',
+    line: { color: 'blue' }
+  };
+
+  const lowerBound = {
+    x: {{ labels|safe }},
+    y: Array({{ labels|length }}).fill({{ min_y }}),
+    mode: 'lines',
+    name: 'Lower Limit',
+    line: { dash: 'dot', color: 'green' }
+  };
+
+  const upperBound = {
+    x: {{ labels|safe }},
+    y: Array({{ labels|length }}).fill({{ max_y }}),
+    mode: 'lines',
+    name: 'Upper Limit',
+    line: { dash: 'dot', color: 'red' }
+  };
+
+  const layout = {
+    title: '{{ parameter.name }} QC Trend',
+    xaxis: { title: 'Date' },
+    yaxis: { title: '{{ parameter.unit }}' },
+    margin: { t: 40 },
+    hovermode: 'closest'
+  };
+
+  Plotly.newPlot('qcChart', [trace, lowerBound, upperBound], layout);
+</script>

@@ -1,0 +1,233 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clerk Activity Summary | ISO 17025 Laboratory</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #34495e;
+      --accent-color: #3498db;
+      --success-color: #27ae60;
+      --light-gray: #ecf0f1;
+      --dark-gray: #7f8c8d;
+    }
+    
+    body {
+      font-family: 'Segoe UI', 'Inter', sans-serif;
+      background-color: #f8f9fa;
+      color: var(--primary-color);
+      padding: 20px;
+    }
+    
+    .header {
+      background-color: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      margin-bottom: 30px;
+      border-left: 5px solid var(--accent-color);
+    }
+    
+    h1 {
+      color: var(--primary-color);
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .subtitle {
+      color: var(--dark-gray);
+      font-size: 1.1rem;
+    }
+    
+    .summary-card {
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+      padding: 25px;
+      margin-bottom: 30px;
+      border-top: 4px solid var(--accent-color);
+    }
+    
+    .summary-card h2 {
+      color: var(--secondary-color);
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--light-gray);
+    }
+    
+    .table-responsive {
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .summary-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    
+    .summary-table thead th {
+      background-color: var(--primary-color);
+      color: white;
+      padding: 15px 20px;
+      font-weight: 600;
+    }
+    
+    .summary-table tbody td {
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--light-gray);
+      background-color: white;
+    }
+    
+    .summary-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .metric-highlight {
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+    
+    .timeframe-col {
+      font-weight: 600;
+      color: var(--secondary-color);
+    }
+    
+    .footer {
+      margin-top: 40px;
+      padding: 20px;
+      text-align: center;
+      color: var(--dark-gray);
+      font-size: 0.9rem;
+    }
+    
+    .compliance-badge {
+      background-color: var(--success-color);
+      color: white;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      display: inline-block;
+      margin-left: 10px;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 15px;
+      }
+      
+      .header {
+        padding: 20px;
+      }
+      
+      .summary-card {
+        padding: 15px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="d-flex align-items-center">
+        <div>
+          <h1>
+            <i class="fas fa-clipboard-list me-2"></i>Clerk Activity Summary
+            <span class="compliance-badge">ISO 17025</span>
+          </h1>
+          <p class="subtitle">
+            Quality assurance metrics for sample intake and client registration activities
+          </p>
+        </div>
+      </div>
+      <a href="/dashboard" class="text-primary">
+                        <i class="fas fa-tachometer-alt me-1"></i>
+                        Dashboard
+                    </a>
+    </div>
+
+    <!-- Clients Registered Section -->
+    <div class="summary-card">
+      <h2>
+        <i class="fas fa-users me-2"></i>Clients Registered
+      </h2>
+      <div class="table-responsive">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Timeframe</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="timeframe-col">Today</td>
+              <td class="metric-highlight">{{ clients_today }}</td>
+            </tr>
+            <tr>
+              <td class="timeframe-col">This Week</td>
+              <td class="metric-highlight">{{ clients_week }}</td>
+            </tr>
+            <tr>
+              <td class="timeframe-col">This Month</td>
+              <td class="metric-highlight">{{ clients_month }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Samples Received Section -->
+    <div class="summary-card">
+      <h2>
+        <i class="fas fa-vials me-2"></i>Samples Received
+      </h2>
+      <div class="table-responsive">
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Timeframe</th>
+              <th>Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="timeframe-col">Today</td>
+              <td class="metric-highlight">{{ samples_today }}</td>
+            </tr>
+            <tr>
+              <td class="timeframe-col">This Week</td>
+              <td class="metric-highlight">{{ samples_week }}</td>
+            </tr>
+            <tr>
+              <td class="timeframe-col">This Month</td>
+              <td class="metric-highlight">{{ samples_month }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>
+        <i class="fas fa-info-circle me-1"></i>
+        Report generated on {{ current_date }} | Laboratory Information Management System v2.1
+      </p>
+      <p class="text-muted small">
+        All activities logged for ISO 17025 compliance and quality assurance
+      </p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

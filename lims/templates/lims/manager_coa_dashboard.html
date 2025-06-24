@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Generate COA{% endblock %}
+
+{% block content %}
+<h2 class="mb-4">📤 Certificate of Analysis Options</h2>
+
+<div class="mb-4">
+  <h5>Client:</h5>
+  <p>
+    <strong>{{ client.name }}</strong> — {{ client.organization }}  
+    <br><small class="text-muted">Client ID: {{ client.client_id }}</small>
+  </p>
+</div>
+
+{% if samples %}
+  <div class="mb-3">
+    <h5>Available Samples:</h5>
+    <ul>
+      {% for sample in samples %}
+        <li>{{ sample.sample_code }} — {{ sample.sample_type }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-3 mt-4">
+    {% for sample in samples %}
+      <div class="col">
+        <a href="{% url 'generate_coa_pdf' client.client_id sample.id %}" class="btn btn-outline-primary w-100">
+          📄 Single COA – {{ sample.sample_code }}
+        </a>
+      </div>
+    {% endfor %}
+
+    <div class="col">
+      <a href="{% url 'generate_combined_coa_pdf' client.client_id %}" class="btn btn-outline-success w-100">
+        📚 Combined COA
+      </a>
+    </div>
+
+    <div class="col">
+      <a href="{% url 'generate_pivoted_coa_pdf' client.client_id %}" class="btn btn-outline-info w-100">
+        📊 Pivoted COA
+      </a>
+    </div>
+  </div>
+
+{% else %}
+  <div class="alert alert-warning mt-4">⚠️ No verified samples found for this client.</div>
+{% endif %}
+{% endblock %}

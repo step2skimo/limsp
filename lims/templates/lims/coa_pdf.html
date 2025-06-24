@@ -1,0 +1,131 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Certificate of Analysis – {{ sample.sample_code }}</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 40px;
+            color: #2c3e50;
+            background-image: url("{% static 'images/Letterhead.png' %}");
+            background-size: cover;
+            background-repeat: no-repeat;
+            background-position: top left;
+            padding: 140px 60px 80px; /* Adjust depending on your letterhead design */
+        }
+        h1, h2 { text-align: center; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            font-size: 0.9em;
+            background-color: rgba(255,255,255,0.95); /* for readability */
+        }
+        th, td { padding: 8px 10px; border: 1px solid #ccc; }
+        th { background: #f1f1f1; }
+        .inline-note { font-size: 0.8em; color: #555; }
+        .summary-box { margin-top: 30px; font-size: 0.9em; }
+        .env-table { margin-top: 10px; }
+        .footer {
+            margin-top: 40px;
+            font-size: 0.8em;
+            text-align: right;
+            color: #888;
+            background: rgba(255,255,255,0.7);
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>JGL Laboratories</h1>
+<h2>Certificate of Analysis</h2>
+
+<p><strong>Client:</strong> {{ client.name }} ({{ client.organization }})<br>
+<strong>Client ID:</strong> {{ client.client_id_code }}<br>
+<strong>Sample:</strong> {{ sample.sample_code }} | <strong>Type:</strong> {{ sample.sample_type }}<br>
+<strong>Received:</strong> {{ sample.created_at|date:"Y-m-d" }} | <strong>Weight:</strong> {{ sample.weight }}g</p>
+
+<h3>🧪 Test Results</h3>
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Value</th>
+            <th>Unit</th>
+            <th>Method</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for test in tests %}
+        <tr>
+            <td>{{ test.parameter.name }}</td>
+            <td>
+                {% if test.testresult %}
+                    {{ test.testresult.value|floatformat:2 }}
+                    <div class="inline-note">
+                        {% with testenv=test.testenvironment %}
+                            {% if testenv %}
+                                ({{ testenv.temperature }} °C, {{ testenv.humidity }}% RH{% if testenv.instrument %}, {{ testenv.instrument.name }}{% endif %})
+                            {% else %}
+                                (env not logged)
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>{{ test.parameter.unit }}</td>
+            <td>{{ test.parameter.method }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<div class="summary-box">
+    <h4>📌 Environmental Summary</h4>
+    <p>The following environmental conditions were logged per test:</p>
+
+    <table class="env-table">
+        <thead>
+            <tr>
+                <th>Parameter</th>
+                <th>Temperature (°C)</th>
+                <th>Humidity (%)</th>
+                <th>Instrument</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for test in tests %}
+            <tr>
+                <td>{{ test.parameter.name }}</td>
+                {% with testenv=test.testenvironment %}
+                    {% if testenv %}
+                        <td>{{ testenv.temperature }}</td>
+                        <td>{{ testenv.humidity }}</td>
+                        <td>
+                            {% if testenv.instrument %}
+                                {{ testenv.instrument.name }} ({{ testenv.instrument.serial_number }})
+                            {% else %}
+                                —
+                            {% endif %}
+                        </td>
+                    {% else %}
+                        <td colspan="3">Not Logged</td>
+                    {% endif %}
+                {% endwith %}
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<div class="footer">
+    COA generated on {{ now|date:"Y-m-d H:i" }} by {{ generated_by.username }}
+</div>
+
+</body>
+</html>

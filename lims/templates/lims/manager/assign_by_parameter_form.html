@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Parameter Test Assignment - ISO 17025 Laboratory</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .lab-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+        .iso-badge {
+            background: #28a745;
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.25rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .parameter-name {
+            color: #2a5298;
+            font-weight: 600;
+        }
+        .assignment-card {
+            background: white;
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+        .table-container {
+            background: white;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .control-info {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 0 0.25rem 0.25rem 0;
+        }
+        .quality-note {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .btn-back {
+            background: #6c757d;
+            border-color: #6c757d;
+            color: white;
+            margin-right: 1rem;
+        }
+        .btn-back:hover {
+            background: #545b62;
+            border-color: #4e555b;
+            color: white;
+        }
+        .analyst-select {
+            border: 2px solid #e9ecef;
+            border-radius: 0.375rem;
+            padding: 0.75rem;
+        }
+        .analyst-select:focus {
+            border-color: #2a5298;
+            box-shadow: 0 0 0 0.2rem rgba(42, 82, 152, 0.25);
+        }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="lab-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">ISO 17025 Laboratory Management System</h1>
+                    <h2 class="mb-0">Test Parameter Assignment</h2>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="iso-badge">ISO/IEC 17025:2017</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="assignment-card">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="mb-1">Assign <span class="parameter-name">{{ parameter.name }}</span> Tests</h3>
+                    <p class="text-muted mb-0">Client: <strong>{{ client.name }}</strong></p>
+                </div>
+                <button type="button" class="btn btn-back" onclick="window.history.back()">
+                    ← Back to Overview
+                </button>
+            </div>
+
+            <div class="quality-note">
+                <strong>Quality Assurance Notice:</strong> This assignment process ensures compliance with ISO/IEC 17025:2017 requirements for competent personnel assignment and quality control procedures. All analysts must be authorized for the selected test parameter.
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <label for="analyst" class="form-label fw-bold">Select Authorized Analyst:</label>
+                        <select id="analyst" name="analyst" class="form-control analyst-select" required>
+                            <option value="">-- Select Analyst --</option>
+                            {% for analyst in analysts %}
+                                <option value="{{ analyst.id }}">{{ analyst.get_full_name }}</option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text text-muted">Only analysts authorized for this parameter are listed</small>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="alert alert-info mb-0">
+                            <strong>Sample Count:</strong> {{ samples.count }} sample(s) available for assignment<br>
+                            <strong>Parameter:</strong> {{ parameter.name }}<br>
+                            <strong>Method:</strong> As per laboratory SOP
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-info">
+                    <h6 class="mb-2"><strong>Quality Control Sample Selection</strong></h6>
+                    <p class="mb-0">Select one sample to serve as the quality control sample for this batch. This ensures compliance with ISO 17025 quality control requirements for analytical procedures.</p>
+                </div>
+
+                <div class="table-container">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="8%">Select</th>
+                                <th width="25%">Sample Code</th>
+                                <th width="35%">Assignment Status</th>
+                                <th width="32%">Quality Control Sample</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sample in samples %}
+                               {% with sample.assigned_analyst_name as analyst_name %}
+
+                                <tr class="{% if analyst_name %}table-success{% else %}table-warning{% endif %}">
+                                    <td>
+                                        <div class="form-check">
+                                            <input type="checkbox" name="sample_ids" value="{{ sample.id }}" 
+                                                   class="form-check-input" id="sample_{{ sample.id }}"
+                                                   {% if sample.id in assigned_sample_ids %}checked{% endif %}>
+                                            <label class="form-check-label" for="sample_{{ sample.id }}"></label>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <strong>{{ sample.sample_code }}</strong>
+                                    </td>
+                                    <td>
+                                        {% if analyst_name %}
+                                            <span class="badge bg-success">✅ Assigned to {{ analyst_name }}</span>
+                                        {% else %}
+                                            <span class="badge bg-warning text-dark">⏳ Pending Assignment</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="form-check">
+                                            <input type="radio" name="control_sample_id" value="{{ sample.id }}" 
+                                                   class="form-check-input" id="control_{{ sample.id }}"
+                                                   {% if sample.id == current_control_id %}checked{% endif %}>
+                                            <label class="form-check-label" for="control_{{ sample.id }}">
+                                                Use as QC Sample
+                                            </label>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endwith %}
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="quality-note mt-3">
+                    <strong>ISO 17025 Compliance Note:</strong> By proceeding with this assignment, you confirm that the selected analyst is competent and authorized to perform the specified test parameter according to laboratory procedures and quality management system requirements.
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="text-muted">
+                        <small>Last updated: <span id="current-time"></span></small>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary me-2" onclick="window.history.back()">
+                            Cancel
+                        </button>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            📋 Assign Selected Samples
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Update current time
+        document.getElementById('current-time').textContent = new Date().toLocaleString();
+        
+        // Form validation
+        document.querySelector('form').addEventListener('submit', function(e) {
+            const analyst = document.getElementById('analyst').value;
+            const selectedSamples = document.querySelectorAll('input[name="sample_ids"]:checked');
+            
+            if (!analyst) {
+                e.preventDefault();
+                alert('Please select an analyst before proceeding.');
+                return;
+            }
+            
+            if (selectedSamples.length === 0) {
+                e.preventDefault();
+                alert('Please select at least one sample to assign.');
+                return;
+            }
+            
+            // Confirmation dialog
+            const confirmMessage = `Assign ${selectedSamples.length} sample(s) to the selected analyst?\n\nThis action will update the laboratory assignment records.`;
+            if (!confirm(confirmMessage)) {
+                e.preventDefault();
+            }
+        });
+
+        // Auto-check samples when control sample is selected
+        document.querySelectorAll('input[name="control_sample_id"]').forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked) {
+                    const sampleCheckbox = document.querySelector(`input[name="sample_ids"][value="${this.value}"]`);
+                    if (sampleCheckbox && !sampleCheckbox.checked) {
+                        sampleCheckbox.checked = true;
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
