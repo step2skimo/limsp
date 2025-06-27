@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Samples for {{ client.name }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; background-color: #f9f9f9; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #eaeaea; }
+    h2 { color: #2c3e50; }
+    a.button {
+      display: inline-block;
+      margin-top: 15px;
+      padding: 8px 14px;
+      background-color: #2c3e50;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>📦 Samples Submitted by {{ client.name }}</h2>
+
+  {% if samples %}
+    <table>
+      <thead>
+        <tr>
+          <th>Sample Code</th>
+          <th>Type</th>
+          <th>Received</th>
+          <th>Status</th>
+          <th>Parameters</th>
+          <th>Results</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sample in samples %}
+          <tr>
+            <td>{{ sample.sample_code }}</td>
+            <td>{{ sample.sample_type }}</td>
+            <td>{{ sample.received_date }}</td>
+            <td>{{ sample.get_status_display }}</td>
+            <td>{{ sample.parameter_names }}</td>
+            <td>{{ sample.result_values }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No samples found for this client.</p>
+  {% endif %}
+
+  <a href="{% url 'view_all_clients' %}" class="button">← Back to Client List</a>
+
+</body>
+</html>

@@ -1,31 +1,69 @@
-{% extends "base.html" %}
-{% block title %}Your Samples{% endblock %}
-{% block content %}
-  <h2>👋 Welcome, {{ client.name }}</h2>
-  <p>Organization: <strong>{{ client.organization }}</strong></p>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>{{ client.name }} – Sample Tracker</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; background: #f9f9f9; }
+    h2 { color: #2c3e50; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background: #eaeaea; }
+    .progress-bar { height: 12px; background: #ccc; border-radius: 4px; overflow: hidden; }
+    .progress-fill { height: 100%; background: #27ae60; }
+  </style>
+</head>
+<body>
+
+  <h2>📦 Sample Tracking for {{ client.name }}</h2>
+<p><strong>Client ID:</strong> {{ client.client_id }}</p>
+<p><strong>Organization:</strong> {{ client.organization }}</p>
 
   {% if samples %}
-    <table class="table table-hover mt-3">
+    <table>
       <thead>
         <tr>
           <th>Sample Code</th>
-          <th>Type</th>
-          <th>Status</th>
           <th>Received</th>
+          <th>Status</th>
+          <th>Progress</th>
+          <th>Turnaround (days)</th>
+          <th>Parameters</th>
+          <th>Results</th>
         </tr>
       </thead>
       <tbody>
-        {% for s in samples %}
-        <tr>
-          <td>{{ s.sample_code }}</td>
-          <td>{{ s.sample_type }}</td>
-          <td><span class="badge bg-secondary">{{ s.get_status_display }}</span></td>
-          <td>{{ s.received_date }}</td>
-        </tr>
+        {% for sample in samples %}
+          <tr>
+            <td>{{ sample.sample_code }}</td>
+            <td>{{ sample.received_date }}</td>
+            <td>{{ sample.get_status_display }}</td>
+            <td>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width:{{ sample.progress }}%"></div>
+              </div>
+              <small>{{ sample.progress }}%</small>
+            </td>
+            <td>{{ sample.turnaround|default:"—" }}</td>
+            <td>
+              {% for a in sample.assignments %}
+                {{ a.parameter.name }}{% if not forloop.last %}, {% endif %}
+              {% empty %}—{% endfor %}
+            </td>
+            <td>
+              {% for a in sample.assignments %}
+                {% if a.testresult and a.testresult.value %}
+                  {{ a.testresult.value }}{% if not forloop.last %}, {% endif %}
+                {% endif %}
+              {% empty %}—{% endfor %}
+            </td>
+          </tr>
         {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <p class="text-muted mt-3">No samples found yet.</p>
+    <p>No samples available at this time.</p>
   {% endif %}
-{% endblock %}
+
+</body>
+</html>

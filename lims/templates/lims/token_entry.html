@@ -379,15 +379,17 @@
             }, 3000);
         });
 
-        // Token input formatting (optional - adds dashes for readability)
-        document.querySelector('input[name="token"]').addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\s+/g, '').replace(/[^a-zA-Z0-9]/g, '');
-            
-            // Optional: Format with dashes every 4 characters for readability
-            // value = value.replace(/(.{4})/g, '$1-').replace(/-$/, '');
-            
-            e.target.value = value.toUpperCase();
-        });
+       <script>
+    document.querySelector('input[name="token"]').addEventListener('input', function(e) {
+        let raw = e.target.value.toUpperCase();
+        
+        // Allow only alphanumerics and dashes
+        raw = raw.replace(/[^A-Z0-9\-]/g, '');
+        
+        e.target.value = raw;
+    });
+</script>
+
 
         // Add subtle animations on load
         window.addEventListener('load', function() {

@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: jaagee-lab
+    env: python
+    region: oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn lims_project.wsgi:application --log-file -
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: lims_project.settings.base
+      - key: SECRET_KEY
+        value: your_super_secret_key  
+      - key: ALLOWED_HOSTS
+        value: jaagee-lab.onrender.com
+      - key: DATABASE_URL
+        fromDatabase:
+          name: jaagee-lab-db
+          property: connectionString

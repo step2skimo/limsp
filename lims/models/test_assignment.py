@@ -26,6 +26,7 @@ class TestResult(models.Model):
     value = models.FloatField(null=True)
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)
     recorded_at = models.DateTimeField(null=True, auto_now_add=True)
+    started_at = models.DateTimeField(null=True, blank=True)
     source = models.CharField(max_length=20, choices=[('manual', 'Manual'), ('system', 'System')], default='manual')
     calculation_note = models.TextField(blank=True, null=True)
 

@@ -1,8 +1,7 @@
 from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
-from lims.models import TestAssignment, TestResult, TestEnvironment, Equipment, ControlSpec
-from django.contrib.auth.decorators import login_required
+from lims.models import *
 from django.utils import timezone
 from collections import defaultdict
 from lims.forms import ResultEntryForm, QCMetricsForm
@@ -11,14 +10,31 @@ from lims.forms import ResultEntryForm
 from ..services.calculators import calculate_nfe_and_me
 from collections import defaultdict
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render
-from lims.models import TestAssignment
 from django.utils.timezone import now
 from datetime import timedelta
-
+from lims.utils.derived import _inject_derived_result
 from django.utils.timezone import now
 from datetime import timedelta
 from collections import defaultdict
+from lims.models import User, ai
+from lims.utils.calculations import calculate_nfe_and_me
+from django.core.paginator import Paginator
+from django.shortcuts import render
+from datetime import datetime
+from collections import defaultdict
+from lims.models import *
+from lims.utils.ai_helpers import generate_efficiency_nudge
+from lims.models.ai import EfficiencySnapshot
+
+
+User = get_user_model()
+
+from collections import defaultdict
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
+from django.utils.timezone import now
+from datetime import timedelta
+
 
 @login_required
 def analyst_dashboard_view(request):
@@ -41,8 +57,14 @@ def analyst_dashboard_view(request):
         else:
             total_samples += 1
 
-        if assignment.sample.received_date and (now_time - assignment.sample.received_date).days > 3:
-            overdue_tests += 1
+        received_date = assignment.sample.received_date
+        if received_date:
+            days_since = (now_time - received_date).days
+            assignment.days_since_received = days_since
+            if days_since > 3:
+                overdue_tests += 1
+        else:
+            assignment.days_since_received = None
 
     completed_count = TestAssignment.objects.filter(
         analyst=request.user,
@@ -50,15 +72,122 @@ def analyst_dashboard_view(request):
         testresult__recorded_at__gte=one_week_ago
     ).count()
 
+    total_assigned = total_samples + total_controls
+    completed_percent = int((completed_count / total_assigned) * 100) if total_assigned else 0
+
+    # AI Efficiency Snapshot logic
+    today = now_time
+    this_week_start = today - timedelta(days=today.weekday())
+    last_week_start = this_week_start - timedelta(days=7)
+    last_week_end = this_week_start - timedelta(days=1)
+
+    snapshots = EfficiencySnapshot.objects.filter(
+        week_start=last_week_start,
+        week_end=last_week_end
+    )
+    my_snapshot = snapshots.filter(analyst=request.user).first()
+    nudge_message = ""
+
+    if my_snapshot:
+        durations = [s.average_duration.total_seconds() for s in snapshots if s.average_duration]
+        my_avg = my_snapshot.average_duration.total_seconds()
+        faster_than = sum(1 for d in durations if my_avg < d)
+        percentile = round((faster_than / len(durations)) * 100) if durations else 0
+
+        nudge_message = generate_efficiency_nudge(
+            request.user.get_short_name() or request.user.username,
+            my_avg,
+            percentile,
+            my_snapshot.total_tests
+        )
+
     return render(request, 'lims/analyst_dashboard.html', {
         'grouped_assignments': dict(grouped),
         'stats': {
             'samples': total_samples,
             'controls': total_controls,
             'overdue': overdue_tests,
-            'completed_last_7_days': completed_count
+            'completed_last_7_days': completed_count,
+            'completed_percent': completed_percent,
+            'total': total_assigned
+        },
+        'nudge_message': nudge_message,
+        'today': today
+    })
+
+
+@login_required
+def result_history_view(request):
+    # Base query for completed assignments with analyst
+    assignments = TestAssignment.objects.select_related(
+        'sample', 'sample__client', 'parameter', 'testresult'
+    ).filter(
+        status='completed',
+        analyst=request.user
+    )
+
+    # Filters
+    client_id = request.GET.get('client_id')
+    date_from = request.GET.get('from')
+    date_to = request.GET.get('to')
+
+    if client_id:
+        assignments = assignments.filter(sample__client__client_id=client_id)
+
+    # Safe filter by recorded date only if TestResult exists
+    assignments = [a for a in assignments if hasattr(a, 'testresult')]
+
+    if date_from:
+        assignments = [
+            a for a in assignments
+            if a.testresult and a.testresult.recorded_at and a.testresult.recorded_at.date() >= datetime.strptime(date_from, "%Y-%m-%d").date()
+        ]
+    if date_to:
+        assignments = [
+            a for a in assignments
+            if a.testresult and a.testresult.recorded_at and a.testresult.recorded_at.date() <= datetime.strptime(date_to, "%Y-%m-%d").date()
+        ]
+
+    # Annotate with turnaround time and duration
+    for a in assignments:
+        received = a.sample.received_date
+        recorded = a.testresult.recorded_at.date() if a.testresult and a.testresult.recorded_at else None
+        a.turnaround_days = (recorded - received).days if received and recorded else None
+
+        if hasattr(a.testresult, 'started_at') and a.testresult.started_at and a.testresult.recorded_at:
+            a.duration = str(a.testresult.recorded_at - a.testresult.started_at)
+        else:
+            a.duration = None
+
+    # Group: client → parameter → assignments
+    grouped = defaultdict(lambda: defaultdict(list))
+    for a in assignments:
+        client_id = a.sample.client.client_id
+        param = a.parameter.name
+        grouped[client_id][param].append(a)
+
+    client_groups = list(grouped.items())
+    paginator = Paginator(client_groups, 3)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    return render(request, 'lims/result_history.html', {
+        'page_obj': page_obj,
+        'filters': {
+            'client_id': client_id or '',
+            'from': date_from or '',
+            'to': date_to or ''
         }
     })
+
+@login_required
+def begin_test_view(request, result_id):
+    if request.method == "POST":
+        result = get_object_or_404(TestResult, id=result_id)
+        if not result.started_at:
+            result.started_at = timezone.now()
+            result.save()
+        return redirect(request.META.get("HTTP_REFERER", "analyst_dashboard"))
 
 
 @login_required
@@ -80,32 +209,29 @@ def enter_result_view(request, assignment_id):
             request.POST or None,
             instance=qc_instance,
             test_assignment=test,
-            initial=qc_initial
         )
-        form = None  # Skip sample form for control assignments
-
+        form = None  # No regular form for control samples
     else:
         result_instance = getattr(test, 'testresult', None)
         form = ResultEntryForm(request.POST or None, instance=result_instance)
 
-        # Smart fallback: use default equipment or all active if none found
+        # Assign available instruments
         equipment_qs = Equipment.objects.filter(
             parameters_supported=test.parameter,
             is_active=True
         )
-
         if not equipment_qs.exists():
             equipment_qs = Equipment.objects.filter(is_active=True)
 
         form.fields['equipment_used'].queryset = equipment_qs
-        qc_form = None  # Skip QC form for normal samples
+        qc_form = None  # No QC form for normal samples
 
     if request.method == 'POST':
         form_valid = form.is_valid() if form else True
         qc_valid = qc_form.is_valid() if qc_form else True
 
         if form_valid and qc_valid:
-            # Save sample result
+            # Save result
             if form:
                 result = form.save(commit=False)
                 result.test_assignment = test
@@ -124,7 +250,6 @@ def enter_result_view(request, assignment_id):
                         'recorded_by': request.user,
                     }
                 )
-
                 messages.success(request, "✅ Result submitted successfully.")
 
             # Save QC metrics
@@ -132,13 +257,12 @@ def enter_result_view(request, assignment_id):
                 qc = qc_form.save(commit=False)
                 qc.test_assignment = test
                 qc.save()
-
                 if qc.status == 'pass':
                     messages.success(request, f"✅ QC PASSED for {test.parameter.name}")
                 else:
                     messages.error(request, f"❌ QC FAILED for {test.parameter.name}")
 
-            # Auto-calculate derived metrics for normal samples
+            # Calculate derived results
             if not test.is_control:
                 sample = test.sample
                 results = TestResult.objects.filter(test_assignment__sample=sample)
@@ -152,13 +276,20 @@ def enter_result_view(request, assignment_id):
                 if me is not None:
                     _inject_derived_result("ME", me, sample, recorded_by=request.user)
 
+            # Mark test assignment as completed
             test.status = 'completed'
             test.save()
+
+            # 🚦 Update sample status if all its test assignments are now completed
+            sample = test.sample
+            all_done = sample.testassignment_set.exclude(status='completed').count() == 0
+            if all_done and sample.status == SampleStatus.ASSIGNED:
+                sample.status = SampleStatus.IN_PROGRESS
+                sample.save(update_fields=['status'])
+
             return redirect('analyst_dashboard')
         else:
             messages.error(request, "❌ Please correct the errors below.")
-
-    print(f"DEBUG: is_control = {test.is_control} | type = {type(test.is_control)}")
 
     return render(request, 'lims/enter_result.html', {
         'test_assignment': test,

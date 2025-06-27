@@ -4,13 +4,17 @@ from django.shortcuts import redirect
 from lims.views.dashboard_views import dashboard_redirect
 from .views.manager import *
 from .views.reports import *
-from .views.analyst import analyst_dashboard_view
+from .views.analyst import *
+from .views.reports import analyst_productivity_view
 from .views.clerk_views import clerk_dashboard_view
 from lims.views.client import enter_token_view
 from lims.views.sample_confirm import intake_confirmation_view
 from .views.assign_test import *
 from django.contrib.auth.views import LogoutView
-  
+from lims.views.ai_views import ask_lab_ai
+from lims.views.coa import manager_coa_dashboard, generate_coa_pdf, preview_coa
+
+
 urlpatterns = [
 
      path("", views.landing_view, name="home"),
@@ -18,6 +22,10 @@ urlpatterns = [
      path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
 
      path("dashboard/", dashboard_redirect, name="dashboard"),
+     path('analyst/results/history/', views.result_history_view, name='result_history'),
+     path('analyst/test/begin/<int:result_id>/', views.begin_test_view, name='begin_test'),
+     path("reports/productivity/", analyst_productivity_view, name="analyst_productivity"),
+
      
      path("client/token-entry/", enter_token_view, name="enter_token"),
      path("clerk/dashboard/", views.clerk_dashboard_view, name="clerk_dashboard"),
@@ -44,6 +52,7 @@ urlpatterns = [
 
     path("manager/reports/pdf/", export_report_pdf, name="export_report_pdf"),
     path("manager/reports/excel/", export_report_excel, name="export_report_excel"),
+    path("coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa_pdf"),
 
 
    
@@ -59,15 +68,24 @@ urlpatterns = [
 
     path('receipt/download/<int:client_id>/', views.intake_pdf_download, name='intake_receipt_pdf'),
     path('analyst/result/<int:assignment_id>/submit/', views.enter_result_view, name='enter_result'),
-    path('manager/sample/<str:sample_id>/review/', views.result_review_view, name='result_review'),
-    path('manager/results/review/', views.result_review_page, name='result_review_page'),
+    path("manager/results/review/<int:sample_id>/", result_review_view, name="result_review"),
 
-    path('manager/sample/<str:sample_id>/coa/', views.generate_coa_pdf, name='generate_coa'),
-    path("manager/client/<str:client_id>/combined_coa/", views.generate_combined_coa_pdf, name="generate_combined_coa_pdf"),
-    path("manager/coa/<str:client_id>/", views.manager_coa_dashboard, name="manager_coa_dashboard"),
-    path('manager/coa_tools', views.manager_coa_tools_view, name ='manager_coa_tools'),  
+    path('manager/results/review/', views.result_review_view, name='result_review_page'),
+     
     path("api/sample_status/", views.sample_status_json, name="sample_status_json"),
     path("api/autocomplete_samples/", views.autocomplete_sample_codes, name="autocomplete_sample_codes"),
+   
+
+
+    path("ai/ask/", ask_lab_ai, name="ask_lab_ai"),
+
+    path("manager/coa-dashboard/", manager_coa_dashboard, name="manager_coa_dashboard"),
+    path("dashboard/coa/preview/<str:client_id>/", preview_coa, name="preview_coa"),
+    path("dashboard/coa/download/<str:client_id>/", generate_coa_pdf, name="generate_coa_pdf"),
+
+
+
+
 
 
 
@@ -76,16 +94,15 @@ urlpatterns = [
 
 
     path("manager/dashboard/", views.manager_dashboard, name="manager_dashboard"),
-    path("manager/client/<str:client_id>/single_coa/<int:sample_id>/", views.generate_coa_pdf, name="generate_coa_pdf"),
-    path("manager/client/strt:client_id>/combined_coa/", views.generate_combined_coa_pdf, name="generate_combined_coa_pdf"),
-    path("manager/client/<str:client_id>/pivoted_coa/", views.generate_pivoted_coa_pdf, name="generate_pivoted_coa_pdf"),
-    path("qc/chart/<int:parameter_id>/", views.qc_chart, name="qc_chart"),
+    
+  
     path("manager/qc/charts/", views.qc_overview_all_parameters, name="qc_overview_all_parameters"),
     path("analyst/qc/charts/", views.analyst_qc_dashboard, name="analyst_qc_dashboard"),
-    path("qc/chart/<int:parameter_id>/", views.qc_chart_data, name="qc_chart"),
     path("manager/test-assignments/", views.test_assignment_list, name="test_assignment_list"),
     path('manager/assign-by-parameter/<str:client_id>/<int:parameter_id>/', views.assign_parameter_tests, name='assign_parameter_tests'),
     path('manager/assign-overview/<str:client_id>/', views.assign_by_parameter_overview, name='assign_by_parameter_overview'),
+    path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
+    path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
 
 
 

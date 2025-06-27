@@ -1,5 +1,4 @@
 from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
 from lims.models import Sample, TestAssignment, Client
 from django.utils import timezone
 from django.template.loader import render_to_string
@@ -22,10 +21,13 @@ from django.utils import timezone
 from django.db.models import Prefetch
 from weasyprint import HTML
 from lims.models import Client, Sample, TestAssignment, Parameter
-
+from collections import defaultdict
+from django.db.models import Count, Q, Prefetch
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Q, Avg
 from django.db.models.functions import TruncMonth
+from lims.models import SampleStatus
+
 
 @login_required
 def manager_dashboard(request):
@@ -66,17 +68,22 @@ def manager_dashboard(request):
         .count()
     )
 
-    # 🚨 Parameters with failed QC
-    failed_qc_parameters = (
+    # 🚨 Parameters with failed QC (with analyst)
+    failed_qc_info = (
         QCMetrics.objects
         .exclude(
             measured_value__gte=F('min_acceptable'),
             measured_value__lte=F('max_acceptable')
         )
-        .values_list('test_assignment__parameter_id', flat=True)
+        .select_related("test_assignment__parameter", "test_assignment__analyst", "test_assignment__sample__client")
+        .values(
+            parameter_name=F("test_assignment__parameter__name"),
+            analyst_username=F("test_assignment__analyst__username"),
+            client_id=F("test_assignment__sample__client__client_id"),
+            client_name=F("test_assignment__sample__client__name")
+        )
         .distinct()
     )
-    failed_qc_param_names = Parameter.objects.filter(id__in=failed_qc_parameters)
 
     # 📈 QC Trend Data Grouped by Analyst and Parameter
     qc_chart_data = (
@@ -111,56 +118,8 @@ def manager_dashboard(request):
         "latest_client": latest_client,
         "total_parameters": total_parameters,
         "qc_param_count": qc_parameters,
-        "failed_qc_param_names": failed_qc_param_names,
-        "qc_chart_data": list(qc_chart_data),  # For JSON safety in template
-    })
-
-
-
-
-@login_required
-def manager_coa_dashboard(request, client_id):
-    client = get_object_or_404(Client, client_id=client_id)
-    samples = Sample.objects.filter(client=client, status='results_verified')
-
-    context = {
-        'client': client,
-        'samples': samples,
-        'formats': [
-            {'name': 'Single-Sample', 'url': 'lims:generate_coa_pdf', 'icon': '📄'},
-            {'name': 'Combined', 'url': 'lims:generate_combined_coa_pdf', 'icon': '📚'},
-            {'name': 'Pivoted', 'url': 'lims:generate_pivoted_coa_pdf', 'icon': '📊'},
-        ]
-    }
-    return render(request, 'lims/manager_coa_dashboard.html', context)
-
-
-
-@login_required
-def manager_coa_tools_view(request):
-    query = request.GET.get('q', '')
-    filter_days = request.GET.get('days', '')
-
-    clients = Client.objects.all().prefetch_related('sample_set')
-
-    if query:
-        clients = clients.filter(
-            Q(name__icontains=query) |
-            Q(organization__icontains=query)
-        )
-
-    if filter_days:
-        try:
-            days = int(filter_days)
-            recent_date = timezone.now() - timedelta(days=days)
-            clients = clients.filter(sample__created__gte=recent_date).distinct()
-        except ValueError:
-            pass
-
-    return render(request, 'lims/manager_coa_tools.html', {
-        'clients': clients,
-        'query': query,
-        'filter_days': filter_days,
+        "failed_qc_info": list(failed_qc_info),
+        "qc_chart_data": list(qc_chart_data),
     })
 
 
@@ -168,16 +127,25 @@ def manager_coa_tools_view(request):
 @login_required
 def result_review_view(request, sample_id):
     sample = get_object_or_404(Sample, id=sample_id)
-    tests = TestAssignment.objects.filter(sample=sample).select_related('parameter', 'testresult')
+    tests = TestAssignment.objects.filter(sample=sample).select_related('parameter', 'testresult', 'qc_metrics')
 
     if request.method == 'POST':
+        # Ensure all tests are complete
+        if any(t.status != 'completed' for t in tests):
+            messages.error(request, "❌ Not all tests are completed.")
+            return redirect('review_panel_grouped_by_client')
+
+        # Final verification
         for test in tests:
             test.status = 'verified'
             test.save(update_fields=['status'])
-        sample.status = 'results_verified'
+
+        sample.status = SampleStatus.APPROVED
         sample.verified_at = timezone.now()
         sample.save(update_fields=['status', 'verified_at'])
-        return redirect('manager_dashboard')  
+
+        messages.success(request, "✅ Sample verified and approved.")
+        return redirect('manager_dashboard')
 
     return render(request, 'lims/review_results.html', {
         'sample': sample,
@@ -185,95 +153,48 @@ def result_review_view(request, sample_id):
     })
 
 
-
 @login_required
-def generate_coa_pdf(request, client_id, sample_id):
-    sample = get_object_or_404(Sample, id=sample_id)
-    client = sample.client
+def review_panel_grouped_by_client(request):
+    samples = Sample.objects.filter(
+        status=SampleStatus.IN_PROGRESS
+    ).prefetch_related(
+        Prefetch('testassignment_set', queryset=TestAssignment.objects.select_related('parameter', 'testresult', 'qc_metrics'))
+    ).select_related('client').order_by('client__name')
 
-    tests = TestAssignment.objects.filter(sample=sample)\
-        .select_related('parameter', 'testresult')\
-        .prefetch_related('testenvironment', 'testenvironment__instrument')
-
-    context = {
-        'sample': sample,
-        'client': client,
-        'tests': tests,
-        'now': timezone.now(),
-        'generated_by': request.user,
-    }
-
-    html = render_to_string('lims/coa_pdf.html', context)
-    pdf = HTML(string=html).write_pdf()
-
-    filename = f"COA_{client.client_id}_{sample.sample_code}.pdf"
-
-    return HttpResponse(
-        pdf,
-        content_type='application/pdf',
-        headers={'Content-Disposition': f'inline; filename="{filename}"'}
-    )
-
-
-@login_required
-def generate_pivoted_coa_pdf(request, client_id):
-    client = get_object_or_404(Client, client_id=client_id)
-    samples = Sample.objects.filter(client=client, status='results_verified').order_by('received_date')
-
-    test_qs = TestAssignment.objects.select_related('parameter')\
-                                    .prefetch_related('testresult_set', 'testenvironment_set', 'testenvironment_set__instrument')
-
-    samples = samples.prefetch_related(Prefetch('testassignment_set', queryset=test_qs, to_attr='tests'))
-
-    parameter_map = {}
-    result_matrix = defaultdict(dict)
-    env_matrix = defaultdict(lambda: defaultdict(dict))
+    grouped = defaultdict(list)
 
     for sample in samples:
-        for test in getattr(sample, 'tests', []):
-            param = test.parameter
-            parameter_map[param.id] = param
+        test_assignments = sample.testassignment_set.all()
 
-            # Assume testresult_set is a related manager - get first test result
-            testresult = test.testresult_set.first()
-            result_matrix[sample.id][param.id] = testresult.value if testresult else None
+        if not test_assignments.exists():
+            continue  # skip samples with no tests
 
-            # For environment, similarly take first related environment if exists
-            testenv = test.testenvironment_set.first()
-            if testenv:
-                env_matrix[sample.id][param.id] = {
-                    'temperature': testenv.temperature,
-                    'humidity': testenv.humidity,
-                    'instrument': testenv.instrument.name if testenv.instrument else None,
-                }
+        # Skip samples already verified
+        if sample.status == SampleStatus.APPROVED or sample.status == 'results_verified':
+            continue
 
-    parameters = sorted(parameter_map.values(), key=lambda p: p.name.lower())
+        # Make sure all tests are marked completed before showing for review
+        if any(t.status != 'completed' for t in test_assignments):
+            continue
 
-    context = {
-        'client': client,
-        'samples': samples,
-        'parameters': parameters,
-        'results_dict': result_matrix,
-        'env_dict': env_matrix,
-        'now': timezone.now(),
-        'generated_by': request.user
-    }
+        total = test_assignments.count()
+        verified = sum(1 for t in test_assignments if t.status == 'verified')
+        pending = total - verified
 
-    html = render_to_string('lims/pivoted_coa_pdf.html', context)
-    pdf = HTML(string=html).write_pdf()
+        controls = [t for t in test_assignments if t.is_control]
+        qc_pass = sum(1 for c in controls if getattr(c.qc_metrics, "status", None) == "pass")
+        qc_fail = sum(1 for c in controls if getattr(c.qc_metrics, "status", None) == "fail")
 
-    filename = f"COA_{client.client_id}_Pivoted.pdf"
-    return HttpResponse(pdf, content_type='application/pdf',
-                        headers={'Content-Disposition': f'inline; filename="{filename}"'})
+        sample.review_summary = {
+            "total": total,
+            "verified": verified,
+            "pending": pending,
+            "qc_pass": qc_pass,
+            "qc_fail": qc_fail,
+        }
 
+        grouped[sample.client].append(sample)
 
-@login_required
-def generate_combined_coa_pdf(request, client_id):
-    client = get_object_or_404(Client, client_id=client_id)
-    samples = Sample.objects.filter(client=client, status='results_verified')
-    return render(request, "lims/combined_coa_view.html", {"client": client, "samples": samples})
-
-
-@login_required
-def result_review_page(request):
-    return render(request, 'lims/result_review.html')
+    return render(request, 'lims/review_grouped.html', {
+        'grouped_samples': grouped
+    })

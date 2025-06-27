@@ -1,0 +1,4 @@
+<h2>Notification Detail</h2>
+<p><strong>Message:</strong> {{ note.message }}</p>
+<p><strong>Received:</strong> {{ note.created_at|naturaltime }}</p>
+<a href="{% url 'notifications:list' %}" class="btn btn-primary">⬅ Back to Notifications</a>

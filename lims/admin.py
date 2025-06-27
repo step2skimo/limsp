@@ -2,6 +2,12 @@ from django.contrib import admin
 from .models import Client, Sample, ParameterGroup, Parameter, TestAssignment, TestResult
 from .models import QCMetrics
 from .models.equipment import Equipment, CalibrationRecord
+from .models.ai import LabAIHistory
+
+@admin.register(LabAIHistory)
+class LabAIHistoryAdmin(admin.ModelAdmin):
+    list_display = ("user", "timestamp", "question")
+    search_fields = ("question", "answer", "user__username")
 
 @admin.register(Client)
 class ClientAdmin(admin.ModelAdmin):

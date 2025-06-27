@@ -20,6 +20,8 @@ from django.contrib.auth import views as auth_views
 
 
 urlpatterns = [
+    path('', include('saml.urls')),
+    path('notifications/', include('notifications.urls')),
     path('admin/', admin.site.urls),
     path('', include('lims.urls')),  # Include LIMS app URLs
 

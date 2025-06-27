@@ -18,12 +18,14 @@ class QCMetrics(models.Model):
     max_acceptable = models.DecimalField(max_digits=8, decimal_places=2, null=True, blank=True)
 
     # Raw result
-    measured_value = models.DecimalField(max_digits=8, decimal_places=2, null='True')
+    measured_value = models.DecimalField(max_digits=8, decimal_places=2, null=True)
 
     # Derived
     recovery_percent = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     status = models.CharField(max_length=10, choices=[('pass', 'Pass'), ('fail', 'Fail')], blank=True)
     notes = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 
     def save(self, *args, **kwargs):
         # Auto-load limits from ControlSpec if missing

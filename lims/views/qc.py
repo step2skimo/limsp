@@ -15,79 +15,43 @@ from django.shortcuts import render
 from lims.models import TestAssignment
 from collections import defaultdict
 
-
-def qc_chart_data(request, parameter_id):
-    param = Parameter.objects.get(id=parameter_id)
-    qcs = QCMetrics.objects.filter(test_assignment__parameter=param).order_by('test_assignment__sample__created_at')
-
-    data = {
-        "name": param.name,
-        "unit": param.unit,
-        "labels": [qc.test_assignment.sample.created_at.strftime('%Y-%m-%d') for qc in qcs],
-        "data": [float(qc.measured_value) for qc in qcs],
-        "min_y": float(param.control_spec.min_acceptable),
-        "max_y": float(param.control_spec.max_acceptable),
-    }
-    return JsonResponse(data)
-
-
-
-def qc_chart(request, parameter_id):
-    param = Parameter.objects.get(id=parameter_id)
-    qcs = QCMetrics.objects.filter(test_assignment__parameter=param).order_by('test_assignment__sample__created_at')
-
-    x = [qc.test_assignment.sample.created_at.strftime('%Y-%m-%d') for qc in qcs]
-    y = [float(qc.measured_value) for qc in qcs]
-    min_y = param.control_spec.min_acceptable
-    max_y = param.control_spec.max_acceptable
-
-    return render(request, "lims/qc_chart.html", {
-        'labels': x,
-        'data': y,
-        'min_y': float(min_y),
-        'max_y': float(max_y),
-        'parameter': param
-    })
-
- 
-
 @login_required
 @user_passes_test(lambda u: u.is_manager)
 def qc_overview_all_parameters(request):
-    parameters = Parameter.objects.filter(name__in=["Protein", "Fat", "Moisture", "Ash", "Fiber"])
-    return render(request, "lims/qc/manager_qc_overview.html", {"parameters": parameters})
+    parameters = Parameter.objects.filter(control_spec__isnull=False)
+    return render(request, "lims/qc/manager_qc_overview.html", {
+        "parameters": parameters
+    })
+
 
 
 @login_required
 def analyst_qc_dashboard(request):
-    # Pull all parameters that have control specs defined
     parameters = Parameter.objects.filter(control_spec__isnull=False).select_related('control_spec')
-
     chart_parameters = []
 
     for param in parameters:
         spec = param.control_spec
+        assignments = (
+            TestAssignment.objects
+            .filter(parameter=param, is_control=True, qc_metrics__isnull=False)
+            .select_related('sample', 'qc_metrics', 'analyst')
+            .order_by('sample__received_date')
+        )
 
-        # Get any control test assignments by this analyst for this parameter
-        assignments = TestAssignment.objects.filter(
-            parameter=param,
-            analyst=request.user,
-            is_control=True,
-            qc_metrics__isnull=False
-        ).select_related('sample', 'qc_metrics')
+        if not assignments:
+            continue
 
-        labels = []
-        values = []
-
-        for a in assignments:
-            labels.append(a.sample.sample_code)
-            values.append(a.qc_metrics.measured_value)
+        labels = [a.sample.sample_code for a in assignments]
+        values = [a.qc_metrics.measured_value for a in assignments]
+        ownership = ["me" if a.analyst == request.user else "other" for a in assignments]
 
         chart_parameters.append({
             'parameter_id': param.id,
             'name': param.name,
             'labels': labels,
             'values': values,
+            'ownership': ownership,
             'min': spec.min_acceptable,
             'max': spec.max_acceptable
         })

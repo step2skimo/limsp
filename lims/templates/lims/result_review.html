@@ -1,8 +1,49 @@
-{% extends 'base.html' %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Verify Sample: {{ sample.sample_code }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; background-color: #fefefe; }
+    h2 { color: #2c3e50; margin-bottom: 0.2em; }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
+    th { background-color: #f0f0f0; }
+    .btn { padding: 10px 18px; background-color: #27ae60; color: #fff; border: none; border-radius: 4px; font-size: 1em; cursor: pointer; }
+    .btn:hover { background-color: #219150; }
+  </style>
+</head>
+<body>
 
-{% block content %}
-<h2>🔍 Result Review Panel</h2>
-<p>This page will show samples that are ready for review.</p>
+  <h2>✅ Review Test Results for {{ sample.sample_code }}</h2>
+  <p>Client: {{ sample.client.name }} | Type: {{ sample.sample_type }} | Status: {{ sample.status|title }}</p>
 
-<!-- Future logic: table of samples, filters, actions -->
-{% endblock %}
+  <form method="post">
+    {% csrf_token %}
+    <table>
+      <thead>
+        <tr>
+          <th>Parameter</th>
+          <th>Result</th>
+          <th>Unit</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for test in tests %}
+          <tr>
+            <td>{{ test.parameter.name }}</td>
+            <td>{{ test.testresult.value }}</td>
+            <td>{{ test.parameter.unit }}</td>
+            <td>{{ test.status }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <br>
+    <button class="btn" type="submit">✅ Approve Sample</button>
+  </form>
+
+</body>
+</html>

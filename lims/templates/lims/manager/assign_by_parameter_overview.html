@@ -48,12 +48,10 @@
 </head>
 <body>
   <div class="container-fluid">
-    <!-- Header with Django Logo -->
     <nav class="navbar navbar-expand-lg navbar-light bg-white mb-4 p-3 rounded shadow-sm">
       <div class="container-fluid">
         <a class="navbar-brand" href="{% url 'manager_dashboard' %}">
           <img src="{% static 'images/logo.jpg' %}" alt="Logo" class="JaaGee-logo">
-
           Lab Management System
         </a>
         <div class="ms-auto">
@@ -63,7 +61,10 @@
     </nav>
 
     <h2 class="mb-4">🔧 Test Assignment Management – {{ client.name }}</h2>
-    
+    <a href="{% url 'manager_dashboard' %}" class="btn btn-outline-secondary mb-3">
+  <i class="fas fa-arrow-left"></i> Back to Manager Dashboard
+</a>
+
     <div class="alert alert-info">
       <i class="fas fa-info-circle"></i> This interface allows you to manage test assignments in compliance with ISO/IEC 17025 requirements. 
       Ensure all test parameters are properly assigned to maintain traceability and quality control.
@@ -112,39 +113,35 @@
             </thead>
             <tbody>
               {% for param in parameters %}
-              <tr data-status="{% with assigned=assigned_lookup|get_item:param.id %}
-                  {% if assigned == total_samples %}full
-                  {% elif assigned > 0 %}partial
-                  {% else %}unassigned
-                  {% endif %}
-                {% endwith %}">
+              {% with assigned=assigned_lookup|get_item:param.id %}
+              <tr data-status="{% if assigned == total_samples %}full{% elif assigned > 0 %}partial{% else %}unassigned{% endif %}">
                 <td>
                   <strong>{{ param.name }}</strong><br>
                   <small class="text-muted">Method: {{ param.method|default:"Not specified" }}</small>
                 </td>
                 <td>
-                  {% with assigned=assigned_lookup|get_item:param.id %}
-                    {% if assigned == total_samples %}
-                      <span class="badge bg-success">✅ Fully Assigned</span>
-                    {% elif assigned > 0 %}
-                      <span class="badge bg-warning text-dark">⚠️ Partial Assignment</span>
-                    {% else %}
-                      <span class="badge bg-danger">❌ Not Assigned</span>
-                    {% endif %}
-                    <div class="progress mt-2" style="height: 5px;">
-                      <div class="progress-bar {% if assigned == total_samples %}bg-success{% elif assigned > 0 %}bg-warning{% else %}bg-danger{% endif %}" 
-                           role="progressbar" style="width: {% widthratio assigned total_samples 100 %}%"></div>
-                    </div>
-                    <small>{{ assigned }}/{{ total_samples }} samples</small>
-                  {% endwith %}
+                  {% if assigned == total_samples %}
+                    <span class="badge bg-success" title="All samples assigned to analysts">✅ Fully Assigned</span>
+                  {% elif assigned > 0 %}
+                    <span class="badge bg-warning text-dark" title="Some samples unassigned">⚠️ Partial Assignment</span>
+                  {% else %}
+                    <span class="badge bg-danger">❌ Not Assigned</span>
+                  {% endif %}
+                  <div class="progress mt-2" style="height: 5px;">
+                    <div class="progress-bar {% if assigned == total_samples %}bg-success{% elif assigned > 0 %}bg-warning{% else %}bg-danger{% endif %}" 
+                         role="progressbar" style="width: {% widthratio assigned total_samples 100 %}%"></div>
+                  </div>
+                  <small>{{ assigned }}/{{ total_samples }} samples</small>
                 </td>
                 <td>
-                  {% if control_lookup|get_item:param.id %}
-                    <span class="badge bg-success">✅ QC Assigned</span><br>
-                    <small>QC-{{ client.client_id }}-{{ param.name|slice:":3"|upper }}</small>
-                  {% else %}
-                    <span class="badge bg-secondary">❌ No QC Sample</span>
-                  {% endif %}
+                  {% with qc_sample=control_lookup|get_item:param.id %}
+                    {% if qc_sample %}
+                      <span class="badge bg-success">✅ QC Assigned</span><br>
+                      <small>Sample ID: {{ qc_sample }}</small>
+                    {% else %}
+                      <span class="badge bg-secondary">❌ No QC Sample</span>
+                    {% endif %}
+                  {% endwith %}
                 </td>
                 <td class="text-center">
                   <a href="{% url 'assign_parameter_tests' client.client_id param.id %}" 
@@ -154,13 +151,13 @@
                   </a>
                 </td>
               </tr>
+              {% endwith %}
               {% endfor %}
             </tbody>
           </table>
         </div>
       </div>
       <div class="card-footer bg-light">
-        <!-- Pagination -->
         <nav aria-label="Test parameter pagination">
           <ul class="pagination justify-content-center mb-0">
             {% if page_obj.has_previous %}

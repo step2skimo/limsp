@@ -6,7 +6,10 @@ from django.utils import timezone
 from lims.models import Client, Parameter, TestAssignment
 from lims.forms import ClientForm, SampleFormWithParameters
 from django.forms import formset_factory
+from django.contrib.auth import get_user_model
+from notifications.utils import notify  
 
+User = get_user_model()
 
 def generate_client_id():
     last = Client.objects.order_by('created').last()
@@ -26,6 +29,8 @@ def generate_token():
     return f"JGL-{today.strftime('%Y%m%d')}-{count_today:04d}"
 
 
+
+
 @csrf_protect
 @login_required
 def sample_intake_view(request):
@@ -37,8 +42,6 @@ def sample_intake_view(request):
 
         if client_form.is_valid() and sample_formset.is_valid():
             client = client_form.save(commit=False)
-
-            # ✅ Auto-generate client_id and token
             client.client_id = generate_client_id()
             client.token = generate_token()
             client.save()
@@ -50,17 +53,29 @@ def sample_intake_view(request):
                 sample.save()
                 samples.append(sample)
 
-            # ✅ Gather parameters selected per sample
             selected_param_ids = []
             for i in range(len(sample_formset)):
                 selected_param_ids += request.POST.getlist(f'samples-{i}-parameters')
 
             parameters = Parameter.objects.filter(id__in=selected_param_ids)
 
-            # ✅ Assign parameters to each sample
             for sample in samples:
                 for param in parameters:
                     TestAssignment.objects.create(sample=sample, parameter=param)
+
+            # ✅ Notify manager(s)
+            sample_count = len(samples)
+            client_name = client.name
+            client_id = client.client_id
+            clerk_name = request.user.get_full_name()
+
+            managers = User.objects.filter(role='Manager')  
+
+            for manager in managers:
+                notify(
+                    manager,
+                    f"Clerk {clerk_name} submitted {sample_count} sample(s) for Client {client_name} (CID-{client_id})."
+                )
 
             return redirect('intake_confirmation', client_id=client.client_id)
 
@@ -68,7 +83,6 @@ def sample_intake_view(request):
         client_form = ClientForm()
         sample_formset = SampleFormSet(prefix='samples')
 
-    # ✅ Group parameters by category for form display
     group_map = defaultdict(list)
     for param in Parameter.objects.select_related("group").all():
         group_map[param.group.name].append(param)

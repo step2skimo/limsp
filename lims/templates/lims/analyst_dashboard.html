@@ -10,18 +10,13 @@
       color: #222;
       background: #f8f9fa;
     }
-    h2 {
-      color: #34495e;
-      margin-bottom: 10px;
-    }
-    h3 {
-      margin-top: 40px;
+    h2, h3 {
       color: #2c3e50;
     }
     .stats-panel {
       background: #ffffff;
       padding: 20px;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
       border-left: 4px solid #2980b9;
       box-shadow: 0 1px 4px rgba(0,0,0,0.06);
     }
@@ -34,26 +29,33 @@
       margin-bottom: 6px;
       font-size: 0.95em;
     }
-    .stats-panel strong {
-      color: #2c3e50;
+    .progress-container {
+      background: #e0e0e0;
+      border-radius: 20px;
+      overflow: hidden;
+      height: 16px;
+      margin-bottom: 10px;
+    }
+    .progress-bar {
+      background: #27ae60;
+      height: 100%;
+      text-align: center;
+      color: white;
+      font-size: 12px;
     }
     table {
       width: 100%;
       border-collapse: collapse;
       background: white;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
       margin-bottom: 30px;
     }
     th, td {
       border: 1px solid #ddd;
-      padding: 10px 12px;
+      padding: 10px;
       font-size: 0.95em;
-      vertical-align: top;
     }
     th {
       background: #f1f1f1;
-      text-align: left;
-      color: #333;
     }
     tr:nth-child(even) {
       background-color: #fafafa;
@@ -68,6 +70,14 @@
     .status-pending { background: #e67e22; }
     .status-completed { background: #2ecc71; }
     .status-verified { background: #1abc9c; }
+    .deadline-tag {
+      background: #c0392b;
+      color: white;
+      font-size: 0.75em;
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: 6px;
+    }
     .full-entry-link a {
       padding: 6px 12px;
       background: #2d98da;
@@ -75,10 +85,6 @@
       text-decoration: none;
       border-radius: 4px;
       font-size: 0.9em;
-      display: inline-block;
-    }
-    .full-entry-link a:hover {
-      background: #227093;
     }
     .control-label {
       font-size: 0.85em;
@@ -91,8 +97,17 @@
   </style>
 </head>
 <body>
-
-<h2>🧪 Analyst Dashboard – Pending Tests</h2>
+<div style="text-align: right;">
+  <a href="{% url 'notifications:list' %}" class="nav-link" style="text-decoration: none; font-weight: bold;">
+    🔔 Notifications <span id="notif-badge" class="badge" style="display:none; background:red; color:white; padding:2px 8px; border-radius:12px;">0</span>
+  </a>
+</div>
+ <a href="{% url 'logout' %}" class="nav-link" style="text-decoration: none; font-weight: bold;">
+    Logout <span id="notif-badge" class="badge" style="display:none; background:red; color:white; padding:2px 8px; border-radius:12px;">0</span>
+  </a>
+</div>
+<h2>👋 Welcome, {{ request.user.first_name }}!</h2>
+<p>Today is {{ today|date:"l, F j, Y" }}</p>
 
 <div class="stats-panel">
   <h3>📊 My Quality Stats</h3>
@@ -102,13 +117,35 @@
     <li><strong>Overdue Tests:</strong> {{ stats.overdue }}</li>
     <li><strong>Completed (Last 7 Days):</strong> {{ stats.completed_last_7_days }}</li>
   </ul>
+  {% if stats.total %}
+    <div class="progress-container">
+      <div class="progress-bar" style="width: {{ stats.completed_percent }}%;">
+        {{ stats.completed_percent }}%
+      </div>
+    </div>
+  {% endif %}
 </div>
+
+<div style="background: #e8f5e9; padding: 12px; border-left: 4px solid #27ae60; margin-bottom: 20px;">
+  <strong>📌 ISO 17025 Tip:</strong> Always ensure results are submitted within specified turnaround times and controls are validated before reporting.
+</div>
+
+{% if nudge_message %}
+  <div style="background: #f0f9f9; border-left: 5px solid #2ecc71; padding: 1em; margin-bottom: 1em;">
+    <strong>💡 AI Performance Nudge:</strong>
+    <p>{{ nudge_message }}</p>
+  </div>
+{% endif %}
+
+<input type="text" id="test-search" placeholder="🔍 Search tests..." style="padding: 8px; width: 100%; margin-bottom: 15px;">
+
+<button onclick="exportTableToExcel('test-table')" style="margin-bottom: 20px;">📥 Export to Excel</button>
 
 {% if grouped_assignments %}
   {% for parameter_name, tests in grouped_assignments.items %}
     <section>
       <h3>🧪 Parameter: <strong>{{ parameter_name }}</strong></h3>
-      <table>
+      <table id="test-table">
         <thead>
           <tr>
             <th>Sample</th>
@@ -121,11 +158,20 @@
           {% for test in tests %}
             <tr>
               <td>
-                {{ test.sample.sample_code }}
-                {% if test.is_control and test.sample.sample_type == "QC" %}
-                  <span class="control-label">🔬 Control</span>
-                {% endif %}
-              </td>
+  {{ test.sample.sample_code }}
+  {% if test.is_control and test.sample.sample_type == "QC" %}
+    <span class="control-label">🔬 Control</span>
+  {% endif %}
+
+  {% if test.days_since_received is not None %}
+    <br><small>{{ test.days_since_received }} day{{ test.days_since_received|pluralize }} ago</small>
+
+    {% if test.days_since_received > 3 %}
+      <span class="deadline-tag">⚠️ {{ test.days_since_received }} days overdue</span>
+    {% endif %}
+  {% endif %}
+</td>
+
               <td><small>{{ test.parameter.method }}</small></td>
               <td>
                 <span class="status-pill status-{{ test.status }}">
@@ -145,8 +191,57 @@
   <p>🎉 All assigned tests have been completed.</p>
 {% endif %}
 
-<br>
+<a href="{% url 'result_history' %}">📄 View Submission History</a> |
 <a href="{% url 'analyst_qc_dashboard' %}">📈 My QC Charts</a>
 
+
+
+<script>
+  // Notification polling
+  function pollNotifications() {
+    fetch("{% url 'notifications:unread_count' %}")
+      .then(res => res.json())
+      .then(data => {
+        const badge = document.getElementById("notif-badge");
+        if (data.unread > 0) {
+          badge.textContent = data.unread;
+          badge.style.display = "inline-block";
+        } else {
+          badge.style.display = "none";
+        }
+      });
+  }
+  setInterval(pollNotifications, 15000);
+  pollNotifications();
+
+  // Live search
+  document.getElementById("test-search").addEventListener("input", function () {
+    const filter = this.value.toLowerCase();
+    document.querySelectorAll("table tbody tr").forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(filter) ? "" : "none";
+    });
+  });
+
+  // Excel Export
+  function exportTableToExcel(tableID, filename = 'test_assignments.xls') {
+    const table = document.getElementById(tableID);
+    const html = table.outerHTML.replace(/ /g, '%20');
+    const link = document.createElement("a");
+    link.href = 'data:application/vnd.ms-excel,' + html;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  // AI Toggle
+  document.getElementById("ask-lab-ai").onclick = function () {
+    const modal = document.getElementById("ai-modal");
+    modal.style.display = modal.style.display === "none" ? "block" : "none";
+  }
+
+  
+</script>
+{% include "components/ai_assistant.html" %}
 </body>
 </html>

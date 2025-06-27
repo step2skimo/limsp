@@ -10,7 +10,8 @@ from lims.models import Sample
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_GET
-from lims.models import Sample
+from collections import defaultdict
+from django.db.models import Prefetch
 
 
 @login_required
@@ -24,6 +25,31 @@ def clerk_dashboard_view(request):
 def view_all_clients(request):
     clients = Client.objects.all()
     return render(request, "lims/client_list.html", {"clients": clients})
+
+
+def view_client_samples(request, client_id):
+    client = get_object_or_404(Client, id=client_id)
+    samples = Sample.objects.filter(client=client).exclude(sample_type='QC').prefetch_related(
+        Prefetch('testassignment_set__parameter'),
+        Prefetch('testassignment_set__testresult')
+    ).order_by('-received_date')
+
+    # Annotate samples with parameter and result lists
+    for sample in samples:
+        assignments = sample.testassignment_set.all()
+        sample.parameter_names = ", ".join(
+            [a.parameter.name for a in assignments if a.parameter]
+        ) or "—"
+        sample.result_values = ", ".join(
+            [str(a.testresult.value) for a in assignments if hasattr(a, 'testresult') and a.testresult and a.testresult.value is not None]
+        ) or "—"
+
+    return render(request, "lims/client_samples.html", {
+        "client": client,
+        "samples": samples
+    })
+
+
 
 @login_required
 def sample_list(request):

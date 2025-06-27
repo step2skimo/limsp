@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Review Samples by Client</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 2em; background-color: #f4f4f4; }
+    h2 { color: #2c3e50; }
+    .client-section { margin-bottom: 2em; background: #fff; padding: 1em; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
+    th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
+    th { background-color: #eaeaea; }
+    .btn { text-decoration: none; padding: 6px 12px; background-color: #2c3e50; color: #fff; border-radius: 4px; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
+    .badge-green { background: #27ae60; color: white; }
+    .badge-red { background: #c0392b; color: white; }
+  </style>
+</head>
+<body>
+
+  <h2>🧪 Samples Pending Review</h2>
+
+  {% for client, sample_list in grouped_samples.items %}
+    <div class="client-section">
+      <h3>👤 {{ client.name }} ({{ sample_list|length }} sample{{ sample_list|length|pluralize }})</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Sample Code</th>
+            <th>Type</th>
+            <th>Total Tests</th>
+            <th>Verified</th>
+            <th>Pending</th>
+            <th>QC Pass</th>
+            <th>QC Fail</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for sample in sample_list %}
+            <tr>
+              <td>{{ sample.sample_code }}</td>
+              <td>{{ sample.sample_type }}</td>
+              <td>{{ sample.review_summary.total }}</td>
+              <td>{{ sample.review_summary.verified }}</td>
+              <td>{{ sample.review_summary.pending }}</td>
+              <td><span class="badge badge-green">{{ sample.review_summary.qc_pass }}</span></td>
+              <td><span class="badge badge-red">{{ sample.review_summary.qc_fail }}</span></td>
+              <td><a class="btn" href="{% url 'result_review_view' sample.id %}">🔍 Review</a></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% empty %}
+    <p>No samples are currently awaiting verification.</p>
+  {% endfor %}
+
+</body>
+</html>

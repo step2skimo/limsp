@@ -1,418 +1,116 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Client Registry - ISO/IEC 17025 LIMS</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <style>
-        :root {
-            --primary-light: rgba(13, 110, 253, 0.1);
-        }
+  <meta charset="UTF-8">
+  <title>Registered Clients</title>
 
-        body {
-            background-color: #f8f9fa;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        }
+  <!-- DataTables Styling -->
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
 
-        .avatar-circle {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 600;
-            font-size: 16px;
-        }
-
-        .bg-gradient-primary {
-            background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-        }
-
-        .sortable {
-            cursor: pointer;
-            user-select: none;
-            transition: all 0.2s ease;
-        }
-
-        .sortable:hover {
-            background-color: rgba(0, 0, 0, 0.03);
-        }
-
-        .client-row {
-            transition: all 0.2s ease;
-            border-left: 3px solid transparent;
-        }
-
-        .client-row:hover {
-            background-color: var(--primary-light);
-            border-left: 3px solid #0d6efd;
-        }
-
-        .table > :not(caption) > * > * {
-            border-bottom-width: 1px;
-            border-color: rgba(0, 0, 0, 0.03);
-        }
-
-        .card {
-            border-radius: 0.5rem;
-            overflow: hidden;
-        }
-
-        .form-control:focus,
-        .form-select:focus {
-            border-color: #0d6efd;
-            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
-        }
-
-        .font-monospace {
-            font-family: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-        }
-
-        .shadow-sm {
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.04) !important;
-        }
-
-        .card:hover {
-            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08) !important;
-            transition: box-shadow 0.3s ease;
-        }
-
-        .badge {
-            padding: 0.35em 0.65em;
-            font-weight: 500;
-            letter-spacing: 0.5px;
-        }
-
-        .input-group-text {
-            transition: all 0.2s ease;
-        }
-
-        .input-group:focus-within .input-group-text {
-            color: #0d6efd !important;
-        }
-
-        .breadcrumb {
-            background-color: transparent;
-            padding: 0;
-            margin: 0;
-        }
-
-        .breadcrumb-item + .breadcrumb-item::before {
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .breadcrumb-item a {
-            color: rgba(255, 255, 255, 0.8);
-            text-decoration: none;
-            transition: color 0.2s ease;
-        }
-
-        .breadcrumb-item a:hover {
-            color: white;
-        }
-
-        .breadcrumb-item.active {
-            color: white;
-        }
-    </style>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 2em;
+      background-color: #f9f9f9;
+    }
+    h2 {
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: left;
+    }
+    th {
+      background-color: #eaeaea;
+    }
+    .btn {
+      padding: 6px 12px;
+      text-decoration: none;
+      border-radius: 4px;
+      background-color: #2980b9;
+      color: #fff;
+    }
+    .btn:hover {
+      background-color: #1f6391;
+    }
+  </style>
 </head>
 <body>
-    <div class="container-fluid">
-        <!-- Navigation Breadcrumb -->
-        <nav aria-label="breadcrumb" class="py-3">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="/dashboard" class="text-primary">
-                        <i class="fas fa-tachometer-alt me-1"></i>
-                        Dashboard
-                    </a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">Client Registry</li>
-            </ol>
-        </nav>
 
-        <!-- Page Header with Gradient -->
-        <div class="d-flex justify-content-between align-items-center mb-4 p-4 bg-gradient-primary rounded-3">
-            <div>
-                <nav aria-label="breadcrumb" class="mb-2">
-                    <ol class="breadcrumb">
-                        <li class="breadcrumb-item">
-                            <a href="/dashboard">
-                                <i class="fas fa-tachometer-alt me-1"></i>
-                                Dashboard
-                            </a>
-                        </li>
-                        <li class="breadcrumb-item active" aria-current="page">Client Registry</li>
-                    </ol>
-                </nav>
-                <h1 class="h3 mb-1 text-white">
-                    <i class="fas fa-users me-2"></i>
-                    Client Registry
-                </h1>
-                <p class="text-white-50 mb-0">
-                    <small>ISO/IEC 17025:2017 Compliant Laboratory Management</small>
-                </p>
-            </div>
-            <div class="text-end">
-                <span class="badge bg-white text-primary fs-6 shadow-sm" id="clientCount">0 Registered Clients</span>
-            </div>
-        </div>
+<h2>👥 Registered Clients</h2>
 
-        <!-- Search Controls Card with Soft Shadow -->
-        <div class="card mb-4 border-0 shadow-sm">
-            <div class="card-body p-4">
-                <div class="row g-3 align-items-end">
-                    <div class="col-md-6">
-                        <label for="searchInput" class="form-label text-muted small fw-bold">SEARCH CLIENTS</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-muted"></i></span>
-                            <input type="text" class="form-control border-start-0 ps-0" id="searchInput" 
-                                   placeholder="Name, organization, or email...">
-                        </div>
-                    </div>
-                    <div class="col-md-4">
-                        <label for="organizationFilter" class="form-label text-muted small fw-bold">FILTER BY</label>
-                        <div class="input-group">
-                            <span class="input-group-text bg-light border-end-0"><i class="fas fa-filter text-muted"></i></span>
-                            <select class="form-select border-start-0 ps-0" id="organizationFilter">
-                                <option value="">All Organizations</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="col-md-2 d-grid">
-                        <button class="btn btn-outline-primary" onclick="clearFilters()">
-                            <i class="fas fa-sync-alt me-1"></i> Reset
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
+<table id="clients-table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Phone</th>
+      <th>Organization</th>
+      <th>Token</th>
+      <th>Action</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for client in clients %}
+    <tr>
+      <td>{{ client.client_id }}</td>
+      <td>{{ client.name }}</td>
+      <td>{{ client.email }}</td>
+      <td>{{ client.phone_number }}</td>
+      <td>{{ client.organization }}</td>
+      <td>
+        <span style="font-family: monospace;">{{ client.token }}</span>
+        <button onclick="navigator.clipboard.writeText('{{ client.token }}')">📋</button>
+      </td>
+      <td>
+        <a class="btn" href="{% url 'view_client_samples' client.id %}">🔍 View Samples</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
 
-        <!-- Client Table Card -->
-        <div class="card border-0 shadow-sm">
-            <div class="card-header bg-white border-0 py-3">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0 text-muted">Client Directory</h5>
-                    <button class="btn btn-sm btn-outline-primary">
-                        <i class="fas fa-plus me-1"></i> New Client
-                    </button>
-                </div>
-            </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0" id="clientsTable">
-                        <thead class="bg-light">
-                            <tr>
-                                <th scope="col" class="sortable border-0 py-3 ps-4" data-column="0">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">Client Name</span>
-                                        <i class="fas fa-sort text-muted small"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" class="sortable border-0 py-3" data-column="1">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">Organization</span>
-                                        <i class="fas fa-sort text-muted small"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" class="sortable border-0 py-3" data-column="2">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">Email</span>
-                                        <i class="fas fa-sort text-muted small"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" class="sortable border-0 py-3" data-column="3">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">Phone</span>
-                                        <i class="fas fa-sort text-muted small"></i>
-                                    </div>
-                                </th>
-                                <th scope="col" class="sortable border-0 py-3 pe-4" data-column="4">
-                                    <div class="d-flex align-items-center">
-                                        <span class="me-2">Token</span>
-                                        <i class="fas fa-sort text-muted small"></i>
-                                    </div>
-                                </th>
-                            </tr>
-                        </thead>
-                        <tbody id="clientsTableBody">
-                            <!-- Client data will be populated here dynamically -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            
-            <!-- Table Footer -->
-            <div class="card-footer bg-white border-0">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div class="d-flex align-items-center">
-                        <small class="text-muted me-3">
-                            Showing <span class="fw-bold" id="recordsInfo">0</span> of 0 clients
-                        </small>
-                        <select class="form-select form-select-sm w-auto border-0 bg-light">
-                            <option>10 per page</option>
-                            <option>25 per page</option>
-                            <option>50 per page</option>
-                        </select>
-                    </div>
-                    <small class="text-muted">
-                        <i class="fas fa-clock me-1"></i>
-                        Updated: <span id="lastUpdated"></span>
-                    </small>
-                </div>
-            </div>
-        </div>
-    </div>
+<!-- jQuery + DataTables -->
+<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Set last updated time
-        document.getElementById('lastUpdated').textContent = new Date().toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+<script>
+  $(document).ready(function () {
+    $('#clients-table').DataTable({
+      dom: 'Bfrtip',
+      buttons: [
+        { extend: 'copyHtml5', text: '📋 Copy' },
+        { extend: 'csvHtml5', text: '📄 Export CSV' },
+        { extend: 'excelHtml5', text: '📊 Export Excel' },
+        { extend: 'pdfHtml5', text: '📕 Export PDF' },
+        { extend: 'print', text: '🖨 Print' }
+      ],
+      order: [[0, 'asc']],
+      pageLength: 10,
+      lengthMenu: [5, 10, 25, 50],
+      language: {
+        search: "🔎 Search:",
+        lengthMenu: "Show _MENU_ clients per page",
+        info: "Showing _START_ to _END_ of _TOTAL_ clients",
+        zeroRecords: "No matching clients found"
+      }
+    });
+  });
+</script>
 
-        // Table sorting functionality
-        let sortDirection = {};
-
-        function sortTable(column) {
-            const tbody = document.getElementById('clientsTableBody');
-            const rows = Array.from(tbody.querySelectorAll('tr'));
-            
-            const direction = sortDirection[column] === 'asc' ? 'desc' : 'asc';
-            sortDirection[column] = direction;
-            
-            rows.sort((a, b) => {
-                let aValue, bValue;
-                
-                if (column === 0) {
-                    // Sort by name (extract from the div structure)
-                    aValue = a.cells[column].querySelector('.fw-semibold').textContent.trim();
-                    bValue = b.cells[column].querySelector('.fw-semibold').textContent.trim();
-                } else {
-                    aValue = a.cells[column].textContent.trim();
-                    bValue = b.cells[column].textContent.trim();
-                }
-                
-                if (direction === 'asc') {
-                    return aValue.localeCompare(bValue);
-                } else {
-                    return bValue.localeCompare(aValue);
-                }
-            });
-            
-            // Update sort indicators
-            document.querySelectorAll('.sortable i.fa-sort').forEach(icon => {
-                icon.className = 'fas fa-sort text-muted small';
-            });
-            
-            const currentHeader = document.querySelector(`[data-column="${column}"] i.fa-sort`);
-            if (currentHeader) {
-                currentHeader.className = `fas fa-sort-${direction === 'asc' ? 'up' : 'down'} text-primary small`;
-            }
-            
-            // Re-append sorted rows
-            tbody.innerHTML = '';
-            rows.forEach(row => tbody.appendChild(row));
-        }
-
-        // Add click handlers for sortable columns
-        document.querySelectorAll('.sortable').forEach(header => {
-            header.addEventListener('click', () => {
-                const column = parseInt(header.dataset.column);
-                sortTable(column);
-            });
-        });
-
-        // Search and filter functionality
-        document.getElementById('searchInput').addEventListener('input', filterTable);
-        document.getElementById('organizationFilter').addEventListener('change', filterTable);
-
-        function filterTable() {
-            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
-            const orgFilter = document.getElementById('organizationFilter').value;
-            const rows = document.querySelectorAll('#clientsTableBody tr');
-            
-            let visibleCount = 0;
-            
-            rows.forEach(row => {
-                const name = row.cells[0].textContent.toLowerCase();
-                const org = row.cells[1].textContent.trim();
-                const email = row.cells[2].textContent.toLowerCase();
-                
-                const matchesSearch = name.includes(searchTerm) || 
-                                     email.includes(searchTerm) || 
-                                     org.toLowerCase().includes(searchTerm);
-                const matchesOrg = !orgFilter || org === orgFilter;
-                
-                if (matchesSearch && matchesOrg) {
-                    row.style.display = '';
-                    visibleCount++;
-                } else {
-                    row.style.display = 'none';
-                }
-            });
-            
-            document.getElementById('recordsInfo').textContent = visibleCount;
-            document.getElementById('clientCount').textContent = `${visibleCount} Registered Clients`;
-        }
-
-        function clearFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('organizationFilter').value = '';
-            filterTable();
-        }
-
-        // Initialize organization filter options and update counts
-        document.addEventListener('DOMContentLoaded', function() {
-            updateClientCounts();
-            
-            const organizations = new Set();
-            document.querySelectorAll('#clientsTableBody tr').forEach(row => {
-                const orgText = row.cells[1].textContent.trim();
-                if (orgText) {
-                    organizations.add(orgText);
-                }
-            });
-            
-            const select = document.getElementById('organizationFilter');
-            Array.from(organizations).sort().forEach(org => {
-                const option = document.createElement('option');
-                option.value = org;
-                option.textContent = org;
-                select.appendChild(option);
-            });
-        });
-
-        // Function to update client counts
-        function updateClientCounts() {
-            const totalClients = document.querySelectorAll('#clientsTableBody tr').length;
-            const visibleClients = document.querySelectorAll('#clientsTableBody tr:not([style*="display: none"])').length;
-            
-            document.getElementById('clientCount').textContent = `${totalClients} Registered Clients`;
-            document.getElementById('recordsInfo').textContent = visibleClients;
-        }
-
-        // Add copy token functionality
-        document.addEventListener('click', function(e) {
-            if (e.target.closest('.fa-copy')) {
-                const token = e.target.closest('td').querySelector('code').textContent;
-                navigator.clipboard.writeText(token);
-                
-                // Show feedback
-                const icon = e.target.closest('.fa-copy');
-                icon.className = 'fas fa-check text-success';
-                setTimeout(() => {
-                    icon.className = 'far fa-copy';
-                }, 2000);
-            }
-        });
-    </script>
 </body>
 </html>
