@@ -1,14 +1,10 @@
 services:
   - type: web
     name: jaagee-lab
-    env: python
-    region: oregon
+    env: docker
     plan: free
-    buildCommand: |
-      apt-get update
-      apt-get install -y libxmlsec1-dev
-      pip install -r requirements.txt
-    startCommand: gunicorn lims_project.wsgi:application --log-file -
+    dockerfilePath: Dockerfile
+    region: oregon
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: lims_project.settings.base
