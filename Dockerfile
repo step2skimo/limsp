@@ -1,28 +1,24 @@
-# Use official Python image
+# Use an official Python image
 FROM python:3.11-slim
 
-# Install required system libraries
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
-    gcc \
     libxml2-dev \
-    libxmlsec1-openssl
+    libxmlsec1-openssl \
+    gcc
 
-# Set workdir
+# Set working directory
 WORKDIR /app
 
-# Copy your code
+# Copy your project code
 COPY . /app
 
-# Install dependencies
+# Install Python dependencies
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# Run migrations automatically
-# (optional, remove if you want to do it manually)
-# RUN python manage.py migrate
-
-# Collect static files (optional)
+# (optional) collect static files if Django
 # RUN python manage.py collectstatic --noinput
 
 # Start gunicorn
