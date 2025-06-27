@@ -4,8 +4,10 @@ services:
     env: python
     region: oregon
     plan: free
-    buildCommand: pip install -r requirements.txt
-    
+    buildCommand: |
+      apt-get update
+      apt-get install -y libxmlsec1-dev
+      pip install -r requirements.txt
     startCommand: gunicorn lims_project.wsgi:application --log-file -
     envVars:
       - key: DJANGO_SETTINGS_MODULE
