@@ -3,16 +3,15 @@ services:
     name: jaagee-lab
     env: python
     region: oregon
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn lims_project.wsgi:application --log-file -
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: lims_project.settings.base
       - key: SECRET_KEY
-        value: your_super_secret_key  
+        generateValue: true
       - key: ALLOWED_HOSTS
         value: jaagee-lab.onrender.com
-      - key: DATABASE_URL
-        fromDatabase:
-          name: jaagee-lab-db
-          property: connectionString
+      - key: GEMINI_API_KEY
+        value: AIzaSyCzfZ8sEFWA18NcKo1cGxPQKjDu1acs1_0
