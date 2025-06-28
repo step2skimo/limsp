@@ -12,7 +12,8 @@ from lims.views.sample_confirm import intake_confirmation_view
 from .views.assign_test import *
 from django.contrib.auth.views import LogoutView
 from lims.views.ai_views import ask_lab_ai
-from lims.views.coa import manager_coa_dashboard, generate_coa_pdf, preview_coa
+from lims.views.coa import *
+from lims.views.charts import *
 
 
 urlpatterns = [
@@ -79,9 +80,16 @@ urlpatterns = [
 
     path("ai/ask/", ask_lab_ai, name="ask_lab_ai"),
 
-    path("manager/coa-dashboard/", manager_coa_dashboard, name="manager_coa_dashboard"),
-    path("dashboard/coa/preview/<str:client_id>/", preview_coa, name="preview_coa"),
-    path("dashboard/coa/download/<str:client_id>/", generate_coa_pdf, name="generate_coa_pdf"),
+    path("coa_dashboard/", views.coa_dashboard, name="coa_dashboard"),
+    path("preview_coa/<str:client_id>/", views.preview_coa, name="preview_coa"),
+    path("generate_coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa"),
+
+    
+    path("generate_coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa"),
+
+    path("qc-chart-data/", qc_metrics_chart_data, name="qc_metrics_chart_data"),
+    path("qc-dashboard/", qc_dashboard, name="qc_dashboard"),
+
 
 
 

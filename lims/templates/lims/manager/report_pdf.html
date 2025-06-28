@@ -1,0 +1,287 @@
+  {% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Laboratory Management Report - {{ range_type|title }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            color: #333;
+            line-height: 1.4;
+            padding: 20px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 20px;
+        }
+        
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .report-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .summary-cards {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .summary-card {
+            width: 18%;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        th {
+            background-color: #f8f9fa;
+            text-align: left;
+            padding: 8px;
+            border: 1px solid #ddd;
+            font-weight: bold;
+        }
+        
+        td {
+            padding: 8px;
+            border: 1px solid #ddd;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            page-break-inside: avoid;
+        }
+        
+        .section-title {
+            background-color: #3498db;
+            color: white;
+            padding: 8px 12px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+        }
+        
+        .total-income {
+            text-align: right;
+            font-size: 18px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #2c3e50;
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .logo {
+            max-width: 150px;
+            margin-bottom: 10px;
+        }
+        
+        .page-break {
+            page-break-after: always;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+      
+
+<img src="{% static 'images/logo.jpg' %}" alt="Laboratory Logo" class="logo">
+
+        <h1>Laboratory Management Report</h1>
+        <h3>{{ range_type|title }} Report - {{ now|date:"F j, Y" }}</h3>
+    </div>
+    
+    <div class="report-meta">
+        <div>Generated on: {{ now|date:"F j, Y H:i" }}</div>
+        <div>Period: {{ range_type|title }}</div>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">Key Performance Indicators</h2>
+        <div class="summary-cards">
+            <div class="summary-card">
+                <div>Samples Received</div>
+                <div class="value">{{ summary.samples_received }}</div>
+            </div>
+            <div class="summary-card">
+                <div>Tests Assigned</div>
+                <div class="value">{{ summary.test_assignments }}</div>
+            </div>
+            <div class="summary-card">
+                <div>With Analysts</div>
+                <div class="value">{{ summary.assigned_with_analysts }}</div>
+            </div>
+            <div class="summary-card">
+                <div>Active Equipment</div>
+                <div class="value">{{ summary.active_equipment }}</div>
+            </div>
+            <div class="summary-card">
+                <div>Expired Calibrations</div>
+                <div class="value">{{ summary.expired_calibrations }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">Top Parameters by Income</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Parameter</th>
+                    <th>Total Tests</th>
+                    <th>Total Income (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for param in top_parameters %}
+                <tr>
+                    <td>{{ param.parameter_name }}</td>
+                    <td>{{ param.total_tests }}</td>
+                    <td>₦{{ param.total_income|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="3">No data found for this range.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">Analyst Activity</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Analyst</th>
+                    <th>Total Tests</th>
+                    <th>Distinct Samples</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for analyst in analyst_workload %}
+                <tr>
+                    <td>{{ analyst.analyst_name }}</td>
+                    <td>{{ analyst.total_tests }}</td>
+                    <td>
+                        {% for s in sample_per_analyst %}
+                            {% if s.analyst_name == analyst.analyst_name %}
+                                {{ s.sample_count }}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">Analysis Performed</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date Received</th>
+                    <th>Client</th>
+                    <th>Parameter Group</th>
+                    <th>Samples</th>
+                    <th>Amount (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in analysis_summary %}
+                <tr>
+                    <td>{{ row.date_received|date:"Y-m-d" }}</td>
+                    <td>{{ row.client_name }}</td>
+                    <td>{{ row.parameter_group }}</td>
+                    <td>{{ row.sample_count }}</td>
+                    <td>₦{{ row.income|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5">No analysis data found for this range.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <div class="total-income">
+            Total Income ({{ range_type|title }}): ₦{{ total_income|floatformat:2 }}
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2 class="section-title">Revenue Summary</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Period</th>
+                    <th>Revenue (₦)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in daily_totals %}
+                <tr>
+                    <td>{{ r.day|date:"Y-m-d" }}</td>
+                    <td>₦{{ r.income|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                {% for r in weekly_totals %}
+                <tr>
+                    <td>Week of {{ r.week|date:"Y-m-d" }}</td>
+                    <td>₦{{ r.income|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                {% for r in monthly_totals %}
+                <tr>
+                    <td>{{ r.month|date:"F Y" }}</td>
+                    <td>₦{{ r.income|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    
+    <div class="footer">
+        <p>This report was automatically generated by the Laboratory Management System</p>
+        <p>ISO 17025:2017 Compliant | Confidential Document</p>
+    </div>
+</body>
+</html>

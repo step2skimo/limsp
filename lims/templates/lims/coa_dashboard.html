@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>COA Dashboard</h2>
+
+<style>
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+    margin-top: 20px;
+  }
+  th, td {
+    border: 1px solid #ccc;
+    padding: 6px;
+    text-align: center;
+  }
+  th {
+    background-color: #eee;
+  }
+  .disabled {
+    color: #999;
+    pointer-events: none;
+    text-decoration: none;
+  }
+</style>
+
+<table>
+  <thead>
+    <tr>
+      <th>Client ID</th>
+      <th>Client Name</th>
+      <th>Number of Samples</th>
+      <th>Date Received</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+ <tbody>
+  {% for client_id, samples in grouped.items %}
+    {% with samples.0 as first_sample %}
+    <tr>
+      <td>{{ client_id }}</td>
+      <td>{{ first_sample.client.name }}</td>
+      <td>{{ samples|length }}</td>
+      <td>{{ first_sample.received_date }}</td>
+      <td>
+        <a href="{% url 'preview_coa' client_id %}" target="_blank">Preview</a> |
+        <a href="{% url 'generate_coa' client_id %}">Download PDF</a>
+      </td>
+    </tr>
+    {% endwith %}
+  {% empty %}
+    <tr><td colspan="5">No submitted samples yet.</td></tr>
+  {% endfor %}
+</tbody>
+
+</table>
+{% endblock %}

@@ -1,149 +1,515 @@
-<h2>📊 Manager Dashboard</h2>
+<div class="manager-dashboard-container">
+  <div class="dashboard-header">
+    <h2 class="dashboard-title">📊 Manager Dashboard</h2>
+    <div class="dashboard-actions">
+      <a href="{% url 'manager_dashboard' %}" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i> Return to Dashboard
+      </a>
+    </div>
+  </div>
 
-<a href="{% url 'manager_dashboard' %}" class="btn btn-secondary">Return to manager dashboard</a>
-<form method="get" style="margin-bottom: 20px;">
-  <label for="range">Time Range:</label>
-  <select name="range" id="range" onchange="this.form.submit()">
-    <option value="day" {% if range_type == "day" %}selected{% endif %}>Today</option>
-    <option value="week" {% if range_type == "week" %}selected{% endif %}>This Week</option>
-    <option value="month" {% if range_type == "month" %}selected{% endif %}>This Month</option>
-  </select>
-</form>
+  <!-- Time Range Selector -->
+  <div class="time-range-selector card">
+    <form method="get">
+      <div class="form-group">
+        <label for="range"><i class="fas fa-calendar-alt"></i> Time Range:</label>
+        <select name="range" id="range" class="form-control" onchange="this.form.submit()">
+          <option value="day" {% if range_type == "day" %}selected{% endif %}>Today</option>
+          <option value="week" {% if range_type == "week" %}selected{% endif %}>This Week</option>
+          <option value="month" {% if range_type == "month" %}selected{% endif %}>This Month</option>
+        </select>
+      </div>
+    </form>
+  </div>
 
-<!-- Summary cards -->
-<div style="display: flex; flex-wrap: wrap; gap: 1em; margin-bottom: 20px;">
-  <div class="card">🧪 Samples Received: <strong>{{ summary.samples_received }}</strong></div>
-  <div class="card">🔍 Tests Assigned: <strong>{{ summary.test_assignments }}</strong></div>
-  <div class="card">👩‍🔬 With Analysts: <strong>{{ summary.assigned_with_analysts }}</strong></div>
-  <div class="card">⚙️ Active Equipment: <strong>{{ summary.active_equipment }}</strong></div>
-  <div class="card">⏰ Expired Calibrations: <strong>{{ summary.expired_calibrations }}</strong></div>
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card card-received">
+      <div class="card-icon">🧪</div>
+      <div class="card-content">
+        <div class="card-title">Samples Received</div>
+        <div class="card-value">{{ summary.samples_received }}</div>
+      </div>
+    </div>
+    
+    <div class="summary-card card-assigned">
+      <div class="card-icon">🔍</div>
+      <div class="card-content">
+        <div class="card-title">Tests Assigned</div>
+        <div class="card-value">{{ summary.test_assignments }}</div>
+      </div>
+    </div>
+    
+    <div class="summary-card card-analysts">
+      <div class="card-icon">👩‍🔬</div>
+      <div class="card-content">
+        <div class="card-title">With Analysts</div>
+        <div class="card-value">{{ summary.assigned_with_analysts }}</div>
+      </div>
+    </div>
+    
+    <div class="summary-card card-equipment">
+      <div class="card-icon">⚙️</div>
+      <div class="card-content">
+        <div class="card-title">Active Equipment</div>
+        <div class="card-value">{{ summary.active_equipment }}</div>
+      </div>
+    </div>
+    
+    <div class="summary-card card-calibrations">
+      <div class="card-icon">⏰</div>
+      <div class="card-content">
+        <div class="card-title">Expired Calibrations</div>
+        <div class="card-value">{{ summary.expired_calibrations }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="dashboard-grid">
+    <!-- Top Parameters Section -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-trophy"></i> Top Parameters by Income</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Total Tests</th>
+              <th>Total Income (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for param in top_parameters %}
+              <tr>
+                <td>{{ param.parameter_name }}</td>
+                <td>{{ param.total_tests }}</td>
+                <td class="text-success">₦{{ param.total_income|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="3" class="text-muted">No data found for this range.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Analyst Activity Section -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-user-tie"></i> Analyst Activity</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Analyst</th>
+              <th>Total Tests</th>
+              <th>Distinct Samples</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for analyst in analyst_workload %}
+              <tr>
+                <td>{{ analyst.analyst_name }}</td>
+                <td>{{ analyst.total_tests }}</td>
+                <td>
+                  {% for s in sample_per_analyst %}
+                    {% if s.analyst_name == analyst.analyst_name %}
+                      {{ s.sample_count }}
+                    {% endif %}
+                  {% endfor %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Parameter Volume Section -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-boxes"></i> Parameters Conducted</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Parameter</th>
+              <th>Test Count</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in parameter_stats %}
+              <tr>
+                <td>{{ p.parameter_name }}</td>
+                <td>{{ p.test_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Analysis Summary Section -->
+    <div class="dashboard-section wide-section">
+      <div class="section-header">
+        <h3><i class="fas fa-flask"></i> Analysis Performed</h3>
+      </div>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Date Received</th>
+              <th>Client</th>
+              <th>Parameter Group</th>
+              <th>Samples</th>
+              <th>Amount (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for row in analysis_summary %}
+              <tr>
+                <td>{{ row.date_received|date:"Y-m-d" }}</td>
+                <td>{{ row.client_name }}</td>
+                <td>{{ row.parameter_group }}</td>
+                <td>{{ row.sample_count }}</td>
+                <td class="text-success">₦{{ row.income|floatformat:2 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-muted">No analysis data found for this range.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="section-footer">
+        <h4 class="total-income">
+          <i class="fas fa-money-bill-wave"></i> Total Income ({{ range_type|title }}): 
+          <strong>₦{{ total_income|floatformat:2 }}</strong>
+        </h4>
+      </div>
+    </div>
+
+    <!-- Revenue Summary Section -->
+    <div class="dashboard-section">
+      <div class="section-header">
+        <h3><i class="fas fa-chart-line"></i> Revenue Summary</h3>
+      </div>
+      <div class="revenue-highlights">
+        <div class="revenue-today">
+          <h4>Today's Revenue</h4>
+          <div class="revenue-amount">₦{{ today_total_income|floatformat:2 }}</div>
+          <div class="revenue-meta">{{ today_test_count }} tests</div>
+        </div>
+      </div>
+      
+      <h4 class="trends-title"><i class="fas fa-chart-bar"></i> Trends</h4>
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Period</th>
+              <th>Revenue (₦)</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for r in daily_totals %}
+              <tr>
+                <td>{{ r.day|date:"Y-m-d" }}</td>
+                <td class="text-success">₦{{ r.income|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}
+            {% for r in weekly_totals %}
+              <tr>
+                <td>Week of {{ r.week|date:"Y-m-d" }}</td>
+                <td class="text-success">₦{{ r.income|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}
+            {% for r in monthly_totals %}
+              <tr>
+                <td>{{ r.month|date:"F Y" }}</td>
+                <td class="text-success">₦{{ r.income|floatformat:2 }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Section -->
+  <div class="export-section card">
+    <div class="section-header">
+      <h3><i class="fas fa-download"></i> Export Reports</h3>
+    </div>
+    <div class="export-options">
+      <a href="{% url 'export_report_pdf' %}?range={{ range_type }}" class="export-btn pdf-btn">
+        <i class="fas fa-file-pdf"></i> PDF Report
+      </a>
+      <a href="{% url 'export_report_excel' %}?range={{ range_type }}" class="export-btn excel-btn">
+        <i class="fas fa-file-excel"></i> Excel Report
+      </a>
+    </div>
+    <div class="compliance-note">
+      <i class="fas fa-certificate"></i>
+      <strong>ISO 17025 Compliance:</strong> All reports meet ISO 17025:2017 standards for testing and calibration laboratories.
+    </div>
+  </div>
 </div>
 
-<!-- Top Parameters -->
-<h3>🏆 Top Parameters by Income</h3>
-<table>
-  <thead>
-    <tr><th>Parameter</th><th>Total Tests</th><th>Total Income (₦)</th></tr>
-  </thead>
-  <tbody>
-    {% for param in top_parameters %}
-      <tr>
-        <td>{{ param.parameter_name }}</td>
-        <td>{{ param.total_tests }}</td>
-        <td>₦{{ param.total_income|floatformat:2 }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="3">No data found for this range.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Analyst Breakdown -->
-<h3>👩‍🔬 Analyst Activity</h3>
-<table>
-  <thead>
-    <tr><th>Analyst</th><th>Total Tests</th><th>Distinct Samples</th></tr>
-  </thead>
-  <tbody>
-    {% for analyst in analyst_workload %}
-      <tr>
-        <td>{{ analyst.analyst_name }}</td>
-        <td>{{ analyst.total_tests }}</td>
-        <td>
-          {% for s in sample_per_analyst %}
-            {% if s.analyst_name == analyst.analyst_name %}
-              {{ s.sample_count }}
-            {% endif %}
-          {% endfor %}
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Parameter Volume -->
-<h3>📦 Parameters Conducted</h3>
-<table>
-  <thead>
-    <tr><th>Parameter</th><th>Test Count</th></tr>
-  </thead>
-  <tbody>
-    {% for p in parameter_stats %}
-      <tr>
-        <td>{{ p.parameter_name }}</td>
-        <td>{{ p.test_count }}</td>
-      </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Analysis Summary -->
-<h3>🧪 Analysis Performed</h3>
-<table>
-  <thead>
-    <tr>
-      <th>Date Received</th>
-      <th>Client</th>
-      <th>Parameter Group</th>
-      <th>No. of Samples</th>
-      <th>Amount Charged (₦)</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for row in analysis_summary %}
-      <tr>
-        <td>{{ row.date_received|date:"Y-m-d" }}</td>
-        <td>{{ row.client_name }}</td>
-        <td>{{ row.parameter_group }}</td>
-        <td>{{ row.sample_count }}</td>
-        <td>₦{{ row.income|floatformat:2 }}</td>
-      </tr>
-    {% empty %}
-      <tr><td colspan="5">No analysis data found for this range.</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<h4 style="margin-top: 15px;">💵 Total Income ({{ range_type|title }}): <strong>₦{{ total_income|floatformat:2 }}</strong></h4>
-
-<!-- Revenue Summary -->
-<h3>💰 Revenue Summary</h3>
-<h4>Today: ₦{{ today_total_income|floatformat:2 }} from {{ today_test_count }} tests</h4>
-
-<h4 style="margin-top: 15px;">Trends</h4>
-<table>
-  <thead><tr><th>Period</th><th>Revenue (₦)</th></tr></thead>
-  <tbody>
-    {% for r in daily_totals %}
-      <tr><td>{{ r.day|date:"Y-m-d" }}</td><td>₦{{ r.income|floatformat:2 }}</td></tr>
-    {% endfor %}
-    {% for r in weekly_totals %}
-      <tr><td>{{ r.week|date:"Y-m-d" }}</td><td>₦{{ r.income|floatformat:2 }}</td></tr>
-    {% endfor %}
-    {% for r in monthly_totals %}
-      <tr><td>{{ r.month|date:"F Y" }}</td><td>₦{{ r.income|floatformat:2 }}</td></tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-<!-- Export Options -->
-<div class="export-section" style="margin-top: 40px; padding: 20px; border: 1px solid #ddd; background: #f9f9f9;">
-  <h3 class="section-title">
-    <i class="fas fa-download"></i>
-    Export Reports
-  </h3>
-  <div class="d-flex gap-3 flex-wrap" style="margin-top: 10px; margin-bottom: 15px;">
-    <a href="{% url 'export_report_pdf' %}?range={{ range_type }}" class="export-btn btn-pdf">
-      <i class="fas fa-file-pdf"></i>
-      Download PDF Report
-    </a>
-    <a href="{% url 'export_report_excel' %}?range={{ range_type }}" class="export-btn btn-excel">
-      <i class="fas fa-file-excel"></i>
-      Download Excel Report
-    </a>
-  </div>
-  <div class="compliance-note" style="font-size: 0.9em; color: #555;">
-    <i class="fas fa-info-circle me-2"></i>
-    <strong>ISO 17025 Compliance:</strong> All reports are generated in accordance with ISO 17025:2017 standards for testing and calibration laboratories.
-  </div>
-</div>
+<style>
+  /* Base Styles */
+  .manager-dashboard-container {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #333;
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+  }
+  
+  .dashboard-title {
+    color: #2c3e50;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  /* Summary Cards */
+  .summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+  }
+  
+  .summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+    display: flex;
+    align-items: center;
+    transition: transform 0.2s;
+  }
+  
+  .summary-card:hover {
+    transform: translateY(-3px);
+  }
+  
+  .card-icon {
+    font-size: 24px;
+    margin-right: 15px;
+  }
+  
+  .card-content {
+    flex: 1;
+  }
+  
+  .card-title {
+    font-size: 14px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .card-value {
+    font-size: 22px;
+    font-weight: 700;
+    color: #2c3e50;
+  }
+  
+  /* Card Colors */
+  .card-received { border-left: 4px solid #3498db; }
+  .card-assigned { border-left: 4px solid #9b59b6; }
+  .card-analysts { border-left: 4px solid #2ecc71; }
+  .card-equipment { border-left: 4px solid #e67e22; }
+  .card-calibrations { border-left: 4px solid #e74c3c; }
+  
+  /* Dashboard Grid */
+  .dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .dashboard-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  
+  .wide-section {
+    grid-column: span 2;
+  }
+  
+  .section-header {
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .section-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #2c3e50;
+  }
+  
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  
+  .data-table th {
+    background: #f8f9fa;
+    padding: 10px 12px;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    border-bottom: 2px solid #dee2e6;
+  }
+  
+  .data-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid #eee;
+  }
+  
+  .data-table tr:hover td {
+    background-color: #f8f9fa;
+  }
+  
+  /* Revenue Highlights */
+  .revenue-highlights {
+    margin-bottom: 20px;
+  }
+  
+  .revenue-today {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 6px;
+    text-align: center;
+  }
+  
+  .revenue-today h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+    color: #6c757d;
+  }
+  
+  .revenue-amount {
+    font-size: 24px;
+    font-weight: 700;
+    color: #28a745;
+  }
+  
+  .revenue-meta {
+    font-size: 14px;
+    color: #6c757d;
+  }
+  
+  .trends-title {
+    font-size: 16px;
+    margin: 20px 0 15px 0;
+    color: #495057;
+  }
+  
+  /* Total Income */
+  .total-income {
+    margin: 15px 0 0 0;
+    text-align: right;
+    color: #2c3e50;
+  }
+  
+  /* Export Section */
+  .export-section {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+  }
+  
+  .export-options {
+    display: flex;
+    gap: 15px;
+    margin: 20px 0;
+  }
+  
+  .export-btn {
+    display: inline-flex;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s;
+  }
+  
+  .export-btn i {
+    margin-right: 8px;
+  }
+  
+  .pdf-btn {
+    background: #e74c3c;
+    color: white;
+  }
+  
+  .pdf-btn:hover {
+    background: #c0392b;
+  }
+  
+  .excel-btn {
+    background: #2ecc71;
+    color: white;
+  }
+  
+  .excel-btn:hover {
+    background: #27ae60;
+  }
+  
+  .compliance-note {
+    font-size: 13px;
+    color: #6c757d;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+  }
+  
+  /* Responsive Adjustments */
+  @media (max-width: 768px) {
+    .dashboard-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+    
+    .summary-cards {
+      grid-template-columns: 1fr 1fr;
+    }
+    
+    .dashboard-grid {
+      grid-template-columns: 1fr;
+    }
+    
+    .wide-section {
+      grid-column: span 1;
+    }
+    
+    .export-options {
+      flex-direction: column;
+    }
+  }
+</style>

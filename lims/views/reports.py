@@ -151,12 +151,10 @@ def analyst_productivity_view(request):
 
 
 
-@login_required
-def manager_report_view(request):
+def get_manager_report_context(request):
     today = timezone.now().date()
     range_type = request.GET.get("range", "month")
 
-    # ⏳ Date Range Calculation
     if range_type == "week":
         start_date = today - timedelta(days=today.weekday())
         end_date = start_date + timedelta(days=6)
@@ -166,11 +164,10 @@ def manager_report_view(request):
         start_date = today.replace(day=1)
         end_date = today
 
-    # 📦 Core Queries (excluding QC/control data)
     samples = Sample.objects.filter(
         received_date__range=(start_date, end_date),
-        sample_type__iexact="Sample"
-    )
+        ).exclude(sample_type__iexact="QC")
+    
     tests = TestAssignment.objects.select_related("parameter", "sample", "analyst").filter(
         assigned_date__date__range=(start_date, end_date),
         is_control=False
@@ -178,7 +175,6 @@ def manager_report_view(request):
     equipment = Equipment.objects.all()
     calibrations = CalibrationRecord.objects.filter(calibration_date__range=(start_date, end_date))
 
-    # 📊 Grouped Analysis Summary (by parameter group)
     analysis_summary = tests.values(
         date_received=F("sample__received_date"),
         client_name=F("sample__client__name"),
@@ -188,11 +184,6 @@ def manager_report_view(request):
         income=Sum("parameter__default_price")
     ).order_by("-date_received")
 
-    # 🔍 Print diagnostic in terminal
-    print("📦 Analysis Summary Rows:")
-    pprint.pprint(list(analysis_summary))
-
-    # 📊 Revenue Trends
     daily_totals = tests.annotate(day=TruncDay("assigned_date")).values("day").annotate(
         income=Sum("parameter__default_price")).order_by("day")
 
@@ -207,7 +198,6 @@ def manager_report_view(request):
         total_income=Sum("parameter__default_price")
     ).order_by("-total_income")[:10]
 
-    # 👩‍🔬 Analyst Workload
     analyst_workload = tests.values(analyst_name=F("analyst__username")).annotate(
         total_tests=Count("id")).order_by("-total_tests")
 
@@ -217,7 +207,6 @@ def manager_report_view(request):
     parameter_stats = tests.values(parameter_name=F("parameter__name")).annotate(
         test_count=Count("id")).order_by("-test_count")
 
-    # 🎯 Today’s Metrics
     today_tests = TestAssignment.objects.filter(assigned_date__date=today, is_control=False)
     today_total_income = today_tests.aggregate(total=Sum("parameter__default_price"))["total"] or 0
     today_test_count = today_tests.count()
@@ -232,7 +221,7 @@ def manager_report_view(request):
         "expired_calibrations": CalibrationRecord.objects.filter(expires_on__lt=today).count()
     }
 
-    return render(request, "lims/report_view.html", {
+    return {
         "samples": samples,
         "tests": tests,
         "equipment": equipment,
@@ -252,37 +241,37 @@ def manager_report_view(request):
         "total_income": total_income,
         "today_total_income": today_total_income,
         "today_test_count": today_test_count,
-    })
+    }
 
 
+@login_required
+def manager_report_view(request):
+    context = get_manager_report_context(request)
+    return render(request, "lims/report_view.html", context)
 
 
+@login_required
 def export_report_pdf(request):
-    from .reports import manager_report_view  # optional reuse
-
-    # replicate the context from manager_report_view
-    response = manager_report_view(request)
-    html = get_template("lims/manager/reports/report_pdf.html").render(response.context_data)
-    pdf = HTML(string=html).write_pdf()
-
-    return HttpResponse(pdf, content_type='application/pdf')
+    context = get_manager_report_context(request)
+    html = get_template("lims/manager/report_pdf.html").render(context)
+    pdf = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HttpResponse(pdf, content_type="application/pdf")
 
 
 
+@login_required
 def export_report_excel(request):
+    context = get_manager_report_context(request)
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Lab Report"
 
     ws.append(["Parameter", "Tests Run", "Revenue (₦)"])
-
-    from .reports import manager_report_view
-    response = manager_report_view(request)
-    for row in response.context_data["top_parameters"]:
+    for row in context["top_parameters"]:
         ws.append([
-            row["parameter__name"],
+            row["parameter_name"],
             row["total_tests"],
-            float(row["total_income"]),
+            float(row["total_income"] or 0),
         ])
 
     response = HttpResponse(

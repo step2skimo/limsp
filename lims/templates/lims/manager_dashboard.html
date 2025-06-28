@@ -24,10 +24,14 @@
 
 <h1 class="mb-4">📋 Manager Lab Dashboard</h1>
 
+
 <div class="mb-3 d-flex flex-wrap gap-2">
   <a href="{% url 'qc_overview_all_parameters' %}" class="btn btn-secondary">📊 QC Trends</a>
   <a href="{% url 'test_assignment_list' %}" class="btn btn-secondary">📋 Test Assignments</a>
- <a href="{% url 'manager_coa_dashboard' %}" class="btn btn-outline-primary btn-sm">🧾 COA Manager Dashboard</a>
+<a href="{% url 'coa_dashboard' %}">COA Dashboard</a>
+
+ <a href="{% url 'qc_dashboard' %}">QC Metrics Dashboard</a>
+
 
 
 
@@ -79,24 +83,8 @@
 {% endif %}
 
 
-        <!-- Filter Dropdowns -->
-        <div class="row mb-3">
-          <div class="col-md-6">
-            <label for="analystFilter" class="form-label">🔍 Filter by Analyst:</label>
-            <select class="form-select" id="analystFilter" onchange="renderCharts()">
-              <option value="all">All Analysts</option>
-            </select>
-          </div>
-          <div class="col-md-6">
-            <label for="parameterFilter" class="form-label">🔍 Filter by Parameter:</label>
-            <select class="form-select" id="parameterFilter" onchange="renderCharts()">
-              <option value="all">All Parameters</option>
-            </select>
-          </div>
-        </div>
+       {% include "lims/qc/partials/qc_chart.html" %}
 
-        <!-- Dynamic Charts -->
-        <div id="chartContainer"></div>
 
       </div>
     </div>

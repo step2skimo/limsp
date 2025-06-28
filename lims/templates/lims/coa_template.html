@@ -1,0 +1,173 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    @page {
+      size: A4;
+      margin: 0;
+    }
+    body {
+      margin: 2cm;
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+    }
+    .letterhead {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4cm;
+      background: url('{{ letterhead_url }}') no-repeat center;
+      background-size: cover;
+      z-index: -1;
+    }
+    .metadata-table {
+      width: 100%;
+      border: 1px solid #333;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-top: 4.5cm;
+    }
+    .metadata-table td {
+      border: 1px solid #333;
+      padding: 4px;
+    }
+    h2 {
+      text-align: center;
+      font-size: 14px;
+      margin: 10px 0;
+    }
+    table.analysis {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+      margin-top: 10px;
+    }
+    table.analysis th, table.analysis td {
+      border: 1px solid #333;
+      padding: 4px;
+      text-align: center;
+    }
+    .footer-note {
+      font-size: 10px;
+      font-style: italic;
+      margin-top: 10px;
+    }
+    .signatures {
+      margin-top: 30px;
+      font-size: 10px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .signatures div {
+      width: 45%;
+    }
+    .center {
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="letterhead"></div>
+
+  <table class="metadata-table">
+    <tr>
+      <td><strong>CLIENT NAME:</strong> {{ client.name }}</td>
+      <td><strong>REPORT DATE:</strong> {{ today }}</td>
+    </tr>
+    <tr>
+      <td><strong>ORGANIZATION:</strong> {{ client.organization }}</td>
+      <td><strong>SAMPLE STORAGE:</strong> Ambient Temperature</td>
+    </tr>
+    <tr>
+      <td><strong>ADDRESS:</strong> {{ client.address }}</td>
+      <td><strong>CONDITION OF SAMPLE:</strong> Tested As Received</td>
+    </tr>
+    <tr>
+      <td><strong>EMAIL:</strong> {{ client.email }}</td>
+      <td><strong>LAB CONTACT:</strong> 07015568976</td>
+    </tr>
+    <tr>
+      <td><strong>PHONE:</strong> {{ client.phone }}</td>
+      <td><strong>ENVIRONMENT:</strong> {{ samples.0.environment }}</td>
+    </tr>
+    <tr>
+      <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date }}</td>
+      <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
+    </tr>
+  </table>
+
+  <div class="footer-note">
+    Please note: samples not requested for after three weeks will be assumed not needed and will be discarded.
+  </div>
+
+  <h2>CERTIFICATE OF ANALYSIS</h2>
+
+  <table class="analysis">
+    <thead>
+      <tr>
+        <th>Sample ID</th>
+        {% for param in parameters %}
+          <th>{{ param.name }}<br>{{ param.unit }}</th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {% for sample in samples %}
+        <tr>
+          <td>{{ sample.sample_code }}</td>
+          {% for param in parameters %}
+            <td>
+              {% with result=None %}
+                {% for r in sample.results %}
+                  {% if r.parameter == param.name %}
+                    {% with result=r %}
+                      {{ r.value }}
+                    {% endwith %}
+                  {% endif %}
+                {% endfor %}
+                {% if not result %} — {% endif %}
+              {% endwith %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="footer-note">
+    <strong>Summary interpretation:</strong> {{ summary_text }}
+  </div>
+
+  <div class="footer-note center">
+    JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial, and various
+    chemical analysis to improve the quality and healthiness of foods and feeds.
+  </div>
+
+  <div class="footer-note">
+    <strong>ANALYSIS METHODS:</strong><br>
+    {% for param in parameters %}
+      {{ param.name|upper }}: {{ param.method }}<br>
+    {% endfor %}
+  </div>
+
+  <div class="signatures">
+    <div>
+      ___________________________<br>
+      Kehinde K. Hannah<br>
+      HEAD OF LABORATORY
+    </div>
+    <div>
+      ___________________________<br>
+      Julius Gbolade Famoriyo<br>
+      FELLOW NISLT REG NO: F0256
+    </div>
+  </div>
+
+  <div class="center" style="margin-top:10px;">
+    1 OF 1 — END OF REPORT
+  </div>
+</body>
+</html>
