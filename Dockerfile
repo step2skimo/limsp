@@ -1,11 +1,12 @@
-# Use an official Python image
-FROM python:3.11-slim
+# Use Python 3.10
+FROM python:3.10-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
     libxml2-dev \
     libxmlsec1-openssl \
+    pkg-config \
     gcc
 
 # Set working directory
@@ -18,7 +19,7 @@ COPY . /app
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-# (optional) collect static files if Django
+# (optional) collect static files
 # RUN python manage.py collectstatic --noinput
 
 # Start gunicorn
