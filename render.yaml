@@ -13,6 +13,9 @@ services:
       - key: ALLOWED_HOSTS
         value: jaagee-lab.onrender.com
       - key: DEBUG
-        value: "True"
+        value: "False"
       - key: GEMINI_API_KEY
-        value: AIzaSyCzfZ8sEFWA18NcKo1cGxPQKjDu1acs1_0
+        value: your_api_key_here
+    ports:
+      - port: 8000
+        protocol: http
