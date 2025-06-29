@@ -33,7 +33,7 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 INSTALLED_APPS = [
     'users',
     'lims',
-    'saml',
+    #'saml',
     'notifications',
     'django.contrib.admin',
     'django.contrib.auth',

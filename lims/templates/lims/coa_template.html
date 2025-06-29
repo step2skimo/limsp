@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -10,67 +11,44 @@
     }
     body {
       margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
       font-size: 11px;
-      position: relative;
-    }
-    .letterhead {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 4cm;
       background: url('{{ letterhead_url }}') no-repeat center top;
       background-size: cover;
     }
     .content {
-      margin: 5cm 2cm 2cm 2cm;
+      margin: 5cm 2cm 2cm 2cm; /* pushes content below the letterhead banner */
     }
-    .metadata-table {
+    table {
       width: 100%;
-      border: 1px solid #333;
       border-collapse: collapse;
-      font-size: 11px;
-      margin-bottom: 10px;
+      font-size: 10px;
     }
-    .metadata-table td {
+    table th, table td {
       border: 1px solid #333;
       padding: 4px;
+      text-align: center;
+    }
+    .metadata {
+      font-size: 10px;
+      margin-bottom: 10px;
     }
     h2 {
       text-align: center;
-      font-size: 14px;
       margin: 15px 0;
     }
-    table.analysis {
-      width: 100%;
-      border-collapse: collapse;
+    .footer-note, .signatures {
       font-size: 10px;
-      margin-top: 10px;
-      table-layout: fixed;
-      word-wrap: break-word;
-      page-break-inside: avoid;
-    }
-    table.analysis th, table.analysis td {
-      border: 1px solid #333;
-      padding: 4px;
-      text-align: center;
-    }
-    .footer-note {
-      font-size: 10px;
-      font-style: italic;
       margin-top: 10px;
     }
     .signatures {
-      margin-top: 30px;
-      font-size: 10px;
       display: flex;
       justify-content: space-between;
+      margin-top: 30px;
     }
     .signatures div {
       width: 45%;
-      border-top: 1px solid #333;
-      padding-top: 5px;
     }
     .center {
       text-align: center;
@@ -78,10 +56,9 @@
   </style>
 </head>
 <body>
-  <div class="letterhead"></div>
   <div class="content">
 
-    <table class="metadata-table">
+    <table class="metadata">
       <tr>
         <td><strong>CLIENT NAME:</strong> {{ client.name }}</td>
         <td><strong>REPORT DATE:</strong> {{ today }}</td>
@@ -91,30 +68,18 @@
         <td><strong>SAMPLE STORAGE:</strong> Ambient Temperature</td>
       </tr>
       <tr>
-        <td><strong>ADDRESS:</strong> {{ client.address }}</td>
-        <td><strong>CONDITION OF SAMPLE:</strong> Tested As Received</td>
-      </tr>
-      <tr>
         <td><strong>EMAIL:</strong> {{ client.email }}</td>
-        <td><strong>LAB CONTACT:</strong> 07015568976</td>
-      </tr>
-      <tr>
         <td><strong>PHONE:</strong> {{ client.phone }}</td>
-        <td><strong>ENVIRONMENT:</strong> {{ samples.0.environment }}</td>
       </tr>
       <tr>
-        <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|default:"-"|date:"Y-m-d" }}</td>
+        <td><strong>ENVIRONMENT:</strong> {{ samples.0.environment }}</td>
         <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
       </tr>
     </table>
 
-    <div class="footer-note">
-      Please note: samples not requested for after three weeks will be assumed not needed and will be discarded.
-    </div>
-
     <h2>CERTIFICATE OF ANALYSIS</h2>
 
-    <table class="analysis">
+    <table>
       <thead>
         <tr>
           <th>Sample ID</th>
@@ -137,9 +102,7 @@
                       {% endwith %}
                     {% endif %}
                   {% endfor %}
-                  {% if not found %}
-                    —
-                  {% endif %}
+                  {% if not found %} — {% endif %}
                 {% endwith %}
               </td>
             {% endfor %}
@@ -177,8 +140,12 @@
       </div>
     </div>
 
-    <div class="center" style="margin-top:10px;">
-      1 OF 1 — END OF REPORT
+    <div class="footer-note center" style="margin-top:5px;">
+      Please note: samples not requested for after three weeks will be assumed not needed and will be discarded.
+    </div>
+
+    <div class="center" style="margin-top:5px;">
+      - END OF REPORT -
     </div>
   </div>
 </body>
