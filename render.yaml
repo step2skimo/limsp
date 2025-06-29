@@ -16,3 +16,6 @@ services:
         value: your_api_key_here
       - key: ALLOWED_HOSTS
         value: .onrender.com,localhost,127.0.0.1
+    startCommand: |
+      python manage.py collectstatic --noinput
+      gunicorn lims_project.wsgi:application --bind 0.0.0.0:8000
