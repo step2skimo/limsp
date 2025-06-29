@@ -39,15 +39,24 @@ from weasyprint import HTML
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from collections import defaultdict
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from weasyprint import HTML
+import datetime
+
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponse
+from django.template.loader import render_to_string
+from django.utils import timezone
+from weasyprint import HTML
+import datetime
+from django.templatetags.static import static
 
 @login_required
 def generate_coa_pdf(request, client_id):
-    from django.template.loader import render_to_string
-    from django.http import HttpResponse
-    import datetime
-
     samples = (
         Sample.objects
+        .exclude(sample_code__startswith="QC-")
         .filter(client__client_id=client_id)
         .prefetch_related(
             "testassignment_set__parameter",
@@ -61,7 +70,9 @@ def generate_coa_pdf(request, client_id):
 
     client = samples.first().client
 
-    # build results
+    summary_input = {}
+    parameters = set()
+
     for sample in samples:
         sample.results = []
         param_values = {}
@@ -70,71 +81,62 @@ def generate_coa_pdf(request, client_id):
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
             param_name = ta.parameter.name
+
             if res:
-                param_values[param_name.lower()] = res.value
+                value = res.value
+                param_values[param_name.lower()] = value
+
                 sample.results.append({
                     "parameter": param_name,
                     "method": ta.parameter.method,
-                    "value": res.value,
+                    "value": value,
                     "unit": ta.parameter.unit,
                 })
 
-            # environment from testenvironment
+                summary_input.setdefault(param_name, []).append(value)
+                parameters.add((param_name, ta.parameter.unit, ta.parameter.method))
+
             env = getattr(ta, "testenvironment", None)
             if env and not sample_environment:
                 sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
 
-        # calculate CHO if all proximate parameters are present
+        # Calculate CHO & ME if possible
         required = ["protein", "fat", "ash", "moisture", "fiber"]
         if all(k in param_values for k in required):
-            cho_value = round(
-                100 - (
-                    param_values["protein"]
-                    + param_values["fat"]
-                    + param_values["ash"]
-                    + param_values["moisture"]
-                    + param_values["fiber"]
-                ),
+            cho = round(100 - sum(param_values[k] for k in required), 2)
+            me = round(
+                (param_values["protein"] * 4)
+                + (param_values["fat"] * 9)
+                + (cho * 4),
                 2
             )
             sample.results.append({
                 "parameter": "CHO",
                 "method": "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)",
-                "value": cho_value,
+                "value": cho,
                 "unit": "%",
             })
-
-            # ME
-            me_value = round(
-                (param_values["protein"] * 4)
-                + (param_values["fat"] * 9)
-                + (cho_value * 4),
-                2
-            )
             sample.results.append({
                 "parameter": "ME",
                 "method": "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)",
-                "value": me_value,
+                "value": me,
                 "unit": "kcal/100g",
             })
 
+            summary_input.setdefault("CHO", []).append(cho)
+            summary_input.setdefault("ME", []).append(me)
+            parameters.add(("CHO", "%", "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)"))
+            parameters.add(("ME", "kcal/100g", "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)"))
+
         sample.environment = sample_environment or "Ambient 25°C 50%RH"
 
-    # collect all parameters for table headers
-    parameters = set()
-    for s in samples:
-        for r in s.results:
-            parameters.add((r["parameter"], r["unit"], r["method"]))
-    parameters = sorted(list(parameters))
+    parameters = sorted(parameters)
 
-    # summary text (optional, reuse your AI summary)
-    summary_input = {}
-    for s in samples:
-        for r in s.results:
-            summary_input.setdefault(r["parameter"], []).append(r["value"])
+    # Generate AI summary
     summary_text = generate_dynamic_summary(summary_input)
 
-    # render
+    # Render template
+    letterhead_url = request.build_absolute_uri(static('letterheads/coa_letterhead.png'))
     html = render_to_string(
         "lims/coa_template.html",
         {
@@ -145,10 +147,13 @@ def generate_coa_pdf(request, client_id):
                 {"name": p[0], "unit": p[1], "method": p[2]} for p in parameters
             ],
             "today": datetime.date.today(),
-            "letterhead_url": request.build_absolute_uri('/static/letterheads/coa_letterhead.png')
+            "letterhead_url": letterhead_url,
         }
     )
-    return HttpResponse(html)
+
+    # Generate PDF
+    pdf_file = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    return HttpResponse(pdf_file, content_type="application/pdf")
 
 
 @login_required

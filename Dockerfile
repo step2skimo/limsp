@@ -1,11 +1,14 @@
-# Use modern Bookworm to get modern libxml2/libxmlsec1
 FROM python:3.10-bookworm
 
+# Install system dependencies
 RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
     libxml2-dev \
     libxmlsec1-openssl \
+    libxmlsec1 \
+    libxml2 \
     pkg-config \
+    libssl-dev \
     gcc
 
 WORKDIR /app
@@ -13,6 +16,11 @@ WORKDIR /app
 COPY . /app
 
 RUN pip install --upgrade pip
+
+# Force lxml and xmlsec to build from source against the correct system libraries
+RUN pip install --no-binary=:all: lxml xmlsec
+
+# Install the rest of your dependencies
 RUN pip install -r requirements.txt
 
 EXPOSE 8000
