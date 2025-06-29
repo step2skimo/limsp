@@ -1,33 +1,32 @@
-# Use Python 3.10
 FROM python:3.10-slim
 
-# Install system dependencies
+# install system dependencies
 RUN apt-get update && apt-get install -y \
-    libxmlsec1-dev \
     libxml2-dev \
+    libxmlsec1-dev \
     libxmlsec1-openssl \
     pkg-config \
-    gcc
+    gcc \
+    libxml2-utils \
+    libxml2
 
-# Set working directory
+# set workdir
 WORKDIR /app
 
-# Copy your project code
+# copy code
 COPY . /app
 
-# Install Python dependencies
+# upgrade pip
 RUN pip install --upgrade pip
+
+# reinstall lxml and xmlsec in sync with system libraries
+RUN pip install --no-binary=:all: lxml xmlsec
+
+# install other requirements
 RUN pip install -r requirements.txt
 
-# (optional) collect static files
-# RUN python manage.py collectstatic --noinput
-
-# Expose port 8000 so Render can detect it
+# expose port
 EXPOSE 8000
 
-
-# comment out Gunicorn
-# CMD ["gunicorn", "lims_project.wsgi:application", "--bind", "0.0.0.0:8000"]
-
-# use Django dev server
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+# start
+CMD ["gunicorn", "lims_project.wsgi:application", "--bind", "0.0.0.0:8000"]
