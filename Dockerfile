@@ -1,4 +1,5 @@
-FROM python:3.10-slim
+# Use debian-slim with newer xmlsec/libxml2
+FROM python:3.10-bookworm
 
 RUN apt-get update && apt-get install -y \
     libxmlsec1-dev \
