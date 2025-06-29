@@ -1,25 +1,40 @@
 
-<h2>🧪 Sample Registry</h2>
-<table class="table table-bordered mt-3">
-  <thead>
-    <tr>
-      <th>Sample Code</th>
-      <th>Type</th>
-      <th>Client</th>
-      <th>Status</th>
-      <th>Received</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for s in samples %}
-    <tr>
-      <td>{{ s.sample_code }}</td>
-      <td>{{ s.sample_type }}</td>
-      <td>{{ s.client.name }}</td>
-      <td><span class="badge bg-secondary">{{ s.get_status_display }}</span></td>
-      <td>{{ s.received_date }}</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+<div class="container mt-4">
+  <h2>Sample List</h2>
+
+  {% regroup samples by client.client_id as client_groups %}
+
+  {% for group in client_groups %}
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <strong>Client ID:</strong> {{ group.grouper }} | 
+        <strong>Client Name:</strong> {{ group.list.0.client.name }}
+      </div>
+      <div class="card-body p-0">
+        <table class="table table-bordered table-striped table-sm mb-0">
+          <thead class="table-light">
+            <tr>
+              <th>Sample Code</th>
+              <th>Received Date</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sample in group.list %}
+              <tr>
+                <td>{{ sample.sample_code }}</td>
+                <td>{{ sample.received_date|date:"Y-m-d" }}</td>
+                <td>{{ sample.status }}</td>
+                
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% empty %}
+    <p class="text-center">No samples found.</p>
+  {% endfor %}
+</div>
 

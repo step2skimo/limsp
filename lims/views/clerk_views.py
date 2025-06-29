@@ -53,8 +53,14 @@ def view_client_samples(request, client_id):
 
 @login_required
 def sample_list(request):
-    samples = Sample.objects.select_related("client").order_by("-received_date")
+    samples = (
+        Sample.objects
+        .exclude(sample_code__startswith="QC-")
+        .select_related("client")
+        .order_by("client__client_id", "-received_date")
+    )
     return render(request, "lims/sample_list.html", {"samples": samples})
+
 
 @login_required
 def search_sample_by_code(request):

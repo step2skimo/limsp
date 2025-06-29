@@ -72,6 +72,11 @@
     .center {
       text-align: center;
     }
+    .final-block {
+      margin-top: 30px;
+      text-align: center;
+      font-size: 9px;
+    }
   </style>
 </head>
 <body>
@@ -97,7 +102,6 @@
       <tr>
         <td><strong>PHONE NO:</strong> {{ client.phone }}</td>
         <td><strong>ENVIRONMENTAL DATA:</strong> {{ samples.0.environment }}</td>
-
       </tr>
       <tr>
         <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|date:"jS F Y" }}</td>
@@ -143,13 +147,18 @@
       </tbody>
     </table>
 
+    <!-- dynamic summary block -->
+    <div class="footnote">
+      <strong>Summary interpretation:</strong> {{ summary_text }}
+    </div>
+
     <div class="center footnote">
       JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial, and various
       chemical analysis to improve the quality and healthiness of foods and feeds.
     </div>
 
     <div class="methods">
-      <strong>ANALYSIS METHOD:</strong><br>
+      <strong>ANALYSIS METHODS:</strong><br>
       {% for param in parameters %}
         {{ param.name|upper }}: {{ param.method }}<br>
       {% endfor %}
@@ -168,8 +177,9 @@
       </div>
     </div>
 
-    <div class="center" style="margin-top:5px;">
-      - END OF REPORT -
+    <div class="final-block">
+      - END OF REPORT - <br>
+      Page <span class="pageNumber"></span> of <span class="totalPages"></span>
     </div>
   </div>
 </body>
