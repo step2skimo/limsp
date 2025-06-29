@@ -1,4 +1,4 @@
-# Use debian-slim with newer xmlsec/libxml2
+# Use modern Bookworm to get modern libxml2/libxmlsec1
 FROM python:3.10-bookworm
 
 RUN apt-get update && apt-get install -y \
