@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libxml2 \
     pkg-config \
     libssl-dev \
+    libssl-dev \
     gcc
 
 WORKDIR /app
