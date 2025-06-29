@@ -10,12 +10,12 @@ services:
         value: lims_project.settings.base
       - key: SECRET_KEY
         generateValue: true
-      - key: ALLOWED_HOSTS
-        value: jaagee-lab.onrender.com
       - key: DEBUG
         value: "False"
       - key: GEMINI_API_KEY
         value: your_api_key_here
+      - key: ALLOWED_HOSTS
+        value: .onrender.com,localhost,127.0.0.1
     ports:
       - port: 8000
         protocol: http
