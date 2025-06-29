@@ -24,9 +24,6 @@ RUN pip install --no-binary=:all: lxml xmlsec
 # Install the rest of your dependencies
 RUN pip install -r requirements.txt
 
-# collect static
-RUN python manage.py collectstatic --noinput
-
 EXPOSE 8000
 
 CMD ["gunicorn", "lims_project.wsgi:application", "--bind", "0.0.0.0:8000"]
