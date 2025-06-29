@@ -25,5 +25,9 @@ RUN pip install -r requirements.txt
 # Expose port 8000 so Render can detect it
 EXPOSE 8000
 
-# Start gunicorn
-CMD ["gunicorn", "lims_project.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+# comment out Gunicorn
+# CMD ["gunicorn", "lims_project.wsgi:application", "--bind", "0.0.0.0:8000"]
+
+# use Django dev server
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
