@@ -363,46 +363,45 @@
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // Form enhancement
-        document.getElementById('tokenForm').addEventListener('submit', function(e) {
-            const submitBtn = this.querySelector('.access-btn');
-            const originalText = submitBtn.innerHTML;
-            
-            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Authenticating...';
-            submitBtn.disabled = true;
-            
-            // Re-enable after 3 seconds (for demo purposes)
-            setTimeout(() => {
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 3000);
-        });
 
-       <script>
-    document.querySelector('input[name="token"]').addEventListener('input', function(e) {
-        let raw = e.target.value.toUpperCase();
-        
-        // Allow only alphanumerics and dashes
-        raw = raw.replace(/[^A-Z0-9\-]/g, '');
-        
-        e.target.value = raw;
-    });
+<script>
+  // Form enhancement
+  document.getElementById('tokenForm').addEventListener('submit', function(e) {
+    const submitBtn = this.querySelector('.access-btn');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Authenticating...';
+    submitBtn.disabled = true;
+    
+    // Re-enable after 3 seconds (for demo purposes)
+    setTimeout(() => {
+      submitBtn.innerHTML = originalText;
+      submitBtn.disabled = false;
+    }, 3000);
+  });
+
+  // Token input sanitization
+  document.querySelector('input[name="token"]').addEventListener('input', function(e) {
+    let raw = e.target.value.toUpperCase();
+    
+    // Allow only alphanumerics and dashes
+    raw = raw.replace(/[^A-Z0-9\-]/g, '');
+    
+    e.target.value = raw;
+  });
+
+  // Add subtle animations on load
+  window.addEventListener('load', function() {
+    const card = document.querySelector('.portal-card');
+    if(card){
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      
+      setTimeout(() => {
+        card.style.transition = 'all 0.6s ease';
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 100);
+    }
+  });
 </script>
-
-
-        // Add subtle animations on load
-        window.addEventListener('load', function() {
-            const card = document.querySelector('.portal-card');
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            
-            setTimeout(() => {
-                card.style.transition = 'all 0.6s ease';
-                card.style.opacity = '1';
-                card.style.transform = 'translateY(0)';
-            }, 100);
-        });
-    </script>
-</body>
-</html>

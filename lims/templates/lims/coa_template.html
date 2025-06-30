@@ -2,12 +2,12 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8">
   <title>Certificate of Analysis</title>
   <style>
     @page {
       size: A4;
-      margin: 5cm 2cm 2cm 2cm; /* margin matches the content area */
+      margin: 0;
       background: url('{{ letterhead_url }}') no-repeat center top;
       background-size: cover;
 
@@ -34,7 +34,7 @@
     }
 
     .content {
-      margin: 0; /* content margins handled by @page */
+      margin: 5cm 2cm 2cm 2cm; /* pushes below letterhead banner */
     }
 
     table {
@@ -42,8 +42,7 @@
       border-collapse: collapse;
     }
 
-    table th,
-    table td {
+    table th, table td {
       border: 1px solid #333;
       padding: 4px;
       text-align: center;
@@ -95,11 +94,11 @@
       text-align: center;
     }
 
-    /* The final block just shows the text, no page break */
     .final-block {
       margin-top: 30px;
       text-align: center;
       font-size: 9px;
+      /* Removed "- END OF REPORT -" text from here, since footer handles it */
     }
   </style>
 </head>
@@ -200,8 +199,9 @@
       </div>
     </div>
 
+    <!-- Keep this empty or remove - footer shows end of report -->
     <div class="final-block">
-      - END OF REPORT -
+      <!-- Intentionally left blank -->
     </div>
 
   </div>
