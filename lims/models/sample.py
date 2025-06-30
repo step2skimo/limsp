@@ -21,6 +21,8 @@ class Sample(models.Model):
     received_date = models.DateField(auto_now_add=True)
    # verified_at = models.DateTimeField(null=True, blank=True)
     coa_released = models.BooleanField(default=False)
+    manager_comment = models.TextField(blank=True, null=True)
+
 
 def __str__(self):
     tag = " [QC]" if self.sample_type == "QC" else ""

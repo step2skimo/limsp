@@ -39,18 +39,12 @@
             color: white;
             display: inline-block;
         }
-        .status-completed {
-            background: #2ecc71;
-        }
-        .status-verified {
-            background: #1abc9c;
-        }
-        .meta {
-            margin-bottom: 20px;
-        }
-        .approve-btn {
-            margin-top: 30px;
-            background: #2980b9;
+        .status-completed { background: #2ecc71; }
+        .status-verified { background: #1abc9c; }
+        .status-assigned { background: #e67e22; }
+        .meta { margin-bottom: 20px; }
+        .approve-btn, .reject-btn {
+            margin-top: 20px;
             color: white;
             padding: 12px 30px;
             border: none;
@@ -58,101 +52,93 @@
             cursor: pointer;
             border-radius: 4px;
         }
-        .approve-btn:hover {
-            background: #2471a3;
-        }
+        .approve-btn { background: #27ae60; }
+        .approve-btn:hover { background: #219150; }
+        .reject-btn { background: #c0392b; margin-left: 10px; }
+        .reject-btn:hover { background: #a93226; }
         .note {
             font-size: 0.85em;
             color: #666;
+            margin-top: 10px;
+        }
+        textarea {
+            width: 100%;
+            margin-top: 10px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            font-family: inherit;
+            font-size: 0.9em;
+            border-radius: 4px;
+        }
+        .manager-comment {
+            background: #fff5f5;
+            border-left: 4px solid #e74c3c;
+            padding: 10px;
+            margin-top: 20px;
+            color: #c0392b;
         }
     </style>
 </head>
 <body>
 
-    <h2>📋 Review Test Results – Sample {{ sample.sample_code }}</h2>
+<h2>📋 Review Test Results – Sample {{ sample.sample_code }}</h2>
 
-    <div class="meta">
-        <p><strong>Client:</strong> {{ sample.client.name }} ({{ sample.client.organization }})</p>
-        <p>
-            <strong>Sample Type:</strong> {{ sample.sample_type }} &nbsp; | &nbsp;
-            <strong>Weight:</strong> {{ sample.weight }}g
-        </p>
-    </div>
+<div class="meta">
+    <p><strong>Client:</strong> {{ sample.client.name }} ({{ sample.client.organization }})</p>
+    <p>
+        <strong>Sample Type:</strong> {{ sample.sample_type }} &nbsp; | &nbsp;
+        <strong>Weight:</strong> {{ sample.weight }}g
+    </p>
+</div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Parameter</th>
-                <th>Result (value)</th>
-                <th>Source</th>
-                <th>Recorded By</th>
-                <th>Recorded At</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for test in tests %}
-            <tr>
-                <td>{{ test.parameter.name }}</td>
-                <td>
-                    {% if test.testresult %}
-                        {{ test.testresult.value|floatformat:2 }}
-                    {% else %}
-                        <em>Not entered</em>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if test.testresult %}
-                        {{ test.testresult.source|title }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>
-                    {% if test.testresult and test.testresult.recorded_by %}
-                        {{ test.testresult.recorded_by.username }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>
-                    {% if test.testresult %}
-                        {{ test.testresult.recorded_at|date:"Y-m-d H:i" }}
-                    {% else %}
-                        —
-                    {% endif %}
-                </td>
-                <td>
-                    <span class="status-pill status-{{ test.status }}">{{ test.status|title }}</span>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+{% if sample.manager_comment %}
+<div class="manager-comment">
+    <strong>Previous Manager Comment:</strong> {{ sample.manager_comment }}
+</div>
+{% endif %}
 
-    {% if sample.status == "results_verified" %}
-    <h3>📄 Certificate of Analysis</h3>
-    <p>You can download the COA for this sample or for all verified samples from this client.</p>
-    <ul>
-        <li>
-            <a href="{% url 'generate_coa' sample.id %}" target="_blank">
-                📥 COA for Sample {{ sample.sample_code }}
-            </a>
-        </li>
-        <li>
-            <a href="{% url 'generate_combined_coa' sample.client.id %}" target="_blank">
-                📚 Combined COA for {{ sample.client.name }}
-            </a>
-        </li>
-    </ul>
-    {% endif %}
+<table>
+    <thead>
+        <tr>
+            <th>Parameter</th>
+            <th>Result</th>
+            <th>Source</th>
+            <th>Recorded By</th>
+            <th>Recorded At</th>
+            <th>Status</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for test in tests %}
+        <tr>
+            <td>{{ test.parameter.name }}</td>
+            <td>
+                {% if test.testresult %}
+                    {{ test.testresult.value|floatformat:2 }}
+                {% else %}
+                    <em>Not entered</em>
+                {% endif %}
+            </td>
+            <td>{{ test.testresult.source|title if test.testresult else "—" }}</td>
+            <td>{{ test.testresult.recorded_by.username if test.testresult and test.testresult.recorded_by else "—" }}</td>
+            <td>{{ test.testresult.recorded_at|date:"Y-m-d H:i" if test.testresult else "—" }}</td>
+            <td>
+                <span class="status-pill status-{{ test.status }}">{{ test.status|title }}</span>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
 
-    <form method="post">
-        {% csrf_token %}
-        <button type="submit" class="approve-btn">✅ Approve & Lock All Results</button>
-    </form>
+<form method="post">
+    {% csrf_token %}
+    <button type="submit" name="action" value="approve" class="approve-btn">✅ Approve & Lock Results</button>
+    <button type="submit" name="action" value="reject" class="reject-btn">❌ Reject & Return to Analyst</button>
 
-    <p class="note">🔒 Once approved, results become read-only and eligible for COA generation.</p>
+    <textarea name="manager_comment" placeholder="If rejecting, explain the reason...">{{ sample.manager_comment }}</textarea>
+</form>
+
+<p class="note">🔒 Once approved, results become read-only and eligible for COA generation.</p>
 
 </body>
 </html>

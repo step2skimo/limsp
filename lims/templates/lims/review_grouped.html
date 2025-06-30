@@ -2,58 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Review Samples by Client</title>
+  <title>Sample Review Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; padding: 2em; background-color: #f4f4f4; }
-    h2 { color: #2c3e50; }
-    .client-section { margin-bottom: 2em; background: #fff; padding: 1em; border-radius: 6px; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    table { width: 100%; border-collapse: collapse; margin-top: 1em; }
-    th, td { padding: 10px; border: 1px solid #ddd; text-align: left; }
-    th { background-color: #eaeaea; }
-    .btn { text-decoration: none; padding: 6px 12px; background-color: #2c3e50; color: #fff; border-radius: 4px; }
-    .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.85em; }
-    .badge-green { background: #27ae60; color: white; }
-    .badge-red { background: #c0392b; color: white; }
+    body { 
+      font-family: Arial, sans-serif; 
+      padding: 2em; 
+      background: #f4f4f4; 
+    }
+    h2 { 
+      color: #2c3e50; 
+      margin-bottom: 1em; 
+    }
+    .client-section {
+      background: #fff;
+      padding: 1em;
+      margin-bottom: 2em;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1em;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th { 
+      background: #f0f0f0; 
+    }
+    .btn {
+      display: inline-block;
+      padding: 5px 10px;
+      margin-top: 5px;
+      background: #3498db;
+      color: white;
+      text-decoration: none;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .btn:hover { 
+      background: #2980b9; 
+    }
+    .status {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.8em;
+      color: white;
+    }
+    .approved { background: #27ae60; }
+    .in_progress { background: #f39c12; }
+    .rejected { background: #c0392b; }
   </style>
 </head>
 <body>
+  <h2>📝 Sample Review Panel Grouped by Client</h2>
+  <a href="{% url 'manager_dashboard' %}">⬅ Back to Manager Dashboard</a>
 
-  <h2>🧪 Samples Pending Review</h2>
-
-  {% for client, sample_list in grouped_samples.items %}
+  {% for client_id, samples in grouped_samples.items %}
     <div class="client-section">
-      <h3>👤 {{ client.name }} ({{ sample_list|length }} sample{{ sample_list|length|pluralize }})</h3>
+      <h3>👤 Client ID: {{ client_id }}</h3>
+
       <table>
         <thead>
           <tr>
             <th>Sample Code</th>
-            <th>Type</th>
-            <th>Total Tests</th>
-            <th>Verified</th>
-            <th>Pending</th>
-            <th>QC Pass</th>
-            <th>QC Fail</th>
+            <th>Sample Type</th>
+            <th>Nature</th>
+            <th>Status</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {% for sample in sample_list %}
-            <tr>
-              <td>{{ sample.sample_code }}</td>
-              <td>{{ sample.sample_type }}</td>
-              <td>{{ sample.review_summary.total }}</td>
-              <td>{{ sample.review_summary.verified }}</td>
-              <td>{{ sample.review_summary.pending }}</td>
-              <td><span class="badge badge-green">{{ sample.review_summary.qc_pass }}</span></td>
-              <td><span class="badge badge-red">{{ sample.review_summary.qc_fail }}</span></td>
-              <td><a class="btn" href="{% url 'result_review_view' sample.id %}">🔍 Review</a></td>
-            </tr>
+          {% for sample in samples %}
+          <tr>
+            <td>{{ sample.sample_code }}</td>
+            <td>{{ sample.sample_type }}</td>
+            <td>{{ sample.nature }}</td>
+            <td>
+              <span class="status {{ sample.status|lower }}">
+
+                {{ sample.get_status_display }}
+              </span>
+            </td>
+            <td>
+              <a href="{% url 'result_review_view' sample.id %}" class="btn">Review</a>
+            </td>
+          </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   {% empty %}
-    <p>No samples are currently awaiting verification.</p>
+    <p>No samples pending review.</p>
   {% endfor %}
 
 </body>

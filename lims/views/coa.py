@@ -29,7 +29,7 @@ from django.http import HttpResponse
 from django.conf import settings
 import datetime
 from django.shortcuts import redirect
-from lims.models import Sample
+from lims.models import Sample, SampleStatus
 from lims.utils.calculations import calculate_cho_and_me
 from lims.utils.coa_summary_ai import generate_dynamic_summary
 from django.shortcuts import render
@@ -47,6 +47,12 @@ from django.utils import timezone
 from weasyprint import HTML
 import datetime
 from django.templatetags.static import static
+from collections import defaultdict
+import logging
+
+logger = logging.getLogger(__name__)
+
+
 
 @login_required
 def generate_coa_pdf(request, client_id):
@@ -152,23 +158,34 @@ def generate_coa_pdf(request, client_id):
     return HttpResponse(pdf_file, content_type="application/pdf")
 
 
+
+
 @login_required
 def coa_dashboard(request):
+    # get ALL samples except QC samples
     samples = (
         Sample.objects
-        .exclude(sample_code__startswith="QC-")
+        .exclude(sample_type="QC")
         .select_related("client")
         .order_by("client__client_id")
     )
 
-    grouped = defaultdict(list)
+    # group them by client and check if they have approved samples
+    grouped = defaultdict(lambda: {"samples": [], "has_approved": False})
+
     for sample in samples:
-        grouped[sample.client.client_id].append(sample)
+        client_entry = grouped[sample.client]
+        client_entry["samples"].append(sample)
+        if sample.status == SampleStatus.APPROVED:
+            client_entry["has_approved"] = True
 
     context = {
-        "grouped": dict(grouped),   # ← convert to normal dict!
+        "grouped": dict(grouped),
     }
     return render(request, "lims/coa_dashboard.html", context)
+
+
+
 
 @login_required
 def release_client_coa(request, client_id):

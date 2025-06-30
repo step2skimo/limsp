@@ -127,25 +127,44 @@ def manager_dashboard(request):
 @login_required
 def result_review_view(request, sample_id):
     sample = get_object_or_404(Sample, id=sample_id)
-    tests = TestAssignment.objects.filter(sample=sample).select_related('parameter', 'testresult', 'qc_metrics')
+    tests = sample.testassignment_set.all().select_related('parameter', 'testresult', 'qc_metrics')
 
     if request.method == 'POST':
-        # Ensure all tests are complete
+        action = request.POST.get("action")
+
         if any(t.status != 'completed' for t in tests):
             messages.error(request, "❌ Not all tests are completed.")
             return redirect('review_panel_grouped_by_client')
 
-        # Final verification
-        for test in tests:
-            test.status = 'verified'
-            test.save(update_fields=['status'])
+        if action == "approve":
+            # approve flow
+            for test in tests:
+                test.status = 'verified'
+                test.save(update_fields=['status'])
 
-        sample.status = SampleStatus.APPROVED
-        sample.verified_at = timezone.now()
-        sample.save(update_fields=['status', 'verified_at'])
+            sample.status = SampleStatus.APPROVED
+            sample.verified_at = timezone.now()
+            sample.save(update_fields=['status', 'verified_at'])
 
-        messages.success(request, "✅ Sample verified and approved.")
-        return redirect('manager_dashboard')
+            messages.success(request, "✅ Sample verified and approved.")
+        
+        elif action == "reject":
+            comment = request.POST.get("manager_comment", "").strip()
+            if not comment:
+                messages.error(request, "❌ You must provide a reason for rejection.")
+                return redirect('result_review_view', sample_id=sample_id)
+
+            # send back to analyst
+            for test in tests:
+                test.status = 'assigned'
+                test.save(update_fields=['status'])
+            sample.status = SampleStatus.IN_PROGRESS
+            sample.manager_comment = comment
+            sample.save(update_fields=['status', 'manager_comment'])
+
+            messages.warning(request, "🚨 Sample sent back to analyst for corrections.")
+
+        return redirect('review_panel_grouped_by_client')
 
     return render(request, 'lims/review_results.html', {
         'sample': sample,
@@ -153,47 +172,29 @@ def result_review_view(request, sample_id):
     })
 
 
+
 @login_required
 def review_panel_grouped_by_client(request):
-    samples = Sample.objects.filter(
-        status=SampleStatus.IN_PROGRESS
-    ).prefetch_related(
-        Prefetch('testassignment_set', queryset=TestAssignment.objects.select_related('parameter', 'testresult', 'qc_metrics'))
-    ).select_related('client').order_by('client__name')
+    from collections import defaultdict
+
+    # get samples that are in progress
+    samples = (
+        Sample.objects
+        .filter(status=SampleStatus.IN_PROGRESS)
+        .select_related("client")
+        .prefetch_related(
+            Prefetch(
+                'testassignment_set',
+                queryset=TestAssignment.objects.select_related('parameter', 'testresult', 'qc_metrics')
+            )
+        )
+        .order_by('client__client_id')
+    )
 
     grouped = defaultdict(list)
 
     for sample in samples:
-        test_assignments = sample.testassignment_set.all()
-
-        if not test_assignments.exists():
-            continue  # skip samples with no tests
-
-        # Skip samples already verified
-        if sample.status == SampleStatus.APPROVED or sample.status == 'results_verified':
-            continue
-
-        # Make sure all tests are marked completed before showing for review
-        if any(t.status != 'completed' for t in test_assignments):
-            continue
-
-        total = test_assignments.count()
-        verified = sum(1 for t in test_assignments if t.status == 'verified')
-        pending = total - verified
-
-        controls = [t for t in test_assignments if t.is_control]
-        qc_pass = sum(1 for c in controls if getattr(c.qc_metrics, "status", None) == "pass")
-        qc_fail = sum(1 for c in controls if getattr(c.qc_metrics, "status", None) == "fail")
-
-        sample.review_summary = {
-            "total": total,
-            "verified": verified,
-            "pending": pending,
-            "qc_pass": qc_pass,
-            "qc_fail": qc_fail,
-        }
-
-        grouped[sample.client].append(sample)
+        grouped[sample.client.client_id].append(sample)
 
     return render(request, 'lims/review_grouped.html', {
         'grouped_samples': grouped

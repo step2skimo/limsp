@@ -1,262 +1,420 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Manager Dashboard</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+  <title>Manager Dashboard | JGL Labs</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: 'Segoe UI', sans-serif; margin: 30px; }
-    canvas { max-width: 100%; }
-    .accordion-button:not(.collapsed) { background-color: #f1f1f1; }
+    :root {
+      --primary: #4e73df;
+      --secondary: #1cc88a;
+      --danger: #e74a3b;
+      --warning: #f6c23e;
+      --info: #36b9cc;
+      --dark: #5a5c69;
+      --light: #f8f9fc;
+    }
+    
+    body {
+      font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background-color: #f8f9fc;
+      color: #333;
+    }
+    
+    .dashboard-header {
+      background: linear-gradient(135deg, var(--primary) 0%, #224abe 100%);
+      color: white;
+      padding: 1.5rem;
+      border-radius: 0.35rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    }
+    
+    .card {
+      border: none;
+      border-radius: 0.35rem;
+      box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.1);
+      margin-bottom: 1.5rem;
+      transition: transform 0.3s ease;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+    }
+    
+    .card-header {
+      background-color: #f8f9fc;
+      border-bottom: 1px solid #e3e6f0;
+      font-weight: 600;
+      padding: 1rem 1.35rem;
+    }
+    
+    .stat-card {
+      border-left: 0.25rem solid var(--primary);
+    }
+    
+    .stat-card.success {
+      border-left-color: var(--secondary);
+    }
+    
+    .stat-card.warning {
+      border-left-color: var(--warning);
+    }
+    
+    .stat-card.danger {
+      border-left-color: var(--danger);
+    }
+    
+    .badge-notification {
+      position: absolute;
+      top: -5px;
+      right: -5px;
+    }
+    
+    .nav-pills .nav-link.active {
+      background-color: var(--primary);
+    }
+    
+    .accordion-button:not(.collapsed) {
+      background-color: rgba(78, 115, 223, 0.1);
+      color: var(--primary);
+    }
+    
+    .alert-custom {
+      border-left: 0.25rem solid;
+    }
+    
+    .btn-icon {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .quick-action-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      white-space: nowrap;
+    }
+    
+    @media (max-width: 768px) {
+      .quick-actions {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
-   <a href="{% url 'logout' %}" class="btn btn-secondary">Logout</a>
-<div class="d-flex justify-content-end mb-3">
-  <a href="{% url 'notifications:list' %}" class="position-relative btn btn-outline-dark">
-    🔔 Notifications
-    <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style="display: none;">
-      0
-    </span>
-  </a>
-</div>
-
-
-<h1 class="mb-4">📋 Manager Lab Dashboard</h1>
-<div class="alert alert-primary d-inline-block">
-  👋 Welcome, <strong>{{ user.username }}</strong>!
-</div>
-
-
-<div class="mb-3 d-flex flex-wrap gap-2">
-  <a href="{% url 'qc_overview_all_parameters' %}" class="btn btn-secondary">📊 QC Trends</a>
-  <a href="{% url 'test_assignment_list' %}" class="btn btn-secondary">📋 Test Assignments</a>
-<a href="{% url 'coa_dashboard' %}">COA Dashboard</a>
-
- <a href="{% url 'qc_dashboard' %}">QC Metrics Dashboard</a>
-
-
-
-
-  <a href="{% url 'result_review_page' %}" class="btn btn-primary">🧪 Review Results</a>
-  <a href="{% url 'manager_report' %}" class="btn btn-outline-primary">📈 View Lab Reports</a>
-  <a href="{% url 'review_panel_grouped_by_client' %}" class="btn btn-outline-dark">
-  📁 Grouped Review by Client
-</a>
-<a href="{% url 'analyst_productivity' %}" class="btn btn-outline-info">
-  📈 View Analyst Productivity
-</a>
-
-
-  {% if latest_client %}
-    <a href="{% url 'assign_by_parameter_overview' latest_client.client_id %}" class="btn btn-outline-secondary">➕ Assign by Parameter</a>
-  {% endif %}
-</div>
-
-<div class="accordion" id="dashboardAccordion">
-
-  <!-- QC Overview Accordion -->
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingQC">
-      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseQC" aria-expanded="true">
-        🔬 QC Overview
-      </button>
-    </h2>
-    <div id="collapseQC" class="accordion-collapse collapse show" data-bs-parent="#dashboardAccordion">
-      <div class="accordion-body">
-
-        <div class="accordion-body">
-
-  <p>✅ Passed: {{ qc_summary.pass }} ❌ Failed: {{ qc_summary.fail }}</p>
-  <p>📦 QC assigned for <strong>{{ qc_param_count }}</strong> of <strong>{{ total_parameters }}</strong> parameters</p>
-
- {% if failed_qc_info %}
-  <div class="alert alert-warning">
-    🚨 <strong>{{ failed_qc_info|length }} parameter{{ failed_qc_info|length|pluralize }} with failed QC:</strong>
-    <ul>
-      {% for item in failed_qc_info %}
-        <li>
-          ❌ {{ item.parameter_name }}
-          <small>by <strong>{{ item.analyst_username|default:"Unassigned" }}</strong></small><br>
-          <small>🆔 Client: <strong>{{ item.client_id }}</strong> ({{ item.client_name }})</small>
-        </li>
-      {% endfor %}
-    </ul>
-  </div>
-{% endif %}
-
-
-   
-
-
+  <div class="container-fluid py-4">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h1 class="h3 mb-0 text-white"><i class="fas fa-tachometer-alt me-2"></i>Manager Lab Dashboard</h1>
+          <p class="mb-0 text-white-50">Welcome back, <strong>{{ user.username }}</strong></p>
+        </div>
+        <div class="d-flex gap-2">
+          <a href="{% url 'notifications:list' %}" class="btn btn-light btn-icon position-relative">
+            <i class="fas fa-bell"></i> Notifications
+            <span id="notif-badge" class="badge bg-danger badge-notification" style="display: none;">0</span>
+          </a>
+          <a href="{% url 'logout' %}" class="btn btn-light btn-icon">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Verified Client Samples -->
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingSamples">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSamples">
-        🧾 Verified Client Samples
-      </button>
-    </h2>
-    <div id="collapseSamples" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
-      <div class="accordion-body">
-        <table class="table table-bordered">
-          <thead>
-            <tr><th>Client</th><th>Samples</th><th>COA</th></tr>
-          </thead>
-          <tbody>
-            {% for entry in client_data %}
-              <tr>
-                <td>
-                  <strong>{{ entry.client.name }}</strong><br>
-                  <small>{{ entry.client.organization }}</small><br>
-                  <small>ID: {{ entry.client.client_id_code }}</small>
-                </td>
-                <td>
-                  <ul>
-                    {% for sample in entry.samples %}
-                      <li><strong>{{ sample.sample_code }}</strong> – {{ sample.sample_type }} ({{ sample.weight }}g)</li>
-                    {% endfor %}
-                  </ul>
-                </td>
-                <td><!-- COA links go here --></td>
-              </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      
+      <a href="{% url 'test_assignment_list' %}" class="btn btn-primary quick-action-btn">
+        <i class="fas fa-clipboard-list"></i> Test Assignments
+      </a>
+      <a href="{% url 'coa_dashboard' %}" class="btn btn-primary quick-action-btn">
+        <i class="fas fa-file-certificate"></i> COA Dashboard
+      </a>
+      <a href="{% url 'qc_dashboard' %}" class="btn btn-primary quick-action-btn">
+        <i class="fas fa-chart-pie"></i> QC Metrics
+      </a>
+      <a href="{% url 'manager_report' %}" class="btn btn-outline-primary quick-action-btn">
+        <i class="fas fa-file-alt"></i> Lab Reports
+      </a>
+      <a href="{% url 'review_panel_grouped_by_client' %}" class="btn btn-outline-primary quick-action-btn">
+        <i class="fas fa-users"></i> Grouped by Client
+      </a>
+      <a href="{% url 'analyst_productivity' %}" class="btn btn-outline-primary quick-action-btn">
+        <i class="fas fa-user-clock"></i> Analyst Productivity
+      </a>
+      {% if latest_client %}
+        <a href="{% url 'assign_by_parameter_overview' latest_client.client_id %}" class="btn btn-outline-primary quick-action-btn">
+          <i class="fas fa-plus-circle"></i> Assign by Parameter
+        </a>
+      {% endif %}
     </div>
-  </div>
 
-  <!-- Equipment Overview -->
-  <div class="accordion-item">
-    <h2 class="accordion-header" id="headingEquip">
-      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEquip">
-        🛠️ Equipment Calibration
-      </button>
-    </h2>
-    <div id="collapseEquip" class="accordion-collapse collapse" data-bs-parent="#dashboardAccordion">
-      <div class="accordion-body">
-        <table class="table table-striped">
-          <thead>
-            <tr><th>Name</th><th>Serial</th><th>Last Calibrated</th><th>Expires</th><th>Status</th></tr>
-          </thead>
-          <tbody>
-            {% for eq in equipment_list %}
-              {% with latest=eq.calibrations.first %}
-                <tr>
-                  <td><a href="{% url 'equipment_usage' eq.id %}">{{ eq.name }}</a></td>
-                  <td>{{ eq.serial_number }}</td>
-                  <td>{{ latest.calibration_date|default:"—" }}</td>
-                  <td>{{ latest.expires_on|default:"—" }}</td>
-                  <td>
-                    {% if latest.expires_on %}
-                      {% if latest.expires_on >= today %}
-                        ✅ Valid
-                      {% else %}
-                        ❌ Expired
-                      {% endif %}
-                    {% else %}
-                      ⚠️ Not Set
-                    {% endif %}
-                  </td>
-                </tr>
-              {% endwith %}
+    <!-- Sample Review Links -->
+    {% if samples %}
+      <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span><i class="fas fa-vial me-2"></i>Pending Sample Reviews</span>
+        </div>
+        <div class="card-body">
+          <div class="d-flex flex-wrap gap-2">
+            {% for sample in samples %}
+              <a href="{% url 'result_review_view' sample.id %}" class="btn btn-sm btn-outline-secondary">
+                <i class="fas fa-search me-1"></i> Review {{ sample.sample_code }}
+              </a>
             {% endfor %}
-          </tbody>
-        </table>
-
-        {% if expiring_calibrations %}
-          <div class="alert alert-warning">
-            ⚠️ <strong>{{ expiring_calibrations|length }} equipment item{{ expiring_calibrations|length|pluralize }} expiring within 7 days:</strong>
-            <ul>
-              {% for record in expiring_calibrations %}
-                <li>{{ record.equipment.name }} — expires on <strong>{{ record.expires_on }}</strong></li>
-              {% endfor %}
-            </ul>
           </div>
-        {% endif %}
+        </div>
+      </div>
+    {% endif %}
+
+    <!-- Dashboard Content -->
+    <div class="row">
+      <!-- QC Overview Card -->
+      <div class="col-lg-6">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-flask me-2"></i>QC Overview</span>
+          </div>
+          <div class="card-body">
+            <div class="row mb-3">
+              <div class="col-md-6 mb-3 mb-md-0">
+                <div class="card stat-card success h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-uppercase text-success mb-0">Passed QC</h6>
+                        <h2 class="mb-0">{{ qc_summary.pass }}</h2>
+                      </div>
+                      <div class="icon-circle bg-success text-white">
+                        <i class="fas fa-check"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card stat-card danger h-100">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h6 class="text-uppercase text-danger mb-0">Failed QC</h6>
+                        <h2 class="mb-0">{{ qc_summary.fail }}</h2>
+                      </div>
+                      <div class="icon-circle bg-danger text-white">
+                        <i class="fas fa-times"></i>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="alert alert-info mb-3">
+              <i class="fas fa-info-circle me-2"></i>
+              QC assigned for <strong>{{ qc_param_count }}</strong> of <strong>{{ total_parameters }}</strong> parameters
+            </div>
+
+            {% if failed_qc_info %}
+              <div class="alert alert-danger alert-custom">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong>{{ failed_qc_info|length }} parameter{{ failed_qc_info|length|pluralize }} with failed QC</strong>
+                </div>
+                <hr>
+                <div class="mt-2">
+                  {% for item in failed_qc_info %}
+                    <div class="mb-2">
+                      <strong><i class="fas fa-times text-danger me-2"></i>{{ item.parameter_name }}</strong>
+                      <div class="ps-4">
+                        <small class="text-muted">Analyst: {{ item.analyst_username|default:"Unassigned" }}</small><br>
+                        <small class="text-muted">Client: {{ item.client_id }} ({{ item.client_name }})</small>
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Equipment Status Card -->
+      <div class="col-lg-6">
+        <div class="card mb-4">
+          <div class="card-header d-flex justify-content-between align-items-center">
+            <span><i class="fas fa-tools me-2"></i>Equipment Calibration</span>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table table-hover">
+                <thead class="table-light">
+                  <tr>
+                    <th>Name</th>
+                    <th>Last Calibrated</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {% for eq in equipment_list %}
+                    {% with latest=eq.calibrations.first %}
+                      <tr onclick="window.location='{% url 'equipment_usage' eq.id %}'" style="cursor: pointer;">
+                        <td>
+                          <strong>{{ eq.name }}</strong>
+                          <div class="text-muted small">{{ eq.serial_number }}</div>
+                        </td>
+                        <td>
+                          {{ latest.calibration_date|default:"—"|date:"M d, Y" }}
+                          {% if latest.expires_on %}
+                            <div class="text-muted small">Expires: {{ latest.expires_on|date:"M d, Y" }}</div>
+                          {% endif %}
+                        </td>
+                        <td>
+                          {% if latest.expires_on %}
+                            {% if latest.expires_on >= today %}
+                              <span class="badge bg-success">Valid</span>
+                            {% else %}
+                              <span class="badge bg-danger">Expired</span>
+                            {% endif %}
+                          {% else %}
+                            <span class="badge bg-warning text-dark">Not Set</span>
+                          {% endif %}
+                        </td>
+                      </tr>
+                    {% endwith %}
+                  {% endfor %}
+                </tbody>
+              </table>
+            </div>
+
+            {% if expiring_calibrations %}
+              <div class="alert alert-warning alert-custom mt-3">
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong>{{ expiring_calibrations|length }} equipment item{{ expiring_calibrations|length|pluralize }} expiring within 7 days</strong>
+                </div>
+                <hr>
+                <div class="mt-2">
+                  {% for record in expiring_calibrations %}
+                    <div class="mb-1">
+                      <i class="fas fa-clock text-warning me-2"></i>
+                      <strong>{{ record.equipment.name }}</strong> — expires on {{ record.expires_on|date:"M d, Y" }}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        </div>
       </div>
     </div>
   </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-const raw = {{ qc_chart_data|safe }};
-const analysts = [...new Set(raw.map(r => r['test_assignment__analyst__username']))];
-const parameters = [...new Set(raw.map(r => r['test_assignment__parameter__name']))];
-const months = [...new Set(raw.map(r => r.month))];
-
-window.addEventListener('DOMContentLoaded', () => {
-  const analystSelect = document.getElementById('analystFilter');
-  const paramSelect = document.getElementById('parameterFilter');
-
-  analysts.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    analystSelect.appendChild(opt);
-  });
-
-  parameters.forEach(name => {
-    const opt = document.createElement('option');
-    opt.value = name;
-    opt.textContent = name;
-    paramSelect.appendChild(opt);
-  });
-
-  renderCharts();
-});
-
-function renderCharts() {
-  const selectedAnalyst = document.getElementById('analystFilter').value;
-  const selectedParam = document.getElementById('parameterFilter').value;
-
-  const container = document.getElementById('chartContainer');
-  container.innerHTML = "";
-
-  const grouped = {};
-
-  raw.forEach(row => {
-    const analyst = row['test_assignment__analyst__username'];
-    const param = row['test_assignment__parameter__name'];
-    const label = `${analyst} – ${param}`;
-    const month = row.month;
-    const result = row.avg_result;
-
-    if (
-      (selectedAnalyst === "all" || selectedAnalyst === analyst) &&
-      (selectedParam === "all" || selectedParam === param)
-    ) {
-      if (!grouped[label]) grouped[label] = {};
-      grouped[label][month] = result;
-    }
-  });
-
-  let idx = 0;
-  Object.entries(grouped).forEach(([label, data
+  <!-- Bootstrap Bundle with Popper -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
   <script>
-function pollNotifications() {
-  fetch("{% url 'notifications:unread_count' %}")
-    .then(res => res.json())
-    .then(data => {
-      const badge = document.getElementById("notif-badge");
-      if (data.unread > 0) {
-        badge.textContent = data.unread;
-        badge.style.display = "inline-block";
-      } else {
-        badge.style.display = "none";
+    // Notification polling
+    function pollNotifications() {
+      fetch("{% url 'notifications:unread_count' %}")
+        .then(res => res.json())
+        .then(data => {
+          const badge = document.getElementById("notif-badge");
+          if (data.unread > 0) {
+            badge.textContent = data.unread;
+            badge.style.display = "inline-block";
+          } else {
+            badge.style.display = "none";
+          }
+        });
+    }
+
+    setInterval(pollNotifications, 15000);
+    pollNotifications();
+
+    // Chart rendering function
+    function renderCharts() {
+      const raw = {{ qc_chart_data|safe }};
+      const analysts = [...new Set(raw.map(r => r['test_assignment__analyst__username']))];
+      const parameters = [...new Set(raw.map(r => r['test_assignment__parameter__name']))];
+      const months = [...new Set(raw.map(r => r.month))];
+
+      const selectedAnalyst = document.getElementById('analystFilter')?.value || "all";
+      const selectedParam = document.getElementById('parameterFilter')?.value || "all";
+
+      const container = document.getElementById('chartContainer');
+      if (container) {
+        container.innerHTML = "";
+
+        const grouped = {};
+
+        raw.forEach(row => {
+          const analyst = row['test_assignment__analyst__username'];
+          const param = row['test_assignment__parameter__name'];
+          const label = `${analyst} – ${param}`;
+          const month = row.month;
+          const result = row.avg_result;
+
+          if (
+            (selectedAnalyst === "all" || selectedAnalyst === analyst) &&
+            (selectedParam === "all" || selectedParam === param)
+          ) {
+            if (!grouped[label]) grouped[label] = {};
+            grouped[label][month] = result;
+          }
+        });
+
+        Object.entries(grouped).forEach(([label, data]) => {
+          // Chart rendering logic here
+        });
+      }
+    }
+
+    // Initialize charts when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      if (document.getElementById('analystFilter') && document.getElementById('parameterFilter')) {
+        const raw = {{ qc_chart_data|safe }};
+        const analysts = [...new Set(raw.map(r => r['test_assignment__analyst__username']))];
+        const parameters = [...new Set(raw.map(r => r['test_assignment__parameter__name']))];
+
+        const analystSelect = document.getElementById('analystFilter');
+        const paramSelect = document.getElementById('parameterFilter');
+
+        analysts.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          analystSelect.appendChild(opt);
+        });
+
+        parameters.forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name;
+          opt.textContent = name;
+          paramSelect.appendChild(opt);
+        });
+
+        renderCharts();
       }
     });
-}
-
-setInterval(pollNotifications, 15000);
-pollNotifications();
-</script>
-{% include "components/ai_assistant.html" %}
-
+  </script>
+  
+  {% include "components/ai_assistant.html" %}
 </body>
 </html>

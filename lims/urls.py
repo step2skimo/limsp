@@ -57,7 +57,14 @@ urlpatterns = [
     path("manager/reports/excel/", export_report_excel, name="export_report_excel"),
     path("coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa_pdf"),
 
+    path('coa_dashboard/', views.coa_dashboard, name='coa_dashboard'),
+    path('preview_coa/<str:client_id>/', views.preview_coa, name='preview_coa'),
+    path('generate_coa/<str:client_id>/', views.generate_coa_pdf, name='generate_coa'),
+    path('release_coa/<int:client_id>/', views.release_client_coa, name='release_client_coa'),
 
+    # Manager review
+    path('manager/results/review/<int:sample_id>/', views.result_review_view, name='result_review_view'),
+    path('manager/results/review_panel/', views.review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
    
 
 
@@ -71,10 +78,8 @@ urlpatterns = [
 
     path('receipt/download/<int:client_id>/', views.intake_pdf_download, name='intake_receipt_pdf'),
     path('analyst/result/<int:assignment_id>/submit/', views.enter_result_view, name='enter_result'),
-    path("manager/results/review/<int:sample_id>/", result_review_view, name="result_review"),
+   
 
-    path('manager/results/review/', views.result_review_view, name='result_review_page'),
-     
     path("api/sample_status/", views.sample_status_json, name="sample_status_json"),
     path("api/autocomplete_samples/", views.autocomplete_sample_codes, name="autocomplete_sample_codes"),
    

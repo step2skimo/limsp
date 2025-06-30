@@ -1,48 +1,287 @@
-<div class="mb-4">
-  <label for="parameter-select" class="font-semibold">Select Parameter:</label>
-  <select id="parameter-select" class="border rounded px-2 py-1"></select>
-  <button id="download-btn" class="bg-green-600 text-white px-4 py-2 rounded ml-2">Download Chart</button>
+<div class="qc-metrics-container">
+  <div class="qc-control-panel">
+    <div class="qc-control-group">
+      <label for="parameter-select" class="qc-control-label">
+        <i class="fas fa-filter"></i> Select Parameter
+      </label>
+      <div class="qc-select-wrapper">
+        <select id="parameter-select" class="qc-select">
+          <option value="" disabled selected>Loading parameters...</option>
+        </select>
+        <div class="qc-select-arrow">
+          <i class="fas fa-chevron-down"></i>
+        </div>
+      </div>
+    </div>
+    
+    <button id="download-btn" class="qc-download-btn">
+      <i class="fas fa-download"></i> Export Chart
+    </button>
+    
+    <div class="qc-legend">
+      <div class="qc-legend-item">
+        <span class="qc-legend-color" style="background-color: #16a34a;"></span>
+        <span>Passed QC</span>
+      </div>
+      <div class="qc-legend-item">
+        <span class="qc-legend-color" style="background-color: #dc2626;"></span>
+        <span>Failed QC</span>
+      </div>
+      <div class="qc-legend-item">
+        <span class="qc-legend-color" style="background-color: #f97316; border: 1px dashed #f97316;"></span>
+        <span>Acceptable Limits</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="qc-chart-container">
+    <div id="qc-chart" class="qc-chart"></div>
+    <div class="qc-loading-overlay" id="loading-overlay">
+      <div class="qc-loading-spinner"></div>
+      <div class="qc-loading-text">Updating QC Data...</div>
+    </div>
+  </div>
 </div>
 
-<div id="qc-chart" style="height:600px;"></div>
+<style>
+  .qc-metrics-container {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background: #ffffff;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    padding: 20px;
+    margin-bottom: 30px;
+  }
+
+  .qc-control-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #eaeaea;
+  }
+
+  .qc-control-group {
+    position: relative;
+    min-width: 250px;
+  }
+
+  .qc-control-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: #4b5563;
+    margin-bottom: 6px;
+  }
+
+  .qc-select-wrapper {
+    position: relative;
+  }
+
+  .qc-select {
+    width: 100%;
+    padding: 10px 15px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    background-color: #ffffff;
+    font-size: 14px;
+    color: #374151;
+    appearance: none;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+
+  .qc-select:focus {
+    outline: none;
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+  }
+
+  .qc-select-arrow {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    color: #6b7280;
+  }
+
+  .qc-download-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: #4f46e5;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .qc-download-btn:hover {
+    background-color: #4338ca;
+  }
+
+  .qc-download-btn:active {
+    background-color: #3730a3;
+  }
+
+  .qc-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin-left: auto;
+  }
+
+  .qc-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #4b5563;
+  }
+
+  .qc-legend-color {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+  }
+
+  .qc-chart-container {
+    position: relative;
+    height: 600px;
+    border-radius: 8px;
+    overflow: hidden;
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+  }
+
+  .qc-chart {
+    width: 100%;
+    height: 100%;
+  }
+
+  .qc-loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 10;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .qc-loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e5e7eb;
+    border-top-color: #4f46e5;
+    border-radius: 50%;
+    animation: qc-spin 1s linear infinite;
+    margin-bottom: 10px;
+  }
+
+  .qc-loading-text {
+    font-size: 14px;
+    color: #4b5563;
+    font-weight: 500;
+  }
+
+  @keyframes qc-spin {
+    to { transform: rotate(360deg); }
+  }
+
+  @media (max-width: 768px) {
+    .qc-control-panel {
+      flex-direction: column;
+      align-items: stretch;
+    }
+    
+    .qc-legend {
+      margin-left: 0;
+      justify-content: flex-start;
+    }
+    
+    .qc-control-group {
+      min-width: 100%;
+    }
+  }
+</style>
 
 <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
 <script>
   let fullData = [];
   let updateInterval;
+  let currentChart = null;
+
+  function showLoading() {
+    document.getElementById('loading-overlay').style.opacity = '1';
+    document.getElementById('loading-overlay').style.pointerEvents = 'auto';
+  }
+
+  function hideLoading() {
+    document.getElementById('loading-overlay').style.opacity = '0';
+    document.getElementById('loading-overlay').style.pointerEvents = 'none';
+  }
 
   function fetchDataAndRender(initial = false) {
+    showLoading();
+    
     fetch("{% url 'qc_metrics_chart_data' %}")
       .then(response => response.json())
       .then(data => {
         fullData = data;
-        const uniqueParams = [...new Set(data.map(q => q.parameter))];
+        const uniqueParams = [...new Set(data.map(q => q.parameter))].sort();
 
         if (initial) {
-          // populate dropdown
           const paramSelect = document.getElementById("parameter-select");
-          paramSelect.innerHTML = "";
+          paramSelect.innerHTML = '';
+          
           uniqueParams.forEach(p => {
             const opt = document.createElement("option");
             opt.value = p;
-            opt.text = p;
-            paramSelect.add(opt);
+            opt.textContent = p;
+            paramSelect.appendChild(opt);
           });
 
           paramSelect.addEventListener("change", e => {
             renderChart(e.target.value);
           });
         }
+        
         const selectedParam = document.getElementById("parameter-select").value || uniqueParams[0];
         renderChart(selectedParam);
       })
-      .catch(error => console.error("Fetch error:", error));
+      .catch(error => {
+        console.error("Fetch error:", error);
+        hideLoading();
+      });
   }
 
   function renderChart(parameter) {
+    showLoading();
+    
     const filtered = fullData.filter(q => q.parameter === parameter);
+    if (filtered.length === 0) {
+      hideLoading();
+      return;
+    }
 
-    // group by analyst
+    // Group by analyst
     const groupedByAnalyst = {};
     filtered.forEach(q => {
       const analyst = q.analyst || "Unknown";
@@ -57,67 +296,172 @@
         x: group.map(q => q.created_at),
         y: group.map(q => q.measured_value),
         mode: 'markers+lines',
-        name: `Analyst: ${analyst}`,
+        name: `${analyst}`,
         marker: {
           color: group.map(q => q.status === 'pass' ? '#16a34a' : '#dc2626'),
-          size: 12
+          size: 10,
+          line: {
+            width: 1,
+            color: '#ffffff'
+          }
+        },
+        line: {
+          color: '#9ca3af',
+          width: 1,
+          dash: 'dot'
         },
         text: group.map(q => `
-          Sample: ${q.sample}<br>
-          Status: ${q.status}<br>
-          Analyst: ${q.analyst}<br>
-          Measured: ${q.measured_value}
+          <b>Sample:</b> ${q.sample}<br>
+          <b>Status:</b> ${q.status === 'pass' ? '✅ Passed' : '❌ Failed'}<br>
+          <b>Analyst:</b> ${q.analyst || 'Unknown'}<br>
+          <b>Measured:</b> ${q.measured_value}<br>
+          <b>Date:</b> ${new Date(q.created_at).toLocaleString()}
         `),
-        hoverinfo: 'text+y'
+        hoverinfo: 'text',
+        hoverlabel: {
+          bgcolor: '#ffffff',
+          bordercolor: '#d1d5db',
+          font: {
+            family: 'Segoe UI, Roboto, sans-serif',
+            size: 12
+          }
+        }
       };
       traces.push(trace);
     });
 
-    // acceptable limits
+    // Acceptable limits
     const minLine = {
       x: filtered.map(q => q.created_at),
       y: filtered.map(q => q.min_acceptable),
       mode: 'lines',
-      line: { color: '#f97316', dash: 'dot' },
-      name: 'Min Acceptable'
+      line: { 
+        color: '#f97316', 
+        dash: 'dash',
+        width: 2
+      },
+      name: 'Min Acceptable',
+      hoverinfo: 'none'
     };
+    
     const maxLine = {
       x: filtered.map(q => q.created_at),
       y: filtered.map(q => q.max_acceptable),
       mode: 'lines',
-      line: { color: '#f97316', dash: 'dot' },
-      name: 'Max Acceptable'
+      line: { 
+        color: '#f97316', 
+        dash: 'dash',
+        width: 2
+      },
+      name: 'Max Acceptable',
+      hoverinfo: 'none'
     };
 
-    traces.push(minLine);
-    traces.push(maxLine);
+    traces.push(minLine, maxLine);
 
     const layout = {
-      title: `QC Results for ${parameter}`,
-      xaxis: { title: 'Date', type: 'date' },
-      yaxis: { title: 'Measured Value' },
+      title: {
+        text: `<b>QC Results for ${parameter}</b>`,
+        font: {
+          family: 'Segoe UI, Roboto, sans-serif',
+          size: 18,
+          color: '#111827'
+        },
+        xref: 'paper',
+        x: 0.05,
+        y: 0.95
+      },
+      xaxis: { 
+        title: 'Date',
+        type: 'date',
+        gridcolor: '#e5e7eb',
+        zerolinecolor: '#e5e7eb',
+        showline: true,
+        linecolor: '#d1d5db'
+      },
+      yaxis: { 
+        title: 'Measured Value',
+        gridcolor: '#e5e7eb',
+        zerolinecolor: '#e5e7eb',
+        showline: true,
+        linecolor: '#d1d5db'
+      },
       hovermode: 'closest',
-      legend: { orientation: 'h', x: 0, y: -0.2 },
-      margin: { b: 120 }
+      legend: { 
+        orientation: 'h',
+        y: -0.2,
+        font: {
+          family: 'Segoe UI, Roboto, sans-serif',
+          size: 12
+        }
+      },
+      margin: { 
+        l: 60,
+        r: 30,
+        b: 80,
+        t: 80,
+        pad: 10
+      },
+      plot_bgcolor: '#ffffff',
+      paper_bgcolor: '#ffffff',
+      font: {
+        family: 'Segoe UI, Roboto, sans-serif'
+      }
     };
 
-    Plotly.newPlot('qc-chart', traces, layout, {responsive: true});
+    const config = {
+      responsive: true,
+      displayModeBar: true,
+      displaylogo: false,
+      modeBarButtonsToRemove: ['toImage', 'sendDataToCloud'],
+      modeBarButtonsToAdd: [{
+        name: 'Download PNG',
+        icon: Plotly.Icons.camera,
+        click: function(gd) {
+          Plotly.downloadImage(gd, {
+            format: 'png',
+            height: 600,
+            width: 1000,
+            filename: `qc_metrics_${parameter.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`
+          });
+        }
+      }]
+    };
+
+    if (currentChart) {
+      Plotly.react('qc-chart', traces, layout, config)
+        .then(() => hideLoading());
+    } else {
+      Plotly.newPlot('qc-chart', traces, layout, config)
+        .then(() => hideLoading());
+    }
   }
 
   document.addEventListener("DOMContentLoaded", function() {
     document.getElementById("download-btn").addEventListener("click", () => {
+      const paramSelect = document.getElementById("parameter-select");
+      const parameter = paramSelect.value || paramSelect.options[0]?.value;
+      const filename = `qc_metrics_${parameter.replace(/[^a-z0-9]/gi, '_').toLowerCase()}`;
+      
       Plotly.downloadImage('qc-chart', {
         format: 'png',
         height: 600,
         width: 1000,
-        filename: 'qc_metrics_dashboard'
+        filename: filename
       });
     });
+
+    // Start initial load
+    fetchDataAndRender(true);
+    
+    // Set up periodic refresh
+    updateInterval = setInterval(() => {
+      fetchDataAndRender();
+    }, 30000); // Refresh every 30 seconds
   });
 
-  // start
-  fetchDataAndRender(true);
-  updateInterval = setInterval(() => {
-    fetchDataAndRender();
-  }, 10000);
+  // Clean up interval when page is unloaded
+  window.addEventListener('beforeunload', () => {
+    clearInterval(updateInterval);
+  });
 </script>
