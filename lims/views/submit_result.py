@@ -51,7 +51,7 @@ def enter_result(request, assignment_id):
             result.recorded_at = result.recorded_at or timezone.now()
             result.save()
 
-            # 🔁 Derived calculations
+            # Derived calculations
             results = TestResult.objects.filter(test_assignment__sample=sample)
             result_dict = {
                 r.test_assignment.parameter.name: float(r.value)
@@ -63,13 +63,13 @@ def enter_result(request, assignment_id):
             if me is not None:
                 _inject_derived_result("ME", me, sample)
 
-            # 🔬 Handle QC metrics if applicable
+            # QC handling
             if test_assignment.is_control and qc_form:
                 qc_metrics = qc_form.save(commit=False)
                 qc_metrics.test_assignment = test_assignment
                 qc_metrics.save()
 
-                # ✅ Mark QC test assignment as completed
+                # mark QC assignment as completed
                 test_assignment.status = "completed"
                 test_assignment.save(update_fields=["status"])
 
@@ -81,7 +81,18 @@ def enter_result(request, assignment_id):
                 else:
                     messages.info(request, f"ℹ️ QC status undetermined for {parameter.name}")
 
-            # 🔔 Notify managers
+            # mark non-QC assignment as completed
+            if not test_assignment.is_control:
+                test_assignment.status = "completed"
+                test_assignment.save(update_fields=["status"])
+
+            # ✅ NEW: mark sample SUBMITTED if all assignments are completed
+            all_assignments = sample.testassignment_set.all()
+            if all(a.status == "completed" for a in all_assignments):
+                sample.status = SampleStatus.UNDER_REVIEW
+                sample.save(update_fields=["status"])
+
+            # Notify managers
             analyst_name = request.user.get_full_name()
             client_id = getattr(sample.client, 'client_id', '—')
             param_name = parameter.name

@@ -2,76 +2,100 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
   <title>Certificate of Analysis</title>
   <style>
     @page {
       size: A4;
-      margin: 0;
+      margin: 5cm 2cm 2cm 2cm; /* margin matches the content area */
       background: url('{{ letterhead_url }}') no-repeat center top;
       background-size: cover;
 
       @bottom-center {
         content: "Page " counter(page) " of " counter(pages);
         font-size: 9px;
+        margin-bottom: 5mm;
       }
     }
+
+    @page :last {
+      @bottom-center {
+        content: "- END OF REPORT - | Page " counter(page) " of " counter(pages);
+        font-size: 9px;
+        margin-bottom: 5mm;
+      }
+    }
+
     body {
       margin: 0;
       padding: 0;
       font-family: Arial, sans-serif;
       font-size: 10px;
     }
+
     .content {
-      margin: 5cm 2cm 2cm 2cm; /* pushes below letterhead banner */
+      margin: 0; /* content margins handled by @page */
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
     }
-    table th, table td {
+
+    table th,
+    table td {
       border: 1px solid #333;
       padding: 4px;
       text-align: center;
       font-size: 10px;
     }
+
     .metadata-table {
       font-size: 10px;
       border: 1px solid #333;
       border-collapse: collapse;
       margin-bottom: 2px;
     }
+
     .metadata-table td {
       border: 1px solid #333;
       padding: 4px;
     }
+
     h2 {
       text-align: center;
       margin: 10px 0;
       font-size: 14px;
       text-decoration: underline;
     }
+
     .footnote {
       font-size: 9px;
       font-style: italic;
       margin-top: 4px;
     }
+
     .methods {
       font-size: 9px;
       margin-top: 10px;
     }
+
     .signatures {
       display: flex;
       justify-content: space-between;
       margin-top: 30px;
       font-size: 10px;
     }
+
     .signatures div {
       width: 45%;
     }
+
     .center {
       text-align: center;
     }
+
+    /* The final block just shows the text, no page break */
     .final-block {
       margin-top: 30px;
       text-align: center;
@@ -147,7 +171,6 @@
       </tbody>
     </table>
 
-    <!-- dynamic summary block -->
     <div class="footnote">
       <strong>Summary interpretation:</strong> {{ summary_text }}
     </div>
@@ -178,9 +201,9 @@
     </div>
 
     <div class="final-block">
-      - END OF REPORT - <br>
-      Page <span class="pageNumber"></span> of <span class="totalPages"></span>
+      - END OF REPORT -
     </div>
+
   </div>
 </body>
 </html>

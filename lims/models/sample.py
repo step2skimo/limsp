@@ -19,7 +19,7 @@ class Sample(models.Model):
     humidity = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)
     status = models.CharField(max_length=20, choices=SampleStatus.choices, default=SampleStatus.RECEIVED)
     received_date = models.DateField(auto_now_add=True)
-   # verified_at = models.DateTimeField(null=True, blank=True)
+    verified_at = models.DateTimeField(null=True, blank=True)
     coa_released = models.BooleanField(default=False)
     manager_comment = models.TextField(blank=True, null=True)
 

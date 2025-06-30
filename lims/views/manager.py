@@ -27,7 +27,8 @@ from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Q, Avg
 from django.db.models.functions import TruncMonth
 from lims.models import SampleStatus
-
+from collections import defaultdict
+from django.contrib import messages
 
 @login_required
 def manager_dashboard(request):
@@ -130,14 +131,43 @@ def result_review_view(request, sample_id):
     tests = sample.testassignment_set.all().select_related('parameter', 'testresult', 'qc_metrics')
 
     if request.method == 'POST':
+        # check if parameter-level action was triggered
+        param_action = request.POST.get("param_action")
+        testassignment_id = request.POST.get("testassignment_id")
+
+        if param_action and testassignment_id:
+            try:
+                test = TestAssignment.objects.get(id=testassignment_id, sample=sample)
+            except TestAssignment.DoesNotExist:
+                messages.error(request, "❌ Invalid parameter selected.")
+                return redirect('result_review_view', sample_id=sample_id)
+
+            comment = request.POST.get("parameter_comment", "").strip()
+
+            if param_action == "approve":
+                test.status = 'verified'
+                test.save(update_fields=['status'])
+                messages.success(request, f"✅ Parameter {test.parameter.name} approved.")
+            elif param_action == "reject":
+                test.status = 'assigned'
+                test.manager_comment = comment
+                test.save(update_fields=['status', 'manager_comment'])
+                messages.warning(
+                    request,
+                    f"🚨 Parameter {test.parameter.name} rejected and sent back to analyst."
+                )
+            else:
+                messages.error(request, "❌ Invalid action.")
+            return redirect('result_review_view', sample_id=sample_id)
+
+        # otherwise process the sample-level buttons
         action = request.POST.get("action")
 
-        if any(t.status != 'completed' for t in tests):
-            messages.error(request, "❌ Not all tests are completed.")
+        if any(t.status != 'completed' and t.status != 'verified' for t in tests):
+            messages.error(request, "❌ Not all tests are completed or verified.")
             return redirect('review_panel_grouped_by_client')
 
         if action == "approve":
-            # approve flow
             for test in tests:
                 test.status = 'verified'
                 test.save(update_fields=['status'])
@@ -154,7 +184,7 @@ def result_review_view(request, sample_id):
                 messages.error(request, "❌ You must provide a reason for rejection.")
                 return redirect('result_review_view', sample_id=sample_id)
 
-            # send back to analyst
+            # send all back to analyst
             for test in tests:
                 test.status = 'assigned'
                 test.save(update_fields=['status'])
@@ -163,7 +193,7 @@ def result_review_view(request, sample_id):
             sample.save(update_fields=['status', 'manager_comment'])
 
             messages.warning(request, "🚨 Sample sent back to analyst for corrections.")
-
+        
         return redirect('review_panel_grouped_by_client')
 
     return render(request, 'lims/review_results.html', {
@@ -173,14 +203,14 @@ def result_review_view(request, sample_id):
 
 
 
+
 @login_required
 def review_panel_grouped_by_client(request):
     from collections import defaultdict
 
-    # get samples that are in progress
     samples = (
         Sample.objects
-        .filter(status=SampleStatus.IN_PROGRESS)
+        .filter(status=SampleStatus.UNDER_REVIEW)
         .select_related("client")
         .prefetch_related(
             Prefetch(
@@ -194,8 +224,11 @@ def review_panel_grouped_by_client(request):
     grouped = defaultdict(list)
 
     for sample in samples:
+        print(f"✅ sample: {sample.sample_code}, client: {sample.client.client_id}")
         grouped[sample.client.client_id].append(sample)
 
+    print("✅ grouped keys:", grouped.keys())
+
     return render(request, 'lims/review_grouped.html', {
-        'grouped_samples': grouped
+        'grouped_samples': dict(grouped)
     })

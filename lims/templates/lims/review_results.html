@@ -40,21 +40,22 @@
             display: inline-block;
         }
         .status-completed { background: #2ecc71; }
-        .status-verified { background: #1abc9c; }
+        .status-approved { background: #27ae60; }
+        .status-rejected { background: #c0392b; }
         .status-assigned { background: #e67e22; }
         .meta { margin-bottom: 20px; }
         .approve-btn, .reject-btn {
-            margin-top: 20px;
+            margin-top: 4px;
             color: white;
-            padding: 12px 30px;
+            padding: 6px 14px;
             border: none;
-            font-size: 1em;
+            font-size: 0.85em;
             cursor: pointer;
             border-radius: 4px;
         }
         .approve-btn { background: #27ae60; }
         .approve-btn:hover { background: #219150; }
-        .reject-btn { background: #c0392b; margin-left: 10px; }
+        .reject-btn { background: #c0392b; }
         .reject-btn:hover { background: #a93226; }
         .note {
             font-size: 0.85em;
@@ -106,6 +107,7 @@
             <th>Recorded By</th>
             <th>Recorded At</th>
             <th>Status</th>
+            <th>Approve/Reject</th>
         </tr>
     </thead>
     <tbody>
@@ -119,11 +121,38 @@
                     <em>Not entered</em>
                 {% endif %}
             </td>
-            <td>{{ test.testresult.source|title if test.testresult else "—" }}</td>
-            <td>{{ test.testresult.recorded_by.username if test.testresult and test.testresult.recorded_by else "—" }}</td>
-            <td>{{ test.testresult.recorded_at|date:"Y-m-d H:i" if test.testresult else "—" }}</td>
+            <td>
+                {% if test.testresult %}
+                    {{ test.testresult.source|title }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>
+                {% if test.testresult and test.testresult.recorded_by %}
+                    {{ test.testresult.recorded_by.username }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
+            <td>
+                {% if test.testresult %}
+                    {{ test.testresult.recorded_at|date:"Y-m-d H:i" }}
+                {% else %}
+                    —
+                {% endif %}
+            </td>
             <td>
                 <span class="status-pill status-{{ test.status }}">{{ test.status|title }}</span>
+            </td>
+            <td>
+                <form method="post" style="display:flex; gap:4px; align-items:center;">
+                    {% csrf_token %}
+                    <input type="hidden" name="testassignment_id" value="{{ test.id }}">
+                    <input type="text" name="parameter_comment" placeholder="optional comment" style="width: 100px;">
+                    <button type="submit" name="param_action" value="approve" class="approve-btn">✅</button>
+                    <button type="submit" name="param_action" value="reject" class="reject-btn">❌</button>
+                </form>
             </td>
         </tr>
         {% endfor %}
@@ -132,13 +161,12 @@
 
 <form method="post">
     {% csrf_token %}
-    <button type="submit" name="action" value="approve" class="approve-btn">✅ Approve & Lock Results</button>
-    <button type="submit" name="action" value="reject" class="reject-btn">❌ Reject & Return to Analyst</button>
-
+    <button type="submit" name="action" value="approve" class="approve-btn" style="margin-top:20px;">✅ Approve & Lock All Results</button>
+    <button type="submit" name="action" value="reject" class="reject-btn" style="margin-top:20px;">❌ Reject Entire Sample</button>
     <textarea name="manager_comment" placeholder="If rejecting, explain the reason...">{{ sample.manager_comment }}</textarea>
 </form>
 
-<p class="note">🔒 Once approved, results become read-only and eligible for COA generation.</p>
+<p class="note">🔒 Once the entire sample is approved, results become read-only and eligible for COA generation.</p>
 
 </body>
 </html>

@@ -52,8 +52,8 @@
       font-size: 0.8em;
       color: white;
     }
+    .submitted { background: #f39c12; }
     .approved { background: #27ae60; }
-    .in_progress { background: #f39c12; }
     .rejected { background: #c0392b; }
   </style>
 </head>
@@ -62,8 +62,9 @@
   <a href="{% url 'manager_dashboard' %}">⬅ Back to Manager Dashboard</a>
 
   {% for client_id, samples in grouped_samples.items %}
-    <div class="client-section">
-      <h3>👤 Client ID: {{ client_id }}</h3>
+  <div class="client-section">
+    <h3>👤 Client ID: {{ client_id }}</h3>
+    <p>Count of samples: {{ samples|length }}</p>
 
       <table>
         <thead>
@@ -83,7 +84,6 @@
             <td>{{ sample.nature }}</td>
             <td>
               <span class="status {{ sample.status|lower }}">
-
                 {{ sample.get_status_display }}
               </span>
             </td>
