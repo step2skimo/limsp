@@ -28,21 +28,17 @@ from pdfrw import PdfReader, PdfWriter, PageMerge
 from django.http import HttpResponse
 from django.conf import settings
 import datetime
-
+from django.shortcuts import redirect
 from lims.models import Sample
 from lims.utils.calculations import calculate_cho_and_me
 from lims.utils.coa_summary_ai import generate_dynamic_summary
 from django.shortcuts import render
 from lims.models import Client, Sample
 from collections import defaultdict
-from weasyprint import HTML
-from django.template.loader import render_to_string
-from django.http import HttpResponse
-from collections import defaultdict
-from django.template.loader import render_to_string
 from django.http import HttpResponse
 from weasyprint import HTML
 import datetime
+from django.shortcuts import get_object_or_404
 
 from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse
@@ -173,6 +169,13 @@ def coa_dashboard(request):
         "grouped": dict(grouped),   # ← convert to normal dict!
     }
     return render(request, "lims/coa_dashboard.html", context)
+
+@login_required
+def release_client_coa(request, client_id):
+    client = get_object_or_404(Client, id=client_id)
+    client.coa_released = True
+    client.save()
+    return redirect("coa_dashboard")
 
 
 @login_required

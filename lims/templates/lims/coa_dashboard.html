@@ -1,6 +1,5 @@
-{% extends "base.html" %}
-{% block content %}
 <h2>COA Dashboard</h2>
+<a href="{% url 'manager_dashboard' %}">Back to Manager Dashboard</a>
 
 <style>
   table {
@@ -45,6 +44,14 @@
       <td>
         <a href="{% url 'preview_coa' client_id %}" target="_blank">Preview</a> |
         <a href="{% url 'generate_coa' client_id %}">Download PDF</a>
+        {% if first_sample.client.coa_released %}
+          <span class="badge bg-success">Released</span>
+        {% else %}
+          <form method="post" action="{% url 'release_client_coa' first_sample.client.id %}" style="display:inline;">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-primary btn-sm">Release to Client</button>
+          </form>
+        {% endif %}
       </td>
     </tr>
     {% endwith %}
@@ -52,6 +59,4 @@
     <tr><td colspan="5">No submitted samples yet.</td></tr>
   {% endfor %}
 </tbody>
-
 </table>
-{% endblock %}

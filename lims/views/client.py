@@ -9,44 +9,55 @@ from lims.models import Client, Sample, TestAssignment
 from datetime import datetime
 from collections import defaultdict
 import logging
-
 def client_tracking_view(request, token):
     normalized_token = token.strip().upper()
     logger = logging.getLogger(__name__)
     logger.info(f"Client portal accessed for token: {normalized_token}")
 
     client = get_object_or_404(Client, token=normalized_token)
+
     samples = (
         Sample.objects.filter(client=client)
         .exclude(sample_type="QC")
         .prefetch_related(
-            "testassignment_set__parameter",
-            "testassignment_set__testresult"
+            "testassignment_set__parameter"
         )
         .order_by("-received_date")
     )
 
     for sample in samples:
         assignments = sample.testassignment_set.all()
-        sample.assignments = assignments
+        
+        # always show parameter names, but hide results
+        sample.assignments = [
+            {
+                "parameter": a.parameter.name,
+                "method": a.parameter.method,
+                "unit": a.parameter.unit,
+            }
+            for a in assignments
+        ]
 
-        completed = sum(1 for a in assignments if hasattr(a, "testresult") and a.testresult)
-        total = len(assignments)
+        completed = sample.testassignment_set.filter(testresult__isnull=False).count()
+        total = sample.testassignment_set.count()
         sample.progress = round((completed / total) * 100) if total > 0 else 0
 
-        latest_result_time = max(
-            (a.testresult.recorded_at for a in assignments if hasattr(a, "testresult") and a.testresult and a.testresult.recorded_at),
-            default=None
-        )
+        latest_result_time = sample.testassignment_set.aggregate(
+            latest=models.Max("testresult__recorded_at")
+        )["latest"]
+        
         sample.turnaround = (
             (latest_result_time.date() - sample.received_date).days
-            if latest_result_time and sample.received_date else None
+            if latest_result_time and sample.received_date
+            else None
         )
 
     return render(request, "lims/tracking.html", {
         "client": client,
         "samples": samples
     })
+
+
 
 
 

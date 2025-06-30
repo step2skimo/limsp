@@ -21,6 +21,7 @@ class Client(models.Model):
     address = models.TextField()
     token = models.CharField(max_length=20, unique=True, blank=True)  
     created = models.DateTimeField(auto_now_add=True)
+    coa_released = models.BooleanField(default=False)
 
     def save(self, *args, **kwargs):
         if not self.token:

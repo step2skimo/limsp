@@ -24,7 +24,7 @@ class QCMetrics(models.Model):
     recovery_percent = models.DecimalField(max_digits=6, decimal_places=2, blank=True, null=True)
     status = models.CharField(max_length=10, choices=[('pass', 'Pass'), ('fail', 'Fail')], blank=True)
     notes = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True, blank=True)
 
 
     def save(self, *args, **kwargs):

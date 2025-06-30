@@ -26,6 +26,8 @@ urlpatterns = [
      path('analyst/results/history/', views.result_history_view, name='result_history'),
      path('analyst/test/begin/<int:result_id>/', views.begin_test_view, name='begin_test'),
      path("reports/productivity/", analyst_productivity_view, name="analyst_productivity"),
+     path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
+
 
      
      path("client/token-entry/", enter_token_view, name="enter_token"),
