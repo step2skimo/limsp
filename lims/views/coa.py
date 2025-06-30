@@ -49,9 +49,10 @@ import datetime
 from django.templatetags.static import static
 from collections import defaultdict
 import logging
+import os
+from django.conf import settings
 
 logger = logging.getLogger(__name__)
-
 
 
 @login_required
@@ -137,8 +138,11 @@ def generate_coa_pdf(request, client_id):
     # Generate AI summary
     summary_text = generate_dynamic_summary(summary_input)
 
-    # Render template
-    letterhead_url = request.build_absolute_uri(static('letterheads/coa_letterhead.png'))
+    # Build letterhead path for WeasyPrint
+    letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
+    letterhead_url = f"file://{letterhead_path}"
+
+    # Render HTML
     html = render_to_string(
         "lims/coa_template.html",
         {
