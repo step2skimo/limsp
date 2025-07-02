@@ -8,6 +8,9 @@ from lims.forms import ClientForm, SampleFormWithParameters
 from django.forms import formset_factory
 from django.contrib.auth import get_user_model
 from notifications.utils import notify  
+from lims.utils.notifications import notify_lab_manager_on_submission
+from django.conf import settings
+from users.models import RoleChoices
 
 User = get_user_model()
 
@@ -27,6 +30,7 @@ def generate_token():
     today = timezone.now().date()
     count_today = Client.objects.filter(created__date=today).count() + 1
     return f"JGL-{today.strftime('%Y%m%d')}-{count_today:04d}"
+
 
 
 
@@ -63,18 +67,23 @@ def sample_intake_view(request):
                 for param in parameters:
                     TestAssignment.objects.create(sample=sample, parameter=param)
 
-            # ✅ Notify manager(s)
+            # ✅ Notify managers
             sample_count = len(samples)
             client_name = client.name
             client_id = client.client_id
             clerk_name = request.user.get_full_name()
 
-            managers = User.objects.filter(role='Manager')  
+            managers = User.objects.filter(role=RoleChoices.MANAGER, is_active=True)
 
             for manager in managers:
-                notify(
-                    manager,
-                    f"Clerk {clerk_name} submitted {sample_count} sample(s) for Client {client_name} (CID-{client_id})."
+                print(f"📧 Manager email: {manager.email}")
+                notify_lab_manager_on_submission(
+                    
+                    manager.email,
+                    sample_count,
+                    client_name,
+                    client_id,
+                    clerk_name
                 )
 
             return redirect('intake_confirmation', client_id=client.client_id)

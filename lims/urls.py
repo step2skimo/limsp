@@ -14,7 +14,7 @@ from django.contrib.auth.views import LogoutView
 from lims.views.ai_views import ask_lab_ai
 from lims.views.coa import *
 from lims.views.charts import *
-
+from lims.views.test_email import test_email
 
 urlpatterns = [
 
@@ -28,6 +28,8 @@ urlpatterns = [
      path("reports/productivity/", analyst_productivity_view, name="analyst_productivity"),
      path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
 
+     
+    path("test-email/", test_email, name="test_email"),
 
      
      path("client/token-entry/", enter_token_view, name="enter_token"),
@@ -44,7 +46,8 @@ urlpatterns = [
 
 
 
-    path('manager/assign-overview/<str:client_id>/', views.assign_by_parameter_overview, name='assign_by_parameter_overview'),
+    path("manager/assign-overview/", assign_overview_all_clients, name="assign_overview_all_clients"),
+
     path('manager/export-assignments/csv/<str:client_id>/', views.export_assignments_csv, name='export_parameter_assignments_csv'),
     path('manager/export-assignments/pdf/<str:client_id>/', views.export_assignments_pdf, name='export_parameter_assignments_pdf'),
 
@@ -115,7 +118,6 @@ urlpatterns = [
     path("analyst/qc/charts/", views.analyst_qc_dashboard, name="analyst_qc_dashboard"),
     path("manager/test-assignments/", views.test_assignment_list, name="test_assignment_list"),
     path('manager/assign-by-parameter/<str:client_id>/<int:parameter_id>/', views.assign_parameter_tests, name='assign_parameter_tests'),
-    path('manager/assign-overview/<str:client_id>/', views.assign_by_parameter_overview, name='assign_by_parameter_overview'),
     path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
     path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
 

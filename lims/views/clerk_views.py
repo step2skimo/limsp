@@ -13,7 +13,6 @@ from django.views.decorators.http import require_GET
 from collections import defaultdict
 from django.db.models import Prefetch
 
-
 @login_required
 def clerk_dashboard_view(request):
     if not request.user.is_clerk():

@@ -13,7 +13,6 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 from pathlib import Path
 from decouple import config
 import os
-import os
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -92,6 +91,25 @@ SECURE_HSTS_PRELOAD = True
 
 LOGIN_REDIRECT_URL = "/dashboard/"
 
+
+
+# EMAIL_BACKEND = config("EMAIL_BACKEND")
+# EMAIL_HOST = config("EMAIL_HOST")
+# EMAIL_PORT = config("EMAIL_PORT", cast=int)
+# EMAIL_USE_SSL = config("EMAIL_USE_SSL", cast=bool)
+# EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+# EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+# EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+# DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+
+EMAIL_BACKEND='django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST='smtp.gmail.com'
+EMAIL_PORT=465
+EMAIL_USE_SSL=True
+EMAIL_USE_TLS=False
+EMAIL_HOST_USER = 'isnevisaac@gmail.com'
+EMAIL_HOST_PASSWORD = 'jdswlskowmzxsrrl'
+DEFAULT_FROM_EMAIL = 'lims@jaageelab.com'
 
 
 

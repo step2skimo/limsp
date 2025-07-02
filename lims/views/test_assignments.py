@@ -17,7 +17,7 @@ from django.shortcuts import render
 def test_assignment_list(request):
     assignments = TestAssignment.objects.select_related(
         "sample__client", "parameter", "analyst"
-    ).order_by("sample__client__client_id")
+    ).order_by("-sample__received_date")  
 
     grouped_assignments = defaultdict(list)
 
@@ -27,7 +27,6 @@ def test_assignment_list(request):
         if client and client.client_id:
             grouped_assignments[client.client_id].append(assignment)
 
-    # transform into dict with counts
     grouped_data = {}
     for client_id, client_assignments in grouped_assignments.items():
         completed = [a for a in client_assignments if a.status == "completed"]

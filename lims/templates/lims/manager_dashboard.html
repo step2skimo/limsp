@@ -160,7 +160,7 @@
         <i class="fas fa-user-clock"></i> Analyst Productivity
       </a>
       {% if latest_client %}
-        <a href="{% url 'assign_by_parameter_overview' latest_client.client_id %}" class="btn btn-outline-primary quick-action-btn">
+        <a href="{% url 'assign_overview_all_clients'  %}" class="btn btn-outline-primary quick-action-btn">
           <i class="fas fa-plus-circle"></i> Assign by Parameter
         </a>
       {% endif %}

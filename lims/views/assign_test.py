@@ -14,6 +14,7 @@ from notifications.utils import notify  # cross-app import
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
+from collections import defaultdict
 
 
 User = get_user_model()
@@ -126,60 +127,82 @@ def assign_parameter_tests(request, client_id, parameter_id):
     })
 
 
-def assign_by_parameter_overview(request, client_id):
-    client = get_object_or_404(Client, client_id=client_id)
 
-    # Only non-QC client samples
-    samples = Sample.objects.filter(client=client).exclude(sample_type="QC")
-    total_samples = samples.count()
 
-    # Count only assignments WITH analysts (true assignment)
-    parameter_stats = (
-        TestAssignment.objects
-        .filter(sample__client=client, analyst__isnull=False)
-        .exclude(sample__sample_type="QC")
-        .values('parameter_id')
-        .annotate(assigned_count=Count('sample', distinct=True))
-    )
-    assigned_lookup = {
-        stat['parameter_id']: stat['assigned_count'] for stat in parameter_stats
-    }
 
-    # Parameters linked to client samples (exclude QC sample parameter ghosts)
-    parameter_ids = (
-        TestAssignment.objects
-        .filter(sample__client=client)
-        .exclude(sample__sample_type="QC")
-        .values_list('parameter', flat=True)
-        .distinct()
-    )
-    parameters = Parameter.objects.filter(id__in=parameter_ids).order_by('name')
+@login_required
+def assign_overview_all_clients(request):
+    """
+    Show for ALL clients:
+    - parameter assignment progress
+    - unassigned samples
+    all on one page grouped by client
+    """
+    clients = Client.objects.all().order_by("-client_id")
 
-    paginator = Paginator(parameters, 10)
-    page_number = request.GET.get("page")
-    page_obj = paginator.get_page(page_number)
-    paginated_parameters = page_obj.object_list
+    # to hold data for each client
+    client_data = []
 
-    # Detect QC for each parameter using only is_control (sample type doesn’t matter)
-    control_stats = (
-        TestAssignment.objects
-        .filter(sample__client=client, is_control=True)
-        .values('parameter')
-        .annotate(control_sample_id=F('sample_id'))
-    )
-    control_lookup = {
-        stat['parameter']: stat['control_sample_id'] for stat in control_stats
-    }
+    for client in clients:
+        # all samples except QC
+        samples = Sample.objects.filter(client=client).exclude(sample_type="QC")
+        total_samples = samples.count()
 
-    return render(request, "lims/manager/assign_by_parameter_overview.html", {
-        "client": client,
-        "samples": samples,
-        "parameters": paginated_parameters,
-        "page_obj": page_obj,
-        "assigned_lookup": assigned_lookup,
-        "total_samples": total_samples,
-        "control_lookup": control_lookup,
+        # assigned samples
+        assigned_sample_ids = TestAssignment.objects.filter(
+            sample__client=client,
+            analyst__isnull=False
+        ).values_list("sample_id", flat=True)
+
+        unassigned_samples = samples.exclude(id__in=assigned_sample_ids)
+
+        # parameter stats
+        parameter_stats = (
+            TestAssignment.objects
+            .filter(sample__client=client, analyst__isnull=False)
+            .exclude(sample__sample_type="QC")
+            .values('parameter_id')
+            .annotate(assigned_count=Count('sample', distinct=True))
+        )
+        assigned_lookup = {
+            stat['parameter_id']: stat['assigned_count'] for stat in parameter_stats
+        }
+
+        parameter_ids = (
+            TestAssignment.objects
+            .filter(sample__client=client)
+            .exclude(sample__sample_type="QC")
+            .values_list('parameter', flat=True)
+            .distinct()
+        )
+        parameters = Parameter.objects.filter(id__in=parameter_ids).order_by('name')
+        for param in parameters:
+            param.assigned_count = assigned_lookup.get(param.id, 0)
+
+        # QC controls
+        control_stats = (
+            TestAssignment.objects
+            .filter(sample__client=client, is_control=True)
+            .values('parameter')
+            .annotate(control_sample_id=F('sample_id'))
+        )
+        control_lookup = {
+            stat['parameter']: stat['control_sample_id'] for stat in control_stats
+        }
+
+        client_data.append({
+            "client": client,
+            "parameters": parameters,
+            "assigned_lookup": assigned_lookup,
+            "total_samples": total_samples,
+            "unassigned_samples": unassigned_samples,
+            "control_lookup": control_lookup,
+        })
+
+    return render(request, "lims/manager/assign_overview_all_clients.html", {
+        "client_data": client_data
     })
+
 
 
 
