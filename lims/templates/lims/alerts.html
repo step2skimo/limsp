@@ -1,0 +1,29 @@
+
+<h2>⚠️ Reagent Alerts</h2>
+
+{% if expiring_lots %}
+  <div class="alert alert-warning">
+    <h4>Expiring Soon (Next 30 Days)</h4>
+    <ul>
+      {% for lot in expiring_lots %}
+        <li>{{ lot.reagent.name }} – Lot {{ lot.lot_number }} (expires {{ lot.expiry_date }})</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% if low_stock_lots %}
+  <div class="alert alert-danger">
+    <h4>Low Stock</h4>
+    <ul>
+      {% for lot in low_stock_lots %}
+        <li>{{ lot.reagent.name }} – Lot {{ lot.lot_number }}: {{ lot.quantity }} {{ lot.unit }} remaining</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+{% if not expiring_lots and not low_stock_lots %}
+  <p class="text-success">✅ All reagents in good standing.</p>
+{% endif %}
+

@@ -1,0 +1,32 @@
+
+
+<h2>📜 Reagent Usage History</h2>
+
+<table class="table table-striped table-hover mt-3">
+  <thead class="table-light">
+    <tr>
+      <th>Date</th>
+      <th>Analyst</th>
+      <th>Parameter</th>
+      <th>Reagent Lot</th>
+      <th>Quantity Used</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for usage in usage_entries %}
+    <tr>
+      <td>{{ usage.date_used|date:"Y-m-d H:i" }}</td>
+      <td>{{ usage.used_by.get_full_name|default:usage.used_by.username }}</td>
+      <td>{{ usage.parameter.name }}</td>
+      <td>{{ usage.lot.reagent.name }} – Lot {{ usage.lot.lot_number }}</td>
+      <td>{{ usage.quantity_used }} {{ usage.lot.unit }}</td>
+      <td>{{ usage.purpose|default:"–" }}</td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-center">No usage history yet.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+

@@ -1,0 +1,474 @@
+<div class="container-fluid reagent-dashboard">
+  <!-- Header Section -->
+  <div class="dashboard-header">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h1 class="dashboard-title">
+        <i class="bi bi-graph-up me-2"></i> Reagent Usage Summary – <span class="month-highlight">{{ month }}</span>
+      </h1>
+      <a href="{% url 'export-csv' %}" class="btn export-btn">
+        <i class="bi bi-download me-2"></i> Export to CSV
+      </a>
+      <a href="{% url 'manager_dashboard' %}" class="btn export-btn">
+        <i class="bi bi-download me-2"></i> Back to Manager Dashboard
+      </a>
+    </div>
+    
+    <!-- Filter Section -->
+    <div class="filter-card mb-5">
+      <form method="get" class="row g-3">
+        <div class="col-md-5">
+          <label for="protocol" class="form-label">Filter by Protocol</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-funnel"></i></span>
+            <input type="text" name="protocol" id="protocol" placeholder="e.g. Kjeldahl" class="form-control" />
+          </div>
+        </div>
+        <div class="col-md-5">
+          <label for="week" class="form-label">Filter by Week</label>
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-calendar-week"></i></span>
+            <input type="week" name="week" id="week" class="form-control" />
+          </div>
+        </div>
+        <div class="col-md-2 d-flex align-items-end">
+          <button type="submit" class="btn filter-btn w-100">
+            <i class="bi bi-funnel-fill me-2"></i> Apply Filters
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="row">
+    <!-- Top Reagents Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card stat-card h-100">
+        <div class="card-header stat-card-header">
+          <i class="bi bi-trophy me-2"></i> Top 5 Reagents by Volume Used
+        </div>
+        <div class="card-body">
+          <olশদ্ধতিol class="top-reagents-list">
+            {% for r in top_reagents %}
+            <li class="reagent-item">
+              <div class="reagent-name">{{ r.lot__reagent__name }}</div>
+              <div class="reagent-amount">
+                <span class="badge usage-badge">{{ r.total_used }}</span> units
+              </div>
+            </li>
+            {% endfor %}
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage by Analyst Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card stat-card h-100">
+        <div class="card-header stat-card-header">
+          <i class="bi bi-people me-2"></i> Usage by Analyst
+        </div>
+        <div class="card-body">
+          <ul class="analyst-list">
+            {% for u in usage_by_analyst %}
+            <li class="analyst-item">
+              <div class="analyst-info">
+                <span class="analyst-name">{{ u.used_by__username }}</span>
+                <div class="analyst-stats">
+                  <span class="badge log-badge">{{ u.total }} logs</span>
+                  <span class="badge reagent-badge">{{ u.reagents }} reagents</span>
+                </div>
+              </div>
+              <div class="progress">
+                 class="progress-bar" style="width: {{ u.progress_percent }}%"
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- Alerts Card -->
+    <div class="col-lg-4 mb-4">
+      <div class="card stat-card h-100">
+        <div class="card-header stat-card-header alert-header">
+          <i class="bi bi-exclamation-triangle me-2"></i> Low Stock & Expiring Reagents
+        </div>
+        <div class="card-body">
+          <ul class="alert-list">
+            {% for lot in expiring %}
+            <li class="alert-item expiring">
+              <i class="bi bi-clock me-2"></i>
+              <div class="alert-content">
+                <strong>{{ lot.reagent.name }}</strong> – Lot {{ lot.lot_number }}
+                <div class="alert-detail">Expires {{ lot.expiry_date|date:"M d, Y" }}</div>
+              </div>
+            </li>
+            {% endfor %}
+            {% for lot in low_stock %}
+            <li class="alert-item low-stock">
+              <i class="bi bi-dash-circle me-2"></i>
+              <div class="alert-content">
+                <strong>{{ lot.reagent.name }}</strong> – Lot {{ lot.lot_number }}
+                <div class="alert-detail">Only {{ lot.quantity }} {{ lot.unit }} remaining</div>
+              </div>
+            </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Professional Dashboard Styling */
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background-color: #f4f6f9;
+  }
+
+  .reagent-dashboard {
+    padding: 2.5rem 1.5rem;
+  }
+
+  .dashboard-header {
+    margin-bottom: 2.5rem;
+  }
+
+  .dashboard-title {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1a202c;
+    display: flex;
+    align-items: center;
+  }
+
+  .month-highlight {
+    color: #3b82f6;
+    font-weight: 700;
+  }
+
+  .filter-card {
+    background: white;
+    padding: 1.75rem;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
+  }
+
+  .filter-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .form-label {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #374151;
+    margin-bottom: 0.5rem;
+  }
+
+  .form-control {
+    border-radius: 8px;
+    border: 1px solid #d1d5db;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .form-control:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    outline: none;
+  }
+
+  .input-group-text {
+    background-color: #f9fafb;
+    border: 1px solid #d1d5db;
+    border-radius: 8px 0 0 8px;
+    color: #6b7280;
+  }
+
+  .filter-btn {
+    background-color: #3b82f6;
+    color: white;
+    border: none;
+    padding: 0.75rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+
+  .filter-btn:hover {
+    background-color: #2563eb;
+    transform: translateY(-2px);
+  }
+
+  .export-btn {
+    background-color: #10b981;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+  }
+
+  .export-btn:hover {
+    background-color: #059669;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-card {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+  }
+
+  .stat-card-header {
+    background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem;
+    border-radius: 12px 12px 0 0;
+  }
+
+  .alert-header {
+    background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%) !important;
+  }
+
+  .card-body {
+    padding: 1.5rem;
+  }
+
+  .top-reagents-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .reagent-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #edf2f7;
+    transition: background-color 0.2s ease;
+  }
+
+  .reagent-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .reagent-item:last-child {
+    border-bottom: none;
+  }
+
+  .reagent-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a202c;
+  }
+
+  .reagent-amount {
+    font-size: 0.9rem;
+    color: #6b7280;
+  }
+
+  .usage-badge {
+    background-color: #3b82f6;
+    color: white;
+    font-weight: 500;
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .analyst-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .analyst-item {
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #edf2f7;
+    transition: background-color 0.2s ease;
+  }
+
+  .analyst-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .analyst-item:last-child {
+    border-bottom: none;
+  }
+
+  .analyst-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+  }
+
+  .analyst-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a202c;
+  }
+
+  .analyst-stats {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  .log-badge {
+    background-color: #10b981;
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+  }
+
+  .reagent-badge {
+    background-color: #06b6d4;
+    color: white;
+    padding: 0.4rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+  }
+
+  .progress {
+    height: 8px;
+    background-color: #e5e7eb;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-bar {
+    background: linear-gradient(90deg, #3b82f6, #60a5fa);
+    transition: width 0.5s ease;
+  }
+
+  .alert-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #edf2f7;
+    gap: 0.75rem;
+    transition: background-color 0.2s ease;
+  }
+
+  .alert-item:hover {
+    background-color: #f9fafb;
+  }
+
+  .alert-item:last-child {
+    border-bottom: none;
+  }
+
+  .alert-item i {
+    font-size: 1.25rem;
+    margin-top: 0.25rem;
+  }
+
+  .alert-item.expiring i {
+    color: #f59e0b;
+  }
+
+  .alert-item.low-stock i {
+    color: #ef4444;
+  }
+
+  .alert-content {
+    flex: 1;
+  }
+
+  .alert-detail {
+    font-size: 0.9rem;
+    color: #6b7280;
+    margin-top: 0.25rem;
+  }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .stat-card {
+    animation: fadeInUp 0.5s ease-out forwards;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 992px) {
+    .dashboard-title {
+      font-size: 1.75rem;
+    }
+
+    .filter-card {
+      padding: 1.25rem;
+    }
+
+    .form-control {
+      font-size: 0.9rem;
+    }
+
+    .filter-btn, .export-btn {
+      padding: 0.75rem;
+    }
+  }
+
+  @media (max-width: 576px) {
+    .reagent-dashboard {
+      padding: 1.5rem 1rem;
+    }
+
+    .dashboard-title {
+      font-size: 1.5rem;
+    }
+
+    .filter-btn, .export-btn {
+      font-size: 0.9rem;
+    }
+
+    .col-md-5, .col-md-2 {
+      margin-bottom: 1rem;
+    }
+  }
+</style>
+
+<script>
+  // Retain all original functionality
+  document.addEventListener('DOMContentLoaded', function() {
+    const cards = document.querySelectorAll('.stat-card');
+    cards.forEach((card, index) => {
+      setTimeout(() => {
+        card.style.opacity = '1';
+        card.style.transform = 'translateY(0)';
+      }, 100 * index);
+    });
+  });
+</script>

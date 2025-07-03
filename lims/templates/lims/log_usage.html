@@ -1,0 +1,15 @@
+
+
+<h3>Welcome, {{ request.user.first_name|default:request.user.username }} 👋🏽</h3>
+<p>Today’s Date: {{ now|date:"Y-m-d" }}</p>
+
+<hr>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <p><strong>Used By:</strong> {{ request.user.get_full_name|default:request.user.username }}</p>
+    <p><strong>Date/Time:</strong> {{ now }}</p>
+    <button class="btn btn-primary">Submit Usage Log</button>
+</form>
+

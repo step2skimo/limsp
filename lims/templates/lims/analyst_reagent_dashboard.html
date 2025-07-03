@@ -1,0 +1,292 @@
+<div class="container mt-4">
+  <!-- Welcome Header -->
+  <div class="d-flex justify-content-between align-items-start mb-4">
+    <div>
+      <h2 class="welcome-heading mb-1">Welcome, {{ request.user.first_name|default:request.user.username }} <span class="welcome-emoji">👋🏽</span></h2>
+      <p class="text-muted welcome-date mb-0">Today: {{ now|date:"l, d M Y – H:i" }}</p>
+    </div>
+    <a href="{% url 'analyst_dashboard' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-speedometer2 me-1"></i> Analyst Dashboard
+    </a>
+  </div>
+
+  <!-- Quick Log Form -->
+  <div class="card usage-form-card mb-4">
+    <div class="card-header usage-form-header">
+      <i class="bi bi-clipboard-plus me-2"></i> Quick Log Reagent Usage
+    </div>
+    <div class="card-body">
+      <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+        <div class="row g-3 mb-3">
+          <div class="col-md-6">
+            <div class="form-floating">
+              {{ form.parameter }}
+              <label for="{{ form.parameter.id_for_label }}">{{ form.parameter.label }}</label>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              {{ form.lot }}
+              <label for="{{ form.lot.id_for_label }}">{{ form.lot.label }}</label>
+              <div class="form-text lot-info-text"></div>
+            </div>
+          </div>
+        </div>
+        <div class="row g-3 mb-4">
+          <div class="col-md-6">
+            <div class="form-floating">
+              {{ form.quantity_used }}
+              <label for="{{ form.quantity_used.id_for_label }}">{{ form.quantity_used.label }}</label>
+              <div class="form-text unit-display"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="form-floating">
+              {{ form.purpose }}
+              <label for="{{ form.purpose.id_for_label }}">{{ form.purpose.label }}</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="usage-meta bg-light p-3 rounded mb-4">
+          <div class="d-flex justify-content-between">
+            <div>
+              <span class="text-muted"><strong>Used By:</strong> {{ request.user.get_full_name|default:request.user.username }}</span>
+            </div>
+            <div>
+              <span class="text-muted"><strong>Date/Time:</strong> <span class="current-datetime">{{ now|date:"Y-m-d H:i" }}</span></span>
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn btn-success submit-btn w-100 py-2">
+          <i class="bi bi-check-circle me-2"></i> Submit Usage Log
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Inventory Alerts -->
+  {% if alerts_expiring or alerts_low_stock %}
+    <div class="alert alert-warning alert-dismissible fade show inventory-alert mb-4" role="alert">
+      <div class="d-flex align-items-center">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <h5 class="alert-heading mb-0">Inventory Alerts</h5>
+      </div>
+      <hr>
+      <ul class="mb-0 alert-list">
+        {% for lot in alerts_expiring %}
+          <li class="alert-item">
+            <i class="bi bi-clock-history text-warning me-2"></i>
+            <strong>{{ lot.reagent.name }}</strong> – Lot {{ lot.lot_number }} expires {{ lot.expiry_date|date:"M d, Y" }}
+          </li>
+        {% endfor %}
+        {% for lot in alerts_low_stock %}
+          <li class="alert-item">
+            <i class="bi bi-arrow-down-circle text-danger me-2"></i>
+            <strong>{{ lot.reagent.name }}</strong> – Lot {{ lot.lot_number }} low: {{ lot.quantity }} {{ lot.unit }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  <!-- Usage History -->
+  <div class="card history-card">
+    <div class="card-header history-card-header">
+      <i class="bi bi-clock-history me-2"></i> Recent Usage History
+    </div>
+    <div class="card-body p-0">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead class="table-light">
+            <tr>
+              <th><i class="bi bi-calendar me-1"></i> Date</th>
+              <th><i class="bi bi-tag me-1"></i> Parameter</th>
+              <th><i class="bi bi-droplet me-1"></i> Reagent Lot</th>
+              <th><i class="bi bi-hash me-1"></i> Qty Used</th>
+              <th><i class="bi bi-chat-square-text me-1"></i> Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for u in recent_usage %}
+              <tr>
+                <td>{{ u.date_used|date:"M j, H:i" }}</td>
+                <td>{{ u.parameter.name }}</td>
+                <td>
+                  <span class="badge bg-primary bg-opacity-10 text-primary">{{ u.lot.reagent.name }}</span>
+                  <span class="text-muted small">Lot {{ u.lot.lot_number }}</span>
+                </td>
+                <td>
+                  <span class="badge bg-secondary bg-opacity-10 text-dark">{{ u.quantity_used }} {{ u.lot.unit }}</span>
+                </td>
+                <td>{{ u.purpose|default:"—"|truncatechars:30 }}</td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="5" class="text-center py-4 no-records">
+                  <i class="bi bi-database-exclamation text-muted" style="font-size: 2rem;"></i>
+                  <p class="mt-2 mb-0">No usage logged yet</p>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* Custom Styles */
+  .welcome-heading {
+    font-weight: 600;
+    color: #2c3e50;
+  }
+  
+  .welcome-emoji {
+    font-size: 1.1em;
+  }
+  
+  .welcome-date {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+  
+  .usage-form-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+  
+  .usage-form-header {
+    background-color: #4e73df;
+    color: white;
+    font-weight: 500;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 15px 20px;
+  }
+  
+  .form-floating label {
+    color: #6c757d;
+    font-weight: 400;
+  }
+  
+  .form-floating > .form-control {
+    height: calc(3rem + 2px);
+    padding: 1rem 1rem;
+  }
+  
+  .form-floating > label {
+    padding: 1rem 1rem;
+  }
+  
+  .usage-meta {
+    background-color: #f8f9fa;
+    border-left: 3px solid #4e73df;
+  }
+  
+  .submit-btn {
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+  }
+  
+  .submit-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  }
+  
+  .inventory-alert {
+    border-radius: 8px;
+    border-left: 4px solid #ffc107;
+  }
+  
+  .alert-heading {
+    font-size: 1.1rem;
+    color: #856404;
+  }
+  
+  .alert-list {
+    padding-left: 0;
+  }
+  
+  .alert-item {
+    list-style-type: none;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+  }
+  
+  .alert-item:last-child {
+    border-bottom: none;
+  }
+  
+  .history-card {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+  }
+  
+  .history-card-header {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 500;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 15px 20px;
+  }
+  
+  .table th {
+    font-weight: 500;
+    color: #495057;
+    border-top: none;
+    padding: 12px 16px;
+  }
+  
+  .table td {
+    padding: 12px 16px;
+    vertical-align: middle;
+  }
+  
+  .no-records {
+    color: #6c757d;
+  }
+  
+  .lot-info-text {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+  
+  .unit-display {
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+    color: #6c757d;
+  }
+</style>
+
+<script>
+  // Functionality to update unit display when lot is selected
+  document.addEventListener('DOMContentLoaded', function() {
+    const lotSelect = document.querySelector('#id_lot');
+    const unitDisplay = document.querySelector('.unit-display');
+    
+    if (lotSelect) {
+      lotSelect.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        if (selectedOption) {
+          const unit = selectedOption.getAttribute('data-unit');
+          if (unit) {
+            unitDisplay.textContent = `Unit: ${unit}`;
+          } else {
+            unitDisplay.textContent = '';
+          }
+        }
+      });
+      
+      // Trigger change event if a lot is already selected
+      if (lotSelect.value) {
+        lotSelect.dispatchEvent(new Event('change'));
+      }
+    }
+  });
+</script>

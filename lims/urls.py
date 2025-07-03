@@ -15,6 +15,7 @@ from lims.views.ai_views import ask_lab_ai
 from lims.views.coa import *
 from lims.views.charts import *
 from lims.views.test_email import test_email
+from lims.views.reagent import *
 
 urlpatterns = [
 
@@ -120,6 +121,28 @@ urlpatterns = [
     path('manager/assign-by-parameter/<str:client_id>/<int:parameter_id>/', views.assign_parameter_tests, name='assign_parameter_tests'),
     path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
     path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
+
+
+
+
+
+    # Form + Success
+    path('reagent-usage/log/', log_reagent_usage, name='reagent-usage-log'),
+    path('reagent-usage/success/', reagent_usage_success, name='reagent-usage-success'),
+
+    # Manager dashboard
+    path('reagent-usage/dashboard/', manager_reagent_dashboard, name='reagent-dashboard'),
+
+    # Alerts
+    path('reagent-usage/alerts/', reagent_alerts, name='reagent-alerts'),
+
+    # Usage history
+    path('reagent-usage/history/', usage_history, name='reagent-usage-history'),
+
+    # CSV Export
+    path('reagent-usage/export/', export_csv, name='export-csv'),
+    path('reagent-usage/analyst/', analyst_dashboard, name='analyst-dashboard'),
+
 
 
 

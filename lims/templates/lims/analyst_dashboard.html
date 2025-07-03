@@ -406,6 +406,12 @@
         <a href="{% url 'logout' %}" class="nav-link">
           <i class="fas fa-sign-out-alt"></i> Logout
         </a>
+          <a href="{% url 'analyst-dashboard' %}" class="footer-link">
+        <i class="fas fa-flask"></i> Reagent Dashboard
+      </a>
+        <a href="{% url 'analyst_qc_dashboard' %}" class="footer-link">
+        <i class="fas fa-chart-line"></i> My QC Charts
+      </a>
       </div>
     </header>
     
@@ -523,9 +529,8 @@
       <a href="{% url 'result_history' %}" class="footer-link">
         <i class="fas fa-history"></i> View Submission History
       </a>
-      <a href="{% url 'analyst_qc_dashboard' %}" class="footer-link">
-        <i class="fas fa-chart-line"></i> My QC Charts
-      </a>
+
+     
     </div>
   </div>
 

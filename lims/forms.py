@@ -4,6 +4,9 @@ from django.forms import formset_factory
 from django import forms
 from decimal import Decimal, ROUND_HALF_UP
 from lims.models import QCMetrics
+from .models.reagent import ReagentUsage, ReagentLot
+from itertools import groupby
+
 
 class ClientForm(forms.ModelForm):
     class Meta:
@@ -118,3 +121,62 @@ class ResultEntryForm(forms.ModelForm):
     class Meta:
         model = TestResult
         fields = ['value', 'temp', 'humidity', 'pressure', 'equipment_used']  
+
+
+
+
+
+class GroupedLotChoiceField(forms.ModelChoiceField):
+    def label_from_instance(self, obj):
+        return f"Lot {obj.lot_number} ({obj.quantity}{obj.unit} remaining)"
+
+    def optgroups(self, name, value, attrs=None):
+        queryset = self.queryset.select_related("reagent").order_by("reagent__name")
+        groups = []
+        for reagent_name, lots in groupby(queryset, key=lambda l: l.reagent.name):
+            group_lots = list(lots)
+            group_choices = [(lot.pk, self.label_from_instance(lot)) for lot in group_lots]
+            groups.append((reagent_name, group_choices, 0))
+        return groups
+
+
+class ReagentUsageForm(forms.ModelForm):
+    class Meta:
+        model = ReagentUsage
+        fields = ['parameter', 'lot', 'quantity_used', 'purpose']
+        widgets = {
+            'parameter': forms.Select(attrs={'class': 'form-select'}),
+            'quantity_used': forms.NumberInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'e.g. 2.5'
+            }),
+            'purpose': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 2,
+                'placeholder': 'Optional notes'
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Grouped reagent lots by reagent name
+        self.fields['lot'] = GroupedLotChoiceField(
+            queryset=ReagentLot.objects.filter(status='active'),
+            widget=forms.Select(attrs={'class': 'form-select'}),
+            label='Reagent Lot'
+        )
+
+        # Order parameters nicely
+        self.fields['parameter'].queryset = Parameter.objects.select_related('group').order_by('group__name', 'name')
+
+    def clean_quantity_used(self):
+        quantity = self.cleaned_data.get('quantity_used')
+        lot = self.cleaned_data.get('lot')
+
+        if lot and quantity:
+            if quantity > lot.quantity:
+                raise forms.ValidationError(
+                    f"Not enough reagent available. Only {lot.quantity} {lot.unit} left in Lot {lot.lot_number}."
+                )
+        return quantity
