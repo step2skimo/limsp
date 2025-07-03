@@ -123,6 +123,7 @@ urlpatterns = [
 
 
 
+
     path("equipment/<int:equipment_id>/usage/", views.equipment_usage_view, name="equipment_usage"),
 
 

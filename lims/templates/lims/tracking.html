@@ -1,12 +1,11 @@
-
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>{{ client.name }} – Sample Tracker</title>
+  <title>{{ organization }} – Sample Tracker</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 2em; background: #f9f9f9; }
-    h2 { color: #2c3e50; }
+    h2 { color: #2c3e50; margin-top: 40px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
     th { background: #eaeaea; }
@@ -18,57 +17,58 @@
 </head>
 <body>
 
-  <h2>📦 Sample Tracking for {{ client.name }}</h2>
-  <p><strong>Client ID:</strong> {{ client.client_id }}</p>
-  <p><strong>Organization:</strong> {{ client.organization }}</p>
+  <h1>📦 Sample Tracker for {{ organization }}</h1>
 
-  {% if client.coa_released %}
-    <p>
-      <a href="{% url 'generate_coa_pdf' client.client_id %}" class="btn-download">Download COA</a>
-    </p>
-  {% else %}
-    <p>
-      <span class="badge-warning">COA Pending Release</span>
-    </p>
-  {% endif %}
+  {% for block in client_data %}
+    <h2>{{ block.client.name }} ({{ block.client.client_id }})</h2>
 
-  {% if samples %}
-    <table>
-      <thead>
-        <tr>
-          <th>Sample Code</th>
-          <th>Received</th>
-          <th>Status</th>
-          <th>Progress</th>
-          <th>Turnaround (days)</th>
-          <th>Parameters Tested</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for sample in samples %}
+    {% if block.samples %}
+      <table>
+        <thead>
           <tr>
-            <td>{{ sample.sample_code }}</td>
-            <td>{{ sample.received_date }}</td>
-            <td>{{ sample.get_status_display }}</td>
-            <td>
-              <div class="progress-bar">
-                <div class="progress-fill" style="width:{{ sample.progress }}%"></div>
-              </div>
-              <small>{{ sample.progress }}%</small>
-            </td>
-            <td>{{ sample.turnaround|default:"—" }}</td>
-            <td>
-              {% for a in sample.assignments %}
-                {{ a.parameter }} ({{ a.unit }}){% if not forloop.last %}, {% endif %}
-              {% empty %}—{% endfor %}
-            </td>
+            <th>Sample Code</th>
+            <th>Received</th>
+            <th>Status</th>
+            <th>Progress</th>
+            <th>Turnaround (days)</th>
+            <th>Parameters Tested</th>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  {% else %}
-    <p>No samples available at this time.</p>
-  {% endif %}
+        </thead>
+        <tbody>
+          {% for sample in block.samples %}
+            <tr>
+              <td>{{ sample.sample_code }}</td>
+              <td>{{ sample.received_date }}</td>
+              <td>{{ sample.get_status_display }}</td>
+              <td>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width:{{ sample.progress }}%"></div>
+                </div>
+                <small>{{ sample.progress }}%</small>
+              </td>
+              <td>{{ sample.turnaround|default:"—" }}</td>
+              <td>
+                {% for a in sample.assignments %}
+                  {{ a.parameter }} ({{ a.unit }}){% if not forloop.last %}, {% endif %}
+                {% empty %}—{% endfor %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+
+      <br>
+      {% if block.client.coa_released %}
+        <a href="{% url 'generate_coa_pdf' block.client.client_id %}" class="btn-download">Download COA for {{ block.client.client_id }}</a>
+      {% else %}
+        <span class="badge-warning">COA Pending Release</span>
+      {% endif %}
+
+    {% else %}
+      <p>No samples available for this client.</p>
+    {% endif %}
+    <hr>
+  {% endfor %}
 
 </body>
 </html>
