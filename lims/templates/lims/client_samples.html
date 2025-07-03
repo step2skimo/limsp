@@ -2,27 +2,150 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Samples for {{ client.name }}</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    body { font-family: Arial, sans-serif; padding: 2em; background-color: #f9f9f9; }
-    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-    th, td { padding: 10px; border: 1px solid #ccc; text-align: left; }
-    th { background-color: #eaeaea; }
-    h2 { color: #2c3e50; }
-    a.button {
-      display: inline-block;
-      margin-top: 15px;
-      padding: 8px 14px;
-      background-color: #2c3e50;
+    :root {
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --light-gray: #f5f5f5;
+      --medium-gray: #eaeaea;
+      --dark-gray: #7f8c8d;
+      --text: #2c3e50;
+      --border: #dcdcdc;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
+      background-color: #f9f9f9;
+      padding: 2rem;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h2 {
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background-color: var(--primary);
       color: white;
       text-decoration: none;
       border-radius: 4px;
+      margin-top: 1.5rem;
+      transition: all 0.2s ease;
+    }
+    
+    .back-btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: white;
+    }
+    
+    th, td {
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    
+    th {
+      background: var(--medium-gray);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    
+    tr:nth-child(even) {
+      background-color: var(--light-gray);
+    }
+    
+    tr:hover {
+      background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 0.85em;
+      font-weight: 500;
+    }
+    
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-in-progress {
+      background-color: #cce5ff;
+      color: #004085;
+    }
+    
+    .status-completed {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: var(--dark-gray);
+      background: white;
+      border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      margin: 1.5rem 0;
+    }
+    
+    .parameter-list {
+      list-style-type: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    
+    .parameter-list li {
+      padding: 4px 0;
+    }
+    
+    .parameter-list li:not(:last-child) {
+      border-bottom: 1px dashed var(--border);
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      
+      table {
+        display: block;
+        overflow-x: auto;
+      }
     }
   </style>
 </head>
 <body>
 
-  <h2>📦 Samples Submitted by {{ client.name }}</h2>
+  <h2><i class="fas fa-box-open"></i> Samples Submitted by {{ client.name }}</h2>
 
   {% if samples %}
     <table>
@@ -33,27 +156,44 @@
           <th>Received</th>
           <th>Status</th>
           <th>Parameters</th>
-          <th>Results</th>
         </tr>
       </thead>
       <tbody>
         {% for sample in samples %}
           <tr>
-            <td>{{ sample.sample_code }}</td>
+            <td><strong>{{ sample.sample_code }}</strong></td>
             <td>{{ sample.sample_type }}</td>
             <td>{{ sample.received_date }}</td>
-            <td>{{ sample.get_status_display }}</td>
-            <td>{{ sample.parameter_names }}</td>
-            <td>{{ sample.result_values }}</td>
+            <td>
+              <span class="status-badge status-{{ sample.get_status_display|lower|cut:' ' }}">
+                {{ sample.get_status_display }}
+              </span>
+            </td>
+            <td>
+              {% if sample.parameter_names %}
+                <ul class="parameter-list">
+                  {% for param in sample.parameter_names.split %}
+                    <li>{{ param }}</li>
+                  {% endfor %}
+                </ul>
+              {% else %}
+                <span style="color: var(--dark-gray);">—</span>
+              {% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>
     </table>
   {% else %}
-    <p>No samples found for this client.</p>
+    <div class="empty-state">
+      <p><i class="fas fa-box-open" style="font-size: 2rem; color: var(--dark-gray);"></i></p>
+      <p>No samples found for this client.</p>
+    </div>
   {% endif %}
 
-  <a href="{% url 'view_all_clients' %}" class="button">← Back to Client List</a>
+  <a href="{% url 'view_all_clients' %}" class="back-btn">
+    <i class="fas fa-arrow-left"></i> Back to Client List
+  </a>
 
 </body>
 </html>

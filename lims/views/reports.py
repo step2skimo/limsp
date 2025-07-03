@@ -32,33 +32,51 @@ def analyst_productivity_view(request):
     today = timezone.now().date()
     range_type = request.GET.get("range", "month")
 
-    # Determine date range
-    if range_type == "week":
-        start_date = today - timedelta(days=today.weekday())
-        end_date = start_date + timedelta(days=6)
-    elif range_type == "day":
+    # Determine start_date and end_date
+    if range_type == "day":
         start_date = end_date = today
-    else:
+    elif range_type == "week":
+        start_date = today - timedelta(days=7)
+        end_date = today
+    elif range_type == "month":
         start_date = today.replace(day=1)
         end_date = today
+    elif range_type == "last_month":
+        first_day_this_month = today.replace(day=1)
+        last_day_last_month = first_day_this_month - timedelta(days=1)
+        start_date = last_day_last_month.replace(day=1)
+        end_date = last_day_last_month
+    elif range_type == "all_time":
+        start_date = None
+        end_date = today
+    else:
+        start_date = end_date = today
 
-    # Get completed assignments
-    assignments = (
-        TestAssignment.objects
-        .filter(
+    # Build assignment queryset
+    if start_date:
+        assignments = TestAssignment.objects.filter(
             status="completed",
             is_control=False,
             testresult__recorded_at__date__range=(start_date, end_date)
         )
-        .annotate(
-            tat=ExpressionWrapper(
-                F("testresult__recorded_at") - F("sample__received_date"),
-                output_field=DurationField()
-            ),
-            duration=ExpressionWrapper(
-                F("testresult__recorded_at") - F("testresult__started_at"),
-                output_field=DurationField()
-            )
+        qc_range_filter = {"created_at__date__range": (start_date, end_date)}
+    else:
+        assignments = TestAssignment.objects.filter(
+            status="completed",
+            is_control=False,
+            testresult__recorded_at__date__lte=end_date
+        )
+        qc_range_filter = {"created_at__date__lte": end_date}
+
+    # Annotate assignments
+    assignments = assignments.annotate(
+        tat=ExpressionWrapper(
+            F("testresult__recorded_at") - F("sample__received_date"),
+            output_field=DurationField()
+        ),
+        duration=ExpressionWrapper(
+            F("testresult__recorded_at") - F("testresult__started_at"),
+            output_field=DurationField()
         )
     )
 
@@ -86,7 +104,7 @@ def analyst_productivity_view(request):
     # QC pass rate from QCMetrics
     qc_results = (
         QCMetrics.objects
-        .filter(created_at__date__range=(start_date, end_date))
+        .filter(**qc_range_filter)
         .annotate(analyst_username=F("test_assignment__analyst__username"))
         .values("analyst_username")
         .annotate(
@@ -101,7 +119,6 @@ def analyst_productivity_view(request):
         for row in qc_results
     }
 
-    # Human-readable TAT + duration
     def format_td(td):
         if not td:
             return "—"
@@ -115,7 +132,6 @@ def analyst_productivity_view(request):
         person["avg_duration_human"] = format_td(person["avg_duration"])
         person["qc_pass_rate"] = qc_pass_rate_map.get(person["analyst_name"], 100.0)
 
-    # Summary metrics
     total_tests = sum(p["tests"] for p in productivity)
     total_samples = sum(p["samples"] for p in productivity)
 
@@ -147,10 +163,7 @@ def analyst_productivity_view(request):
 
 
 
-
-
-
-
+@login_required
 def get_manager_report_context(request):
     today = timezone.now().date()
     range_type = request.GET.get("range", "month")
@@ -160,21 +173,34 @@ def get_manager_report_context(request):
         end_date = start_date + timedelta(days=6)
     elif range_type == "day":
         start_date = end_date = today
-    else:
+    elif range_type == "last_month":
+        first_day_this_month = today.replace(day=1)
+        last_day_last_month = first_day_this_month - timedelta(days=1)
+        start_date = last_day_last_month.replace(day=1)
+        end_date = last_day_last_month
+    elif range_type == "all_time":
+        start_date = None
+        end_date = today
+    else:  # current month
         start_date = today.replace(day=1)
         end_date = today
 
-    samples = Sample.objects.filter(
-        received_date__range=(start_date, end_date),
-        ).exclude(sample_type__iexact="QC")
-    
-    tests = TestAssignment.objects.select_related("parameter", "sample", "analyst").filter(
-        assigned_date__date__range=(start_date, end_date),
-        is_control=False
-    )
-    equipment = Equipment.objects.all()
-    calibrations = CalibrationRecord.objects.filter(calibration_date__range=(start_date, end_date))
+    # Query filters
+    sample_filters = {"received_date__lte": end_date}
+    test_filters = {"assigned_date__date__lte": end_date, "is_control": False}
+    calibration_filters = {"calibration_date__lte": end_date}
 
+    if start_date:
+        sample_filters["received_date__gte"] = start_date
+        test_filters["assigned_date__date__gte"] = start_date
+        calibration_filters["calibration_date__gte"] = start_date
+
+    samples = Sample.objects.filter(**sample_filters).exclude(sample_type__iexact="QC")
+    tests = TestAssignment.objects.select_related("parameter", "sample", "analyst").filter(**test_filters)
+    equipment = Equipment.objects.all()
+    calibrations = CalibrationRecord.objects.filter(**calibration_filters)
+
+    # Report aggregations
     analysis_summary = tests.values(
         date_received=F("sample__received_date"),
         client_name=F("sample__client__name"),
@@ -242,6 +268,7 @@ def get_manager_report_context(request):
         "today_total_income": today_total_income,
         "today_test_count": today_test_count,
     }
+
 
 
 @login_required

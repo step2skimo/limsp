@@ -2,116 +2,287 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Registered Clients</title>
 
   <!-- DataTables Styling -->
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.dataTables.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
+    :root {
+      --primary: #3498db;
+      --primary-dark: #2980b9;
+      --success: #27ae60;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+      --light-gray: #f5f5f5;
+      --medium-gray: #eaeaea;
+      --dark-gray: #7f8c8d;
+      --text: #2c3e50;
+      --border: #dcdcdc;
+    }
+    
     body {
-      font-family: Arial, sans-serif;
-      padding: 2em;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--text);
       background-color: #f9f9f9;
+      padding: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
     }
-    h2 {
-      color: #333;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 20px;
-    }
-    th, td {
-      padding: 10px;
-      border: 1px solid #ccc;
-      text-align: left;
-    }
-    th {
-      background-color: #eaeaea;
-    }
-    .btn {
-      padding: 6px 12px;
+    
+    .back-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background-color: var(--primary);
+      color: white;
       text-decoration: none;
       border-radius: 4px;
-      background-color: #2980b9;
-      color: #fff;
+      margin-bottom: 1.5rem;
+      transition: all 0.2s ease;
     }
-    .btn:hover {
-      background-color: #1f6391;
+    
+    .back-btn:hover {
+      background-color: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    h2 {
+      color: var(--text);
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    #clients-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      background: white;
+    }
+    
+    #clients-table th, 
+    #clients-table td {
+      padding: 12px 15px;
+      border: 1px solid var(--border);
+      text-align: left;
+    }
+    
+    #clients-table th {
+      background: var(--medium-gray);
+      font-weight: 600;
+      position: sticky;
+      top: 0;
+    }
+    
+    #clients-table tr:nth-child(even) {
+      background-color: var(--light-gray);
+    }
+    
+    #clients-table tr:hover {
+      background-color: rgba(52, 152, 219, 0.1);
+    }
+    
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+    
+    .btn-view {
+      background: var(--primary);
+      color: white;
+    }
+    
+    .btn-view:hover {
+      background: var(--primary-dark);
+      transform: translateY(-1px);
+    }
+    
+    .btn-copy {
+      background: var(--medium-gray);
+      color: var(--text);
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .btn-copy:hover {
+      background: var(--dark-gray);
+      color: white;
+    }
+    
+    .token-display {
+      font-family: 'Courier New', Courier, monospace;
+      background: var(--light-gray);
+      padding: 4px 8px;
+      border-radius: 4px;
+      display: inline-block;
+    }
+    
+    .dataTables_wrapper .dt-buttons {
+      margin-bottom: 1rem;
+    }
+    
+    .dataTables_wrapper .dt-buttons .dt-button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 6px 12px;
+      margin-right: 5px;
+      transition: all 0.2s ease;
+    }
+    
+    .dataTables_wrapper .dt-buttons .dt-button:hover {
+      background-color: var(--primary-dark);
+    }
+    
+    .dataTables_wrapper .dataTables_filter input {
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    
+    @media (max-width: 768px) {
+      body {
+        padding: 1rem;
+      }
+      
+      .dataTables_wrapper .dt-buttons {
+        margin-bottom: 0.5rem;
+      }
+      
+      .dataTables_wrapper .dt-buttons .dt-button {
+        padding: 4px 8px;
+        font-size: 0.8rem;
+        margin-bottom: 5px;
+      }
     }
   </style>
 </head>
 <body>
 
-  <a href="{% url 'clerk_dashboard' %}" class="button">← Back to Clerk Dashboard</a>
-<h2>👥 Registered Clients</h2>
+  <a href="{% url 'clerk_dashboard' %}" class="back-btn">
+    <i class="fas fa-arrow-left"></i> Back to Clerk Dashboard
+  </a>
+  
+  <h2><i class="fas fa-users"></i> Registered Clients</h2>
 
-<table id="clients-table">
-  <thead>
-    <tr>
-      <th>ID</th>
-      <th>Name</th>
-      <th>Email</th>
-      <th>Phone</th>
-      <th>Organization</th>
-      <th>Token</th>
-      <th>Action</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for client in clients %}
-    <tr>
-      <td>{{ client.client_id }}</td>
-      <td>{{ client.name }}</td>
-      <td>{{ client.email }}</td>
-      <td>{{ client.phone_number }}</td>
-      <td>{{ client.organization }}</td>
-      <td>
-        <span style="font-family: monospace;">{{ client.token }}</span>
-        <button onclick="navigator.clipboard.writeText('{{ client.token }}')">📋</button>
-      </td>
-      <td>
-        <a class="btn" href="{% url 'view_client_samples' client.id %}">🔍 View Samples</a>
-      </td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+  <table id="clients-table" class="display nowrap" style="width:100%">
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Phone</th>
+        <th>Organization</th>
+        <th>Token</th>
+        <th>Action</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr>
+        <td>{{ client.client_id }}</td>
+        <td>{{ client.name }}</td>
+        <td><a href="mailto:{{ client.email }}">{{ client.email }}</a></td>
+        <td>{{ client.phone }}</td>
+        <td>{{ client.organization }}</td>
+        <td>
+          <span class="token-display">{{ client.token }}</span>
+          <button class="btn-copy" onclick="navigator.clipboard.writeText('{{ client.token }}')">
+            <i class="far fa-copy"></i> Copy
+          </button>
+        </td>
+        <td>
+          <a class="btn btn-view" href="{% url 'view_client_samples' client.id %}">
+            <i class="fas fa-search"></i> View Samples
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
-<!-- jQuery + DataTables -->
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+  <!-- jQuery + DataTables -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+  <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
-<script>
-  $(document).ready(function () {
-    $('#clients-table').DataTable({
-      dom: 'Bfrtip',
-      buttons: [
-        { extend: 'copyHtml5', text: '📋 Copy' },
-        { extend: 'csvHtml5', text: '📄 Export CSV' },
-        { extend: 'excelHtml5', text: '📊 Export Excel' },
-        { extend: 'pdfHtml5', text: '📕 Export PDF' },
-        { extend: 'print', text: '🖨 Print' }
-      ],
-      order: [[0, 'asc']],
-      pageLength: 10,
-      lengthMenu: [5, 10, 25, 50],
-      language: {
-        search: "🔎 Search:",
-        lengthMenu: "Show _MENU_ clients per page",
-        info: "Showing _START_ to _END_ of _TOTAL_ clients",
-        zeroRecords: "No matching clients found"
-      }
+  <script>
+    $(document).ready(function () {
+      $('#clients-table').DataTable({
+        dom: '<"top"Bf>rt<"bottom"lip><"clear">',
+        buttons: [
+          { 
+            extend: 'copyHtml5', 
+            text: '<i class="far fa-copy"></i> Copy',
+            className: 'dt-button'
+          },
+          { 
+            extend: 'csvHtml5', 
+            text: '<i class="fas fa-file-csv"></i> CSV',
+            className: 'dt-button'
+          },
+          { 
+            extend: 'excelHtml5', 
+            text: '<i class="fas fa-file-excel"></i> Excel',
+            className: 'dt-button'
+          },
+          { 
+            extend: 'pdfHtml5', 
+            text: '<i class="fas fa-file-pdf"></i> PDF',
+            className: 'dt-button'
+          },
+          { 
+            extend: 'print', 
+            text: '<i class="fas fa-print"></i> Print',
+            className: 'dt-button'
+          }
+        ],
+        responsive: true,
+        order: [[0, 'asc']],
+        pageLength: 10,
+        lengthMenu: [5, 10, 25, 50, 100],
+        language: {
+          search: '<i class="fas fa-search"></i> Search:',
+          lengthMenu: "Show _MENU_ clients per page",
+          info: "Showing _START_ to _END_ of _TOTAL_ clients",
+          infoEmpty: "No clients available",
+          zeroRecords: "No matching clients found",
+          paginate: {
+            first: '<i class="fas fa-angle-double-left"></i>',
+            last: '<i class="fas fa-angle-double-right"></i>',
+            next: '<i class="fas fa-angle-right"></i>',
+            previous: '<i class="fas fa-angle-left"></i>'
+          }
+        }
+      });
     });
-  });
-</script>
+  </script>
 
 </body>
 </html>

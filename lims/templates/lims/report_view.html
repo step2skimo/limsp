@@ -14,9 +14,12 @@
       <div class="form-group">
         <label for="range"><i class="fas fa-calendar-alt"></i> Time Range:</label>
         <select name="range" id="range" class="form-control" onchange="this.form.submit()">
-          <option value="day" {% if range_type == "day" %}selected{% endif %}>Today</option>
-          <option value="week" {% if range_type == "week" %}selected{% endif %}>This Week</option>
-          <option value="month" {% if range_type == "month" %}selected{% endif %}>This Month</option>
+  <option value="day" {% if range_type == "day" %}selected{% endif %}>Today</option>
+  <option value="week" {% if range_type == "week" %}selected{% endif %}>This Week</option>
+  <option value="month" {% if range_type == "month" %}selected{% endif %}>This Month</option>
+  <option value="last_month" {% if range_type == "last_month" %}selected{% endif %}>Last Month</option>
+  <option value="all_time" {% if range_type == "all_time" %}selected{% endif %}>All Time</option>
+
         </select>
       </div>
     </form>
