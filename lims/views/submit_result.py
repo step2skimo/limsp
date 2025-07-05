@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.utils import timezone
 from lims.utils.derived import _inject_derived_result
-from lims.models import TestAssignment, Equipment, TestResult, QCMetrics
+from lims.models import TestAssignment, Equipment, TestResult, QCMetrics, SampleStatus, TestEnvironment
 from lims.forms import ResultEntryForm, QCMetricsForm
 from django.contrib.auth import get_user_model
 from notifications.utils import notify  
@@ -35,6 +35,17 @@ def enter_result(request, assignment_id):
         form_valid = form.is_valid()
         qc_valid = qc_form.is_valid() if qc_form else True
 
+        # grab temperature/humidity from POST
+        temperature = request.POST.get("temperature")
+        humidity = request.POST.get("humidity")
+
+        if not temperature or not humidity:
+            messages.warning(
+                request,
+                "⚠️ Please enter both temperature and humidity before submitting results."
+            )
+            return redirect(request.META.get("HTTP_REFERER", "analyst_dashboard"))
+
         if not form_valid:
             print("🔍 Test Result Form Errors:", form.errors)
 
@@ -44,12 +55,20 @@ def enter_result(request, assignment_id):
             print("Measured Value:", qc_form.cleaned_data.get("measured_value", None))
 
         if form_valid and qc_valid:
+            # save test result
             result = form.save(commit=False)
             result.test_assignment = test_assignment
             result.recorded_by = request.user
             result.source = "manual"
             result.recorded_at = result.recorded_at or timezone.now()
             result.save()
+
+            # create TestEnvironment for this result
+            TestEnvironment.objects.create(
+                test_result=result,
+                temperature=temperature,
+                humidity=humidity
+            )
 
             # Derived calculations
             results = TestResult.objects.filter(test_assignment__sample=sample)
@@ -86,7 +105,7 @@ def enter_result(request, assignment_id):
                 test_assignment.status = "completed"
                 test_assignment.save(update_fields=["status"])
 
-            # ✅ NEW: mark sample SUBMITTED if all assignments are completed
+            # ✅ mark sample under review if all assignments are completed
             all_assignments = sample.testassignment_set.all()
             if all(a.status == "completed" for a in all_assignments):
                 sample.status = SampleStatus.UNDER_REVIEW

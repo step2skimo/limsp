@@ -6,8 +6,8 @@ from django.contrib.auth import get_user_model
 
 class TestEnvironment(models.Model):
     test_assignment = models.OneToOneField(TestAssignment, on_delete=models.CASCADE)
-    temperature = models.DecimalField(max_digits=5, decimal_places=2)
-    humidity = models.DecimalField(max_digits=5, decimal_places=2)
+    temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True)
+    humidity = models.DecimalField(max_digits=5, decimal_places=2, null=True)
     pressure = models.DecimalField(max_digits=6, decimal_places=2, null=True, blank=True)
     instrument = models.ForeignKey(Equipment, null=True, blank=True, on_delete=models.SET_NULL)
     recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, on_delete=models.SET_NULL)

@@ -460,65 +460,75 @@
       <i class="fas fa-file-export"></i> Export to Excel
     </button>
     
-    {% if grouped_assignments %}
-      {% for parameter_name, tests in grouped_assignments.items %}
-        <section>
-          <h3><i class="fas fa-flask"></i> Parameter: <strong>{{ parameter_name }}</strong></h3>
-          <div class="table-container">
-            <table id="test-table">
-              <thead>
-                <tr>
-                  <th>Sample</th>
-                  <th>Method</th>
-                  <th>Status</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {% for test in tests %}
-                  <tr>
-                    <td>
-                      <div>{{ test.sample.sample_code }}</div>
-                      {% if test.is_control and test.sample.sample_type == "QC" %}
-                        <span class="control-label"><i class="fas fa-sliders-h"></i> Control</span>
+   {% if grouped_assignments %}
+  {% for key, tests in grouped_assignments.items %}
+    {% with client_id=key.0 parameter_name=key.1 %}
+    <section>
+      <h3><i class="fas fa-flask"></i> Parameter: <strong>{{ parameter_name }}</strong> for Client: <strong>CID-{{ client_id }}</strong></h3>
+
+      <!-- Start Analysis button -->
+      <form method="post" action="{% url 'begin_parameter_analysis' client_id tests.0.parameter.id %}" style="margin-bottom: 10px;">
+        {% csrf_token %}
+        <button type="submit" class="start-btn">
+          🚀 Start Analysis for {{ parameter_name }} (CID-{{ client_id }})
+        </button>
+      </form>
+
+      <div class="table-container">
+        <table id="test-table">
+          <thead>
+            <tr>
+              <th>Sample</th>
+              <th>Method</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for test in tests %}
+              <tr>
+                <td>
+                  <div>{{ test.sample.sample_code }}</div>
+                  {% if test.is_control and test.sample.sample_type == "QC" %}
+                    <span class="control-label"><i class="fas fa-sliders-h"></i> Control</span>
+                  {% endif %}
+                  {% if test.days_since_received is not None %}
+                    <div style="font-size: 0.8rem; color: var(--gray); margin-top: 4px;">
+                      <i class="far fa-clock"></i> {{ test.days_since_received }} day{{ test.days_since_received|pluralize }} ago
+                      {% if test.days_since_received > 3 %}
+                        <span class="deadline-tag"><i class="fas fa-exclamation-circle"></i> {{ test.days_since_received }} days overdue</span>
                       {% endif %}
-                      
-                      {% if test.days_since_received is not None %}
-                        <div style="font-size: 0.8rem; color: var(--gray); margin-top: 4px;">
-                          <i class="far fa-clock"></i> {{ test.days_since_received }} day{{ test.days_since_received|pluralize }} ago
-                          {% if test.days_since_received > 3 %}
-                            <span class="deadline-tag"><i class="fas fa-exclamation-circle"></i> {{ test.days_since_received }} days overdue</span>
-                          {% endif %}
-                        </div>
-                      {% endif %}
-                    </td>
-                    <td><small>{{ test.parameter.method }}</small></td>
-                    <td>
-                      <span class="status-pill status-{{ test.status }}">
-                        {% if test.status == 'pending' %}
-                          <i class="fas fa-hourglass-half"></i>
-                        {% elif test.status == 'completed' %}
-                          <i class="fas fa-check-circle"></i>
-                        {% elif test.status == 'verified' %}
-                          <i class="fas fa-check-double"></i>
-                        {% endif %}
-                        {{ test.status|title }}
-                      </span>
-                    </td>
-                    <td>
-                      <a href="{% url 'enter_result' test.id %}" class="action-link">
-                        <i class="fas fa-edit"></i> Enter Result
-                      </a>
-                    </td>
-                  </tr>
-                {% endfor %}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      {% endfor %}
-    {% else %}
-      <div class="empty-state">
+                    </div>
+                  {% endif %}
+                </td>
+                <td><small>{{ test.parameter.method }}</small></td>
+                <td>
+                  <span class="status-pill status-{{ test.status }}">
+                    {% if test.status == 'pending' %}
+                      <i class="fas fa-hourglass-half"></i>
+                    {% elif test.status == 'completed' %}
+                      <i class="fas fa-check-circle"></i>
+                    {% elif test.status == 'verified' %}
+                      <i class="fas fa-check-double"></i>
+                    {% endif %}
+                    {{ test.status|title }}
+                  </span>
+                </td>
+                <td>
+                  <a href="{% url 'enter_result' test.id %}" class="action-link">
+                    <i class="fas fa-edit"></i> Enter Result
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+    {% endwith %}
+  {% endfor %}
+{% else %}
+  <div class="empty-state">
         <i class="fas fa-check-circle"></i>
         <h3>All assigned tests have been completed!</h3>
         <p>You're all caught up with your assigned tests.</p>

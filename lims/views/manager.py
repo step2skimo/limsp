@@ -206,11 +206,10 @@ def result_review_view(request, sample_id):
 
 @login_required
 def review_panel_grouped_by_client(request):
-    from collections import defaultdict
-
     samples = (
         Sample.objects
         .filter(status=SampleStatus.UNDER_REVIEW)
+        .exclude(sample_type="QC")   # 🟢 exclude QC
         .select_related("client")
         .prefetch_related(
             Prefetch(

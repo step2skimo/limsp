@@ -25,9 +25,10 @@ urlpatterns = [
 
      path("dashboard/", dashboard_redirect, name="dashboard"),
      path('analyst/results/history/', views.result_history_view, name='result_history'),
-     path('analyst/test/begin/<int:result_id>/', views.begin_test_view, name='begin_test'),
+    
      path("reports/productivity/", analyst_productivity_view, name="analyst_productivity"),
      path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
+
 
      
     path("test-email/", test_email, name="test_email"),
@@ -43,11 +44,14 @@ urlpatterns = [
      path("intake/", views.sample_intake_view, name="sample_intake"),
      
 
+    path('manager/assign-by-parameter-overview/<str:client_id>/', views.assign_by_parameter_overview, name="assign_by_parameter_overview"),
 
 
 
 
     path("manager/assign-overview/", assign_overview_all_clients, name="assign_overview_all_clients"),
+    path("analyst/begin-analysis/<str:client_id>/<int:parameter_id>/", views.begin_parameter_analysis, name="begin_parameter_analysis"),
+
 
     path('manager/export-assignments/csv/<str:client_id>/', views.export_assignments_csv, name='export_parameter_assignments_csv'),
     path('manager/export-assignments/pdf/<str:client_id>/', views.export_assignments_pdf, name='export_parameter_assignments_pdf'),

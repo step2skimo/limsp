@@ -109,9 +109,18 @@ class QCMetricsForm(forms.ModelForm):
 
 
 class ResultEntryForm(forms.ModelForm):
-    temp = forms.DecimalField(required=False, max_digits=5, decimal_places=2)
-    humidity = forms.DecimalField(required=False, max_digits=5, decimal_places=2)
-    pressure = forms.DecimalField(required=False, max_digits=6, decimal_places=2)
+    temp = forms.DecimalField(
+        required=True,
+        max_digits=5,
+        decimal_places=2,
+        label="Temperature (°C)"
+    )
+    humidity = forms.DecimalField(
+        required=True,
+        max_digits=5,
+        decimal_places=2,
+        label="Humidity (%)"
+    )
     equipment_used = forms.ModelChoiceField(
         queryset=Equipment.objects.filter(is_active=True),
         required=False,
@@ -120,8 +129,23 @@ class ResultEntryForm(forms.ModelForm):
 
     class Meta:
         model = TestResult
-        fields = ['value', 'temp', 'humidity', 'pressure', 'equipment_used']  
+        fields = ['value', 'temp', 'humidity', 'equipment_used']
 
+    def clean(self):
+        cleaned = super().clean()
+        temp = cleaned.get("temp")
+        humidity = cleaned.get("humidity")
+
+        errors = {}
+        if temp is not None and not (10 <= temp <= 40):
+            errors['temp'] = "Temperature should be between 10°C and 40°C"
+        if humidity is not None and not (10 <= humidity <= 90):
+            errors['humidity'] = "Humidity should be between 10% and 90%"
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        return cleaned
 
 
 

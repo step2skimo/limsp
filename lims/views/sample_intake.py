@@ -3,7 +3,7 @@ from django.contrib.auth.decorators import login_required
 from collections import defaultdict
 from django.shortcuts import render, redirect
 from django.utils import timezone
-from lims.models import Client, Parameter, TestAssignment
+from lims.models import Client, Parameter, TestAssignment, SampleStatus
 from lims.forms import ClientForm, SampleFormWithParameters
 from django.forms import formset_factory
 from django.contrib.auth import get_user_model
@@ -54,6 +54,7 @@ def sample_intake_view(request):
             for form in sample_formset:
                 sample = form.save(commit=False)
                 sample.client = client
+                sample.status = SampleStatus.RECEIVED
                 sample.save()
                 samples.append(sample)
 

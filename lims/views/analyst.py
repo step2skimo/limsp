@@ -50,7 +50,9 @@ def analyst_dashboard_view(request):
     one_week_ago = now_time - timedelta(days=7)
 
     for assignment in assignments:
-        grouped[assignment.parameter.name].append(assignment)
+        client_id = assignment.sample.client.client_id
+        key = (client_id, assignment.parameter.name)
+        grouped[key].append(assignment)
 
         if assignment.is_control:
             total_controls += 1
@@ -181,13 +183,31 @@ def result_history_view(request):
     })
 
 @login_required
-def begin_test_view(request, result_id):
-    if request.method == "POST":
-        result = get_object_or_404(TestResult, id=result_id)
-        if not result.started_at:
-            result.started_at = timezone.now()
-            result.save()
-        return redirect(request.META.get("HTTP_REFERER", "analyst_dashboard"))
+def begin_parameter_analysis(request, client_id, parameter_id):
+    client = get_object_or_404(Client, client_id=client_id)
+    parameter = get_object_or_404(Parameter, id=parameter_id)
+
+    # find samples for this client that are still assigned
+    assigned_samples = Sample.objects.filter(
+        client=client,
+        status=SampleStatus.ASSIGNED,
+        testassignment__parameter=parameter
+    ).distinct()
+
+    if assigned_samples.exists():
+        assigned_samples.update(status=SampleStatus.IN_PROGRESS)
+        messages.success(
+            request,
+            f"✅ Started analysis for parameter '{parameter.name}' on {assigned_samples.count()} samples for client CID-{client.client_id}."
+        )
+    else:
+        messages.warning(
+            request,
+            f"⚠️ No samples in 'assigned' status for parameter '{parameter.name}' on this client."
+        )
+
+    return redirect("analyst_dashboard")  # adjust this to your actual dashboard route
+
 
 
 @login_required

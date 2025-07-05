@@ -10,7 +10,7 @@ from django.http import HttpResponse
 from reportlab.pdfgen import canvas
 from django.core.paginator import Paginator
 from django.contrib.auth import get_user_model
-from notifications.utils import notify  # cross-app import
+from notifications.utils import notify
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
@@ -66,7 +66,9 @@ def assign_parameter_tests(request, client_id, parameter_id):
             defaults={
                 "client": client,
                 "sample_type": "QC",
-                "weight": 0
+                "weight": 0,
+                "status": SampleStatus.ASSIGNED
+                
             }
         )
 
@@ -127,6 +129,21 @@ def assign_parameter_tests(request, client_id, parameter_id):
     })
 
 
+@login_required
+def assign_by_parameter_overview(request, client_id):
+    client = get_object_or_404(Client, client_id=client_id)
+    samples = Sample.objects.filter(client=client)
+    test_assignments = (
+        TestAssignment.objects
+        .filter(sample__client=client)
+        .select_related('sample', 'analyst', 'parameter')
+    )
+
+    return render(request, "lims/manager/assign_by_parameter_overview.html", {
+        "client": client,
+        "test_assignments": test_assignments,
+        "samples": samples,
+    })
 
 
 
