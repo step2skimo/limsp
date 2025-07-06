@@ -8,6 +8,7 @@ from lims.forms import ResultEntryForm, QCMetricsForm
 from django.contrib.auth import get_user_model
 from notifications.utils import notify  
 
+
 User = get_user_model()
 
 
@@ -31,11 +32,22 @@ def enter_result(request, assignment_id):
             test_assignment=test_assignment
         )
 
+    # ✅ Promotion helper: checks all samples for this client+parameter combo
+    def promote_samples_for_parameter_if_ready(parameter, client):
+        from lims.models import Sample, TestAssignment, SampleStatus
+        samples = client.sample_set.all()
+        assignments = TestAssignment.objects.filter(sample__in=samples, parameter=parameter)
+        if all(a.status == "completed" for a in assignments):
+            for s in samples:
+                if s.status != SampleStatus.UNDER_REVIEW:
+                    s.status = SampleStatus.UNDER_REVIEW
+                    s.save(update_fields=["status"])
+                    print(f"🔁 Promoted {s.sample_code} to UNDER_REVIEW for {parameter.name}")
+
     if request.method == "POST":
         form_valid = form.is_valid()
         qc_valid = qc_form.is_valid() if qc_form else True
 
-        # grab temperature/humidity from POST
         temperature = request.POST.get("temperature")
         humidity = request.POST.get("humidity")
 
@@ -51,11 +63,9 @@ def enter_result(request, assignment_id):
 
         if test_assignment.is_control and not qc_valid:
             print("🔬 QC Form Errors:", qc_form.errors)
-            print("Non-field Errors:", qc_form.non_field_errors())
-            print("Measured Value:", qc_form.cleaned_data.get("measured_value", None))
 
         if form_valid and qc_valid:
-            # save test result
+            # Save result
             result = form.save(commit=False)
             result.test_assignment = test_assignment
             result.recorded_by = request.user
@@ -63,14 +73,14 @@ def enter_result(request, assignment_id):
             result.recorded_at = result.recorded_at or timezone.now()
             result.save()
 
-            # create TestEnvironment for this result
+            # Environmental metadata
             TestEnvironment.objects.create(
                 test_result=result,
                 temperature=temperature,
                 humidity=humidity
             )
 
-            # Derived calculations
+            # Derived results logic
             results = TestResult.objects.filter(test_assignment__sample=sample)
             result_dict = {
                 r.test_assignment.parameter.name: float(r.value)
@@ -88,30 +98,14 @@ def enter_result(request, assignment_id):
                 qc_metrics.test_assignment = test_assignment
                 qc_metrics.save()
 
-                # mark QC assignment as completed
-                test_assignment.status = "completed"
-                test_assignment.save(update_fields=["status"])
+            # ✅ Mark assignment as completed
+            test_assignment.status = "completed"
+            test_assignment.save(update_fields=["status"])
 
-                status = qc_metrics.status
-                if status == "pass":
-                    messages.success(request, f"✅ QC Passed for {parameter.name}")
-                elif status == "fail":
-                    messages.warning(request, f"❌ QC Failed for {parameter.name}")
-                else:
-                    messages.info(request, f"ℹ️ QC status undetermined for {parameter.name}")
+            # ✅ Promote related samples if all assignments for parameter+client are done
+            promote_samples_for_parameter_if_ready(parameter, sample.client)
 
-            # mark non-QC assignment as completed
-            if not test_assignment.is_control:
-                test_assignment.status = "completed"
-                test_assignment.save(update_fields=["status"])
-
-            # ✅ mark sample under review if all assignments are completed
-            all_assignments = sample.testassignment_set.all()
-            if all(a.status == "completed" for a in all_assignments):
-                sample.status = SampleStatus.UNDER_REVIEW
-                sample.save(update_fields=["status"])
-
-            # Notify managers
+            # Notify lab managers
             analyst_name = request.user.get_full_name()
             client_id = getattr(sample.client, 'client_id', '—')
             param_name = parameter.name
@@ -135,6 +129,7 @@ def enter_result(request, assignment_id):
         "test_assignment": test_assignment,
         "equipment_list": equipment_qs,
     })
+
 
 
 

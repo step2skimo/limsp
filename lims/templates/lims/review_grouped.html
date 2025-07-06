@@ -71,7 +71,6 @@
           <tr>
             <th>Sample Code</th>
             <th>Sample Type</th>
-            <th>Nature</th>
             <th>Status</th>
             <th>Action</th>
           </tr>
@@ -81,11 +80,14 @@
           <tr>
             <td>{{ sample.sample_code }}</td>
             <td>{{ sample.sample_type }}</td>
-            <td>{{ sample.nature }}</td>
+            
             <td>
-              <span class="status {{ sample.status|lower }}">
-                {{ sample.get_status_display }}
-              </span>
+            <span class="status {{ sample.status|lower }}">
+ {{ sample.get_status_display }}
+
+
+</span>
+
             </td>
             <td>
               <a href="{% url 'result_review_view' sample.id %}" class="btn">Review</a>

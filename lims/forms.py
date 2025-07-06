@@ -24,6 +24,10 @@ class SampleFormWithParameters(forms.ModelForm):
         model = Sample
         fields = ['sample_type', 'weight', 'sample_code', 'parameters']
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+       
+
 
 class ParameterSelectionForm(forms.Form):
     def __init__(self, *args, **kwargs):

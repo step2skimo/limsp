@@ -171,7 +171,7 @@ def coa_dashboard(request):
         Sample.objects
         .exclude(sample_type="QC")
         .select_related("client")
-        .order_by("client__client_id")
+        .order_by("-client__client_id", "-received_date")
     )
 
     # group them by client and check if they have approved samples

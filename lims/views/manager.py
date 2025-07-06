@@ -30,6 +30,20 @@ from lims.models import SampleStatus
 from collections import defaultdict
 from django.contrib import messages
 
+
+
+def promote_samples_for_parameter_if_ready(parameter, client):
+    samples = client.sample_set.all()
+    assignments = TestAssignment.objects.filter(sample__in=samples, parameter=parameter)
+
+    if all(a.status == "completed" for a in assignments):
+        for sample in samples:
+            if sample.status != SampleStatus.UNDER_REVIEW:
+                sample.status = SampleStatus.UNDER_REVIEW
+                sample.save(update_fields=["status"])
+                print(f"📣 {sample.sample_code} marked as UNDER_REVIEW for parameter {parameter.name}")
+
+
 @login_required
 def manager_dashboard(request):
     today = date.today()

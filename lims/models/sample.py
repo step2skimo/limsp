@@ -12,7 +12,7 @@ class SampleStatus(models.TextChoices):
 
 class Sample(models.Model):
     client = models.ForeignKey(Client, on_delete=models.CASCADE)
-    sample_code = models.CharField(max_length=50, unique=True)
+    sample_code = models.CharField(max_length=50)
     sample_type = models.CharField(max_length=100)
     weight = models.DecimalField(max_digits=6, decimal_places=2)
     temperature = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)

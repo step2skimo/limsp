@@ -50,36 +50,26 @@ def sample_intake_view(request):
             client.token = generate_token()
             client.save()
 
-            samples = []
+            # Save samples and assign parameters
             for form in sample_formset:
                 sample = form.save(commit=False)
                 sample.client = client
                 sample.status = SampleStatus.RECEIVED
                 sample.save()
-                samples.append(sample)
 
-            selected_param_ids = []
-            for i in range(len(sample_formset)):
-                selected_param_ids += request.POST.getlist(f'samples-{i}-parameters')
-
-            parameters = Parameter.objects.filter(id__in=selected_param_ids)
-
-            for sample in samples:
-                for param in parameters:
+                for param in form.cleaned_data['parameters']:
                     TestAssignment.objects.create(sample=sample, parameter=param)
 
             # ✅ Notify managers
-            sample_count = len(samples)
+            sample_count = len(sample_formset)
             client_name = client.name
             client_id = client.client_id
             clerk_name = request.user.get_full_name()
 
             managers = User.objects.filter(role=RoleChoices.MANAGER, is_active=True)
-
             for manager in managers:
                 print(f"📧 Manager email: {manager.email}")
                 notify_lab_manager_on_submission(
-                    
                     manager.email,
                     sample_count,
                     client_name,
@@ -93,6 +83,7 @@ def sample_intake_view(request):
         client_form = ClientForm()
         sample_formset = SampleFormSet(prefix='samples')
 
+    # Build parameter groupings for checkbox rendering
     group_map = defaultdict(list)
     for param in Parameter.objects.select_related("group").all():
         group_map[param.group.name].append(param)
