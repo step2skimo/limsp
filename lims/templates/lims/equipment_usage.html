@@ -1,6 +1,4 @@
-{% extends "base.html" %}
 
-{% block content %}
   <h2>🔧 Equipment Usage: {{ equipment.name }}</h2>
 
   <p>
@@ -17,7 +15,7 @@
           <th>Parameter</th>
           <th>Temperature (°C)</th>
           <th>Humidity (%)</th>
-          <th>Pressure (hPa)</th>
+         
           <th>Date Recorded</th>
           <th>Analyst</th>
         </tr>
@@ -29,7 +27,7 @@
             <td>{{ record.test_assignment.parameter.name }}</td>
             <td>{{ record.temperature }}</td>
             <td>{{ record.humidity }}</td>
-            <td>{{ record.pressure|default:"—" }}</td>
+           
             <td>{{ record.recorded_at|date:"Y-m-d H:i" }}</td>
             <td>{{ record.recorded_by.get_full_name|default:record.recorded_by.username }}</td>
           </tr>
@@ -39,4 +37,4 @@
   {% else %}
     <p>No test records found for this equipment yet.</p>
   {% endif %}
-{% endblock %}
+
