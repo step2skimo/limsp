@@ -8,7 +8,7 @@ from lims.forms import ClientForm, SampleFormWithParameters
 from django.forms import formset_factory
 from django.contrib.auth import get_user_model
 from notifications.utils import notify  
-from lims.utils.notifications import notify_lab_manager_on_submission
+from lims.utils.notifications import notify_lab_manager_on_submission, notify_client_on_submission
 from django.conf import settings
 from users.models import RoleChoices
 
@@ -65,6 +65,9 @@ def sample_intake_view(request):
             client_name = client.name
             client_id = client.client_id
             clerk_name = request.user.get_full_name()
+            sample_count = len(sample_formset)
+            client_email = client.email
+            client_token = client.token
 
             managers = User.objects.filter(role=RoleChoices.MANAGER, is_active=True)
             for manager in managers:
@@ -76,7 +79,21 @@ def sample_intake_view(request):
                     client_id,
                     clerk_name
                 )
+            
+            all_parameters = set()
+            for form in sample_formset:
+                for param in form.cleaned_data['parameters']:
+                    all_parameters.add(param.name)
+            parameter_list = list(all_parameters)
 
+            # Notify the client
+            notify_client_on_submission(
+                    client_email,
+                    sample_count,
+                    parameter_list,
+                    client_id,
+                    client_token
+                    )
             return redirect('intake_confirmation', client_id=client.client_id)
 
     else:

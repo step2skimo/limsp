@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_protect
 from django.utils import timezone
 from collections import defaultdict
-
+from lims.utils.notifications import notify_analyst_by_email
 
 User = get_user_model()
 
@@ -102,6 +102,13 @@ def assign_parameter_tests(request, client_id, parameter_id):
             f"Hi {analyst.first_name}, You’ve been assigned to analyze {sample_count} sample(s) for Client ID CID-{client.client_id}.\nParameter: {parameter.name}"
         )
 
+        notify_analyst_by_email(
+            analyst.email,
+            analyst.get_full_name(),
+            sample_count,
+            client.client_id,
+            parameter.name
+        )
         return redirect('assign_by_parameter_overview', client_id=client.client_id)
 
     assigned_sample_ids = TestAssignment.objects.filter(

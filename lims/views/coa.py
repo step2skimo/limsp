@@ -51,6 +51,8 @@ from collections import defaultdict
 import logging
 import os
 from django.conf import settings
+from django.contrib import messages
+from lims.utils.notifications import notify_client_on_coa_release
 
 logger = logging.getLogger(__name__)
 
@@ -190,13 +192,64 @@ def coa_dashboard(request):
 
 
 
-
 @login_required
 def release_client_coa(request, client_id):
     client = get_object_or_404(Client, id=client_id)
+    client_id_str = client.client_id.upper()
+
     client.coa_released = True
     client.save()
+
+    # ✅ Fetch completed samples with results
+    samples = (
+        Sample.objects
+        .exclude(sample_code__startswith="QC-")
+        .filter(client=client)
+        .prefetch_related(
+            "testassignment_set__parameter",
+            "testassignment_set__testresult",
+            "testassignment_set__testenvironment"
+        )
+    )
+
+    # ✅ Build summary and parameter list
+    summary_input = {}
+    parameters = set()
+
+    for sample in samples:
+        param_values = {}
+        for ta in sample.testassignment_set.all():
+            res = getattr(ta, "testresult", None)
+            if res:
+                value = res.value
+                param_values[ta.parameter.name.lower()] = value
+                summary_input.setdefault(ta.parameter.name, []).append(value)
+                parameters.add((ta.parameter.name, ta.parameter.unit, ta.parameter.method))
+
+        # Add CHO and ME if all required
+        required = ["protein", "fat", "ash", "moisture", "fiber"]
+        if all(k in param_values for k in required):
+            cho = round(100 - sum(param_values[k] for k in required), 2)
+            me = round((param_values["protein"] * 4) + (param_values["fat"] * 9) + (cho * 4), 2)
+            summary_input.setdefault("CHO", []).append(cho)
+            summary_input.setdefault("ME", []).append(me)
+            parameters.add(("CHO", "%", "Calculated"))
+            parameters.add(("ME", "kcal/100g", "Estimated"))
+
+    summary_text = generate_dynamic_summary(summary_input)
+    param_list = [{"name": p[0], "unit": p[1], "method": p[2]} for p in sorted(parameters)]
+
+    # ✅ Notify client with attached COA
+    notify_client_on_coa_release(
+        client,
+        samples,
+        summary_text,
+        param_list
+    )
+
+    messages.success(request, f"✅ COA released and emailed to {client.name}.")
     return redirect("coa_dashboard")
+
 
 
 @login_required
