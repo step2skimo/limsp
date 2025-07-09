@@ -1,0 +1,40 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Batch Result Submitted</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 40px;
+      background: #f9f9f9;
+      color: #333;
+      text-align: center;
+    }
+    .box {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      display: inline-block;
+    }
+    .btn {
+      margin-top: 20px;
+      display: inline-block;
+      padding: 12px 25px;
+      background-color: #2ecc71;
+      color: white;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>✅ Results Submitted Successfully</h2>
+    <p>All results for <strong>{{ parameter.name }}</strong> under Client ID <strong>CID-{{ client.client_id }}</strong> have been submitted.</p>
+    <p>The lab manager will now review and approve the results.</p>
+    <a href="{% url 'analyst_dashboard' %}" class="btn">🔙 Back to Analyst Dashboard</a>
+  </div>
+</body>
+</html>

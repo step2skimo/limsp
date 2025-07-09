@@ -139,109 +139,119 @@ def manager_dashboard(request):
 
 
 
-@login_required
-def result_review_view(request, sample_id):
-    sample = get_object_or_404(Sample, id=sample_id)
-    tests = sample.testassignment_set.all().select_related('parameter', 'testresult', 'qc_metrics')
-
-    if request.method == 'POST':
-        # check if parameter-level action was triggered
-        param_action = request.POST.get("param_action")
-        testassignment_id = request.POST.get("testassignment_id")
-
-        if param_action and testassignment_id:
-            try:
-                test = TestAssignment.objects.get(id=testassignment_id, sample=sample)
-            except TestAssignment.DoesNotExist:
-                messages.error(request, "❌ Invalid parameter selected.")
-                return redirect('result_review_view', sample_id=sample_id)
-
-            comment = request.POST.get("parameter_comment", "").strip()
-
-            if param_action == "approve":
-                test.status = 'verified'
-                test.save(update_fields=['status'])
-                messages.success(request, f"✅ Parameter {test.parameter.name} approved.")
-            elif param_action == "reject":
-                test.status = 'assigned'
-                test.manager_comment = comment
-                test.save(update_fields=['status', 'manager_comment'])
-                messages.warning(
-                    request,
-                    f"🚨 Parameter {test.parameter.name} rejected and sent back to analyst."
-                )
-            else:
-                messages.error(request, "❌ Invalid action.")
-            return redirect('result_review_view', sample_id=sample_id)
-
-        # otherwise process the sample-level buttons
-        action = request.POST.get("action")
-
-        if any(t.status != 'completed' and t.status != 'verified' for t in tests):
-            messages.error(request, "❌ Not all tests are completed or verified.")
-            return redirect('review_panel_grouped_by_client')
-
-        if action == "approve":
-            for test in tests:
-                test.status = 'verified'
-                test.save(update_fields=['status'])
-
-            sample.status = SampleStatus.APPROVED
-            sample.verified_at = timezone.now()
-            sample.save(update_fields=['status', 'verified_at'])
-
-            messages.success(request, "✅ Sample verified and approved.")
-        
-        elif action == "reject":
-            comment = request.POST.get("manager_comment", "").strip()
-            if not comment:
-                messages.error(request, "❌ You must provide a reason for rejection.")
-                return redirect('result_review_view', sample_id=sample_id)
-
-            # send all back to analyst
-            for test in tests:
-                test.status = 'assigned'
-                test.save(update_fields=['status'])
-            sample.status = SampleStatus.IN_PROGRESS
-            sample.manager_comment = comment
-            sample.save(update_fields=['status', 'manager_comment'])
-
-            messages.warning(request, "🚨 Sample sent back to analyst for corrections.")
-        
-        return redirect('review_panel_grouped_by_client')
-
-    return render(request, 'lims/review_results.html', {
-        'sample': sample,
-        'tests': tests
-    })
-
-
 
 
 @login_required
-def review_panel_grouped_by_client(request):
-    samples = (
-        Sample.objects
-        .filter(status=SampleStatus.UNDER_REVIEW)
-        .exclude(sample_type="QC")   # 🟢 exclude QC
-        .select_related("client")
-        .prefetch_related(
-            Prefetch(
-                'testassignment_set',
-                queryset=TestAssignment.objects.select_related('parameter', 'testresult', 'qc_metrics')
-            )
-        )
-        .order_by('client__client_id')
+def review_by_parameter(request, parameter_id):
+    parameter = get_object_or_404(Parameter, id=parameter_id)
+
+    # Get only non-QC completed assignments
+    assignments = (
+        TestAssignment.objects
+        .filter(parameter=parameter, status="completed")
+        .exclude(sample__sample_type="QC")
+        .select_related("sample__client", "testresult", "qc_metrics")
+        .order_by("sample__client__client_id", "sample__sample_code")
     )
 
+    # Group assignments by client ID
     grouped = defaultdict(list)
+    for assignment in assignments:
+        grouped[assignment.sample.client.client_id].append(assignment)
 
-    for sample in samples:
-        print(f"✅ sample: {sample.sample_code}, client: {sample.client.client_id}")
-        grouped[sample.client.client_id].append(sample)
+    if request.method == "POST":
+        action = request.POST.get("action")
+        assignment_id = request.POST.get("assignment_id")
+        comment = request.POST.get("comment", "").strip()
+        is_bulk = request.POST.get("bulk")
 
-    print("✅ grouped keys:", grouped.keys())
+        if is_bulk:
+            # 🔁 Bulk Approve or Reject All
+            for assignment in assignments:
+                sample = assignment.sample
+                if action == "approve_all":
+                    assignment.status = "verified"
+                    assignment.manager_comment = ""
+                elif action == "reject_all":
+                    assignment.status = "assigned"
+                    assignment.manager_comment = "Rejected during bulk review"
+                assignment.save(update_fields=["status", "manager_comment"])
 
-    return render(request, 'lims/review_grouped.html', {
-        'grouped_samples': dict(grouped)
+                # ✅ Check if all other assignments are verified
+                other = sample.testassignment_set.exclude(status="verified")
+                if not other.exists():
+                    sample.status = SampleStatus.APPROVED
+                    sample.verified_at = timezone.now()
+                    sample.save(update_fields=["status", "verified_at"])
+
+            messages.success(request, f"✅ Bulk action '{action}' applied.")
+            return redirect("review_by_parameter", parameter_id=parameter_id)
+
+        # ✅ Individual Approve / ❌ Reject
+        assignment = get_object_or_404(TestAssignment, id=assignment_id)
+        sample = assignment.sample
+
+        if action == "approve":
+            assignment.status = "verified"
+            assignment.manager_comment = ""
+            assignment.save(update_fields=["status", "manager_comment"])
+
+            # ✅ Check if all tests for this sample are now verified
+            remaining = sample.testassignment_set.exclude(status="verified")
+            if not remaining.exists():
+                sample.status = SampleStatus.APPROVED
+                sample.verified_at = timezone.now()
+                sample.save(update_fields=["status", "verified_at"])
+
+            messages.success(request, f"✅ {assignment.sample.sample_code} approved.")
+
+        elif action == "reject":
+            assignment.status = "assigned"
+            assignment.manager_comment = comment
+            assignment.save(update_fields=["status", "manager_comment"])
+            messages.warning(request, f"❌ {assignment.sample.sample_code} rejected.")
+
+        else:
+            messages.error(request, "❌ Invalid action.")
+
+        return redirect("review_by_parameter", parameter_id=parameter_id)
+
+    return render(request, "lims/review_by_parameter.html", {
+        "parameter": parameter,
+        "grouped_assignments": dict(grouped),
     })
+
+
+
+@login_required
+def parameter_review_list(request):
+    # Get only test samples with 'completed' status
+    completed_assignments = (
+        TestAssignment.objects
+        .filter(status="completed", is_control=False)
+        .select_related("parameter", "sample__client")
+    )
+
+    # Group parameters per client
+    grouped_parameters = defaultdict(list)
+
+    for ta in completed_assignments:
+        client_id = ta.sample.client.client_id
+        param = ta.parameter
+
+        # Avoid duplicates per parameter per client
+        already_added = any(p.id == param.id for p in grouped_parameters[client_id])
+        if not already_added:
+            # Count how many assignments this client has for this parameter
+            count = sum(
+                1 for t in completed_assignments
+                if t.parameter.id == param.id and t.sample.client.client_id == client_id
+            )
+            param.pending_reviews = count
+            grouped_parameters[client_id].append(param)
+
+    return render(request, "lims/parameter_review_list.html", {
+        "grouped_parameters": dict(grouped_parameters)
+    })
+
+

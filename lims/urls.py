@@ -30,7 +30,8 @@ urlpatterns = [
      path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
 
 
-     
+    path('results/batch/<str:client_id>/<int:parameter_id>/', views.enter_batch_result, name='enter_batch_result'),
+
     path("test-email/", test_email, name="test_email"),
 
      
@@ -56,7 +57,7 @@ urlpatterns = [
     path('manager/export-assignments/csv/<str:client_id>/', views.export_assignments_csv, name='export_parameter_assignments_csv'),
     path('manager/export-assignments/pdf/<str:client_id>/', views.export_assignments_pdf, name='export_parameter_assignments_pdf'),
 
-    path('result-success/<int:assignment_id>/', views.result_success, name='result_success'),
+   
 
     path('intake/confirmation/<str:client_id>/', views.intake_confirmation_view, name='intake_confirmation'),
 
@@ -65,14 +66,28 @@ urlpatterns = [
     path("manager/reports/excel/", export_report_excel, name="export_report_excel"),
     path("coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa_pdf"),
 
+    path(
+        "results/batch/<str:client_id>/<int:parameter_id>/success/",
+        views.batch_result_success,
+        name="result_success_batch"
+    ),
+    # urls.py
+    path("manager/review/<int:parameter_id>/", views.review_by_parameter, name="review_by_parameter"),
+    
+    path("manager/review/", views.parameter_review_list, name="parameter_review_list"),
+
+
+
+
+
     path('coa_dashboard/', views.coa_dashboard, name='coa_dashboard'),
     path('preview_coa/<str:client_id>/', views.preview_coa, name='preview_coa'),
     path('generate_coa/<str:client_id>/', views.generate_coa_pdf, name='generate_coa'),
     path('release_coa/<int:client_id>/', views.release_client_coa, name='release_client_coa'),
 
     # Manager review
-    path('manager/results/review/<int:sample_id>/', views.result_review_view, name='result_review_view'),
-    path('manager/results/review_panel/', views.review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
+    # path('manager/results/review/<int:sample_id>/', views.result_review_view, name='result_review_view'),
+    # path('manager/results/review_panel/', views.review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
    
 
 
@@ -85,7 +100,7 @@ urlpatterns = [
 
 
     path('receipt/download/<int:client_id>/', views.intake_pdf_download, name='intake_receipt_pdf'),
-    path('analyst/result/<int:assignment_id>/submit/', views.enter_result_view, name='enter_result'),
+   # path('analyst/result/<int:assignment_id>/submit/', views.enter_result_view, name='enter_result'),
    
 
     path("api/sample_status/", views.sample_status_json, name="sample_status_json"),
@@ -123,7 +138,7 @@ urlpatterns = [
     path("analyst/qc/charts/", views.analyst_qc_dashboard, name="analyst_qc_dashboard"),
     path("manager/test-assignments/", views.test_assignment_list, name="test_assignment_list"),
     path('manager/assign-by-parameter/<str:client_id>/<int:parameter_id>/', views.assign_parameter_tests, name='assign_parameter_tests'),
-    path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
+  #  path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
     path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
 
 

@@ -1,5 +1,5 @@
 from django import forms
-from .models import Client, Sample, Parameter, ParameterGroup, QCMetrics, Equipment, TestResult
+from .models import Client, Sample, Parameter, ParameterGroup, QCMetrics, Equipment, TestResult, TestEnvironment, TestAssignment
 from django.forms import formset_factory
 from django import forms
 from decimal import Decimal, ROUND_HALF_UP
@@ -43,6 +43,8 @@ class ParameterSelectionForm(forms.Form):
             )
 
 
+
+
 class QCMetricsForm(forms.ModelForm):
     min_acceptable = forms.DecimalField(
         disabled=True, required=False, label="Min Acceptable"
@@ -59,50 +61,58 @@ class QCMetricsForm(forms.ModelForm):
         label="Measured Value"
     )
 
+    tolerance = forms.DecimalField(
+        required=False,
+        widget=forms.HiddenInput()
+    )
+
     class Meta:
         model = QCMetrics
-        fields = [
-            'expected_value', 'measured_value', 'tolerance',
-            'min_acceptable', 'max_acceptable', 'notes'
-        ]
+        fields = ['measured_value', 'expected_value', 'tolerance',
+                  'min_acceptable', 'max_acceptable', 'notes']
         widgets = {
-            'expected_value': forms.NumberInput(attrs={'step': '0.01'}),
-            'tolerance': forms.NumberInput(attrs={'step': '0.01'}),
+            'expected_value': forms.NumberInput(attrs={
+                'step': '0.01',
+                'readonly': 'readonly'
+            }),
             'notes': forms.Textarea(attrs={'rows': 2}),
         }
 
     def __init__(self, *args, **kwargs):
-        test_assignment = kwargs.pop('test_assignment', None)
+        self.test_assignment = kwargs.pop('test_assignment', None)
         super().__init__(*args, **kwargs)
 
-        self.test_assignment = test_assignment or getattr(self.instance, "test_assignment", None)
+        if not self.test_assignment:
+            self.test_assignment = getattr(self.instance, 'test_assignment', None)
 
-        if self.test_assignment and hasattr(self.test_assignment.parameter, 'control_spec'):
-            spec = self.test_assignment.parameter.control_spec
+        if self.test_assignment:
+            spec = getattr(self.test_assignment.parameter, 'control_spec', None)
+            if spec:
+                self.fields['min_acceptable'].initial = spec.min_acceptable
+                self.fields['max_acceptable'].initial = spec.max_acceptable
 
-            self.fields['min_acceptable'].initial = spec.min_acceptable
-            self.fields['max_acceptable'].initial = spec.max_acceptable
+                if not self.instance.expected_value and spec.expected_value is not None:
+                    self.fields['expected_value'].initial = spec.expected_value
+                    self.instance.expected_value = spec.expected_value
 
-            if not self.instance.expected_value and getattr(spec, 'expected_value', None):
-                self.fields['expected_value'].initial = spec.expected_value
-
-            if not self.instance.tolerance and getattr(spec, 'default_tolerance', None):
-                self.fields['tolerance'].initial = spec.default_tolerance
+                if not self.instance.tolerance and spec.default_tolerance is not None:
+                    self.fields['tolerance'].initial = spec.default_tolerance
+                    self.instance.tolerance = spec.default_tolerance
 
     def clean(self):
         cleaned = super().clean()
-        val = cleaned.get("measured_value")
 
-        if val is not None:
-            val = Decimal(val).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-            cleaned["measured_value"] = val
-            self.instance.measured_value = val
+        measured = cleaned.get("measured_value")
+        min_val = self.fields['min_acceptable'].initial
+        max_val = self.fields['max_acceptable'].initial
 
-            min_val = self.fields['min_acceptable'].initial
-            max_val = self.fields['max_acceptable'].initial
+        if measured is not None:
+            measured = Decimal(measured).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+            cleaned['measured_value'] = measured
+            self.instance.measured_value = measured
 
             try:
-                if float(val) < float(min_val) or float(val) > float(max_val):
+                if float(measured) < float(min_val) or float(measured) > float(max_val):
                     self.instance.status = "fail"
                 else:
                     self.instance.status = "pass"
@@ -112,37 +122,30 @@ class QCMetricsForm(forms.ModelForm):
         return cleaned
 
 
-class ResultEntryForm(forms.ModelForm):
-    temp = forms.DecimalField(
-        required=True,
-        max_digits=5,
-        decimal_places=2,
-        label="Temperature (°C)"
-    )
-    humidity = forms.DecimalField(
-        required=True,
-        max_digits=5,
-        decimal_places=2,
-        label="Humidity (%)"
-    )
-    equipment_used = forms.ModelChoiceField(
-        queryset=Equipment.objects.filter(is_active=True),
-        required=False,
-        empty_label="— Select —"
-    )
 
+class ResultEntryForm(forms.ModelForm):
     class Meta:
         model = TestResult
-        fields = ['value', 'temp', 'humidity', 'equipment_used']
+        fields = ['value']  
+
+class TestEnvironmentForm(forms.ModelForm):
+    class Meta:
+        model = TestEnvironment
+        fields = ['temperature', 'humidity', 'instrument']
+        labels = {
+            'temperature': 'Temperature (°C)',
+            'humidity': 'Humidity (%)',
+            'instrument': 'Equipment Used',
+        }
 
     def clean(self):
         cleaned = super().clean()
-        temp = cleaned.get("temp")
+        temp = cleaned.get("temperature")
         humidity = cleaned.get("humidity")
 
         errors = {}
         if temp is not None and not (10 <= temp <= 40):
-            errors['temp'] = "Temperature should be between 10°C and 40°C"
+            errors['temperature'] = "Temperature should be between 10°C and 40°C"
         if humidity is not None and not (10 <= humidity <= 90):
             errors['humidity'] = "Humidity should be between 10% and 90%"
 
@@ -150,6 +153,49 @@ class ResultEntryForm(forms.ModelForm):
             raise forms.ValidationError(errors)
 
         return cleaned
+
+
+
+
+# class ResultEntryForm(forms.ModelForm):
+#     temp = forms.DecimalField(
+#         required=True,
+#         max_digits=5,
+#         decimal_places=2,
+#         label="Temperature (°C)"
+#     )
+#     humidity = forms.DecimalField(
+#         required=True,
+#         max_digits=5,
+#         decimal_places=2,
+#         label="Humidity (%)"
+#     )
+#     equipment_used = forms.ModelChoiceField(
+#         queryset=Equipment.objects.filter(is_active=True),
+#         required=False,
+#         empty_label="— Select —"
+#     )
+
+#     class Meta:
+#         model = TestResult
+#         fields = ['value', 'equipment_used']  # ✅ exclude temp & humidity
+
+#     def clean(self):
+#         cleaned = super().clean()
+#         temp = cleaned.get("temp")
+#         humidity = cleaned.get("humidity")
+
+#         errors = {}
+#         if temp is not None and not (10 <= temp <= 40):
+#             errors['temp'] = "Temperature should be between 10°C and 40°C"
+#         if humidity is not None and not (10 <= humidity <= 90):
+#             errors['humidity'] = "Humidity should be between 10% and 90%"
+
+#         if errors:
+#             raise forms.ValidationError(errors)
+
+#         return cleaned
+
 
 
 

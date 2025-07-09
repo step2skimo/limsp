@@ -29,7 +29,7 @@ def ask_lab_ai(request):
 
             # ✅ Gemini: Use system_instruction (NOT history role="system")
             model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",  # or "gemini-2.5-flash" if enabled for your API key
+                model_name="gemini-1.5-flash",
                 system_instruction=system_prompt
             )
 

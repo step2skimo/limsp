@@ -1,0 +1,199 @@
+{% load static %}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Enter Results – {{ parameter.name }} | CID-{{ client.client_id }}</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    h2, h3 { color: #2c3e50; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; margin-top: 10px; font-weight: bold; }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      font-size: 1em;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .section { margin-bottom: 40px; }
+    button {
+      padding: 12px 30px;
+      background: #2ecc71;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      font-size: 1em;
+      cursor: pointer;
+    }
+    .messages .error { color: red; }
+    .messages .success { color: green; }
+    #qc-status, #recovery-display {
+      font-size: 0.95em;
+      font-weight: bold;
+      margin-top: 6px;
+    }
+    .sample-box {
+      background: #fff;
+      padding: 15px;
+      border-left: 5px solid #3498db;
+      margin-bottom: 20px;
+      border-radius: 4px;
+    }
+    .info-box {
+      background: #f0f0f0;
+      padding: 10px;
+      margin-top: 10px;
+      border-left: 4px solid #7f8c8d;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+     <a href="{% url 'analyst_dashboard' %}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-speedometer2 me-1"></i> Analyst Dashboard
+    </a>
+
+<h2>🧪 Enter Results – {{ parameter.name }} for CID-{{ client.client_id }}</h2>
+
+{% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+      <div class="{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+<form method="POST">
+  {% csrf_token %}
+
+  <!-- 🔹 Environment Section -->
+  <div class="section">
+    <h3>🌡️ Environment & Equipment</h3>
+
+    <div class="form-group">
+      <label for="{{ env_form.temperature.id_for_label }}">Temperature (°C)</label>
+      {{ env_form.temperature }}
+      {% for error in env_form.temperature.errors %}
+        <div class="messages error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ env_form.humidity.id_for_label }}">Humidity (%)</label>
+      {{ env_form.humidity }}
+      {% for error in env_form.humidity.errors %}
+        <div class="messages error">{{ error }}</div>
+      {% endfor %}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ env_form.instrument.id_for_label }}">Equipment Used</label>
+      {{ env_form.instrument }}
+      {% for error in env_form.instrument.errors %}
+        <div class="messages error">{{ error }}</div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- 🔹 Sample Result Entry -->
+  <div class="section">
+    <h3>📋 Results for Samples</h3>
+    {% for assignment, form in result_forms %}
+      <div class="sample-box">
+        <h4>🧾 {{ assignment.sample.sample_code }}</h4>
+        {% for field in form %}
+          <div class="form-group">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            {% for error in field.errors %}
+              <div class="messages error">{{ error }}</div>
+            {% endfor %}
+          </div>
+        {% endfor %}
+      </div>
+    {% endfor %}
+  </div>
+
+  <!-- 🔹 QC Evaluation -->
+  {% if qc_form %}
+    <div class="section">
+      <h3>🔬 QC Evaluation – {{ control_assignment.sample.sample_code }}</h3>
+
+      <div class="form-group">
+        <label for="{{ qc_form.measured_value.id_for_label }}">Measured Value</label>
+        {{ qc_form.measured_value }}
+        <div id="qc-status"></div>
+        <div id="recovery-display"></div>
+        {% for error in qc_form.measured_value.errors %}
+          <div class="messages error">{{ error }}</div>
+        {% endfor %}
+      </div>
+
+      <div class="info-box">
+        <strong>Expected:</strong> {{ qc_form.initial.expected_value|default:"—" }}<br>
+        <strong>Min Acceptable:</strong> {{ qc_form.initial.min_acceptable|default:"—" }}<br>
+        <strong>Max Acceptable:</strong> {{ qc_form.initial.max_acceptable|default:"—" }}
+      </div>
+
+      <div class="info-box">
+        <strong>Why this matters:</strong><br>
+        QC samples help verify the accuracy of test methods and analyst performance.
+      </div>
+    </div>
+  {% endif %}
+
+  <button type="submit">✅ Submit All Results</button>
+</form>
+
+<!-- 🔹 QC Live Script -->
+{% if qc_form %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    try {
+      const measured = document.querySelector('[name$="measured_value"]');
+      const statusEl = document.getElementById('qc-status');
+      const recoveryDisplay = document.getElementById('recovery-display');
+      const expected = parseFloat("{{ qc_form.initial.expected_value|default_if_none:'0' }}");
+      const min = parseFloat("{{ qc_form.initial.min_acceptable|default_if_none:'0' }}");
+      const max = parseFloat("{{ qc_form.initial.max_acceptable|default_if_none:'0' }}");
+
+      function updateQCStatus() {
+        const val = parseFloat(measured.value);
+        if (!isNaN(val)) {
+          if (val < min || val > max) {
+            measured.style.borderColor = "red";
+            statusEl.textContent = `❌ Out of Range [${min} – ${max}]`;
+            statusEl.style.color = "red";
+          } else {
+            measured.style.borderColor = "green";
+            statusEl.textContent = `✅ Within Range [${min} – ${max}]`;
+            statusEl.style.color = "green";
+          }
+
+          if (!isNaN(expected) && expected !== 0) {
+            const recovery = ((val / expected) * 100).toFixed(2);
+            recoveryDisplay.textContent = `🧮 Recovery: ${recovery}%`;
+          }
+        }
+      }
+
+      if (measured) {
+        measured.addEventListener("input", updateQCStatus);
+        updateQCStatus();
+      }
+    } catch (err) {
+      console.error("QC script error", err);
+    }
+  });
+</script>
+{% endif %}
+
+</body>
+</html>

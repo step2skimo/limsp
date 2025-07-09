@@ -1,0 +1,77 @@
+
+{% load static %}
+
+
+<h2>🔎 Review Results for Parameter: <strong>{{ parameter.name }}</strong></h2>
+
+{% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+      <div class="alert {{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+{% endif %}
+
+{% for client_id, assignments in grouped_assignments.items %}
+  <div class="client-group" style="margin-bottom: 40px;">
+    <h3 style="margin-bottom: 10px;">👤 Client: <span style="color: #2c3e50;">{{ client_id }}</span></h3>
+
+    <table style="width: 100%; border-collapse: collapse; background: #fff;">
+      <thead>
+        <tr style="background-color: #f1f1f1;">
+          <th style="padding: 8px; border: 1px solid #ccc;">Sample Code</th>
+          <th style="padding: 8px; border: 1px solid #ccc;">Value</th>
+          <th style="padding: 8px; border: 1px solid #ccc;">QC Status</th>
+          <th style="padding: 8px; border: 1px solid #ccc;">Comment</th>
+          <th style="padding: 8px; border: 1px solid #ccc;">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for assignment in assignments %}
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{ assignment.sample.sample_code }}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">{{ assignment.testresult.value }}</td>
+          <td style="padding: 8px; border: 1px solid #ddd;">
+            {% if assignment.qc_metrics %}
+              {% if assignment.qc_metrics.status == 'fail' %}
+                <span style="color: red;">❌ Fail</span>
+              {% elif assignment.qc_metrics.status == 'pass' %}
+                <span style="color: green;">✅ Pass</span>
+              {% else %}
+                <span style="color: gray;">Pending</span>
+              {% endif %}
+            {% else %}
+              <span style="color: gray;">—</span>
+            {% endif %}
+          </td>
+          <td style="padding: 8px; border: 1px solid #ddd;">
+            <form method="post" style="margin: 0;">
+              {% csrf_token %}
+              <input type="hidden" name="assignment_id" value="{{ assignment.id }}">
+              <textarea name="comment" rows="2" style="width: 100%;">{{ assignment.manager_comment }}</textarea>
+          </td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">
+              <button type="submit" name="action" value="approve" style="background-color: #2ecc71; color: white; border: none; padding: 5px 12px; border-radius: 4px;">✅</button>
+              <button type="submit" name="action" value="reject" style="background-color: #e74c3c; color: white; border: none; padding: 5px 12px; border-radius: 4px; margin-left: 5px;">❌</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% empty %}
+  <p>🎉 No completed results found for this parameter.</p>
+{% endfor %}
+
+{% if grouped_assignments %}
+  <form method="post" style="margin-top: 30px; text-align: center;">
+    {% csrf_token %}
+    <input type="hidden" name="bulk" value="1">
+    <button type="submit" name="action" value="approve_all" style="background-color: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 4px; font-weight: bold; margin-right: 10px;">✅ Approve All</button>
+    <button type="submit" name="action" value="reject_all" style="background-color: #c0392b; color: white; padding: 10px 20px; border: none; border-radius: 4px; font-weight: bold;">❌ Reject All</button>
+  </form>
+{% endif %}
+
+<a href="{% url 'parameter_review_list' %}" style="display: inline-block; margin-top: 30px; text-decoration: none; color: #3498db;">← Back to Parameter Review List</a>
+
