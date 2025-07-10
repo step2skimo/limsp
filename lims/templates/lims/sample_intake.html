@@ -308,13 +308,14 @@
                           <ul class="parameter-list">
                             {% for param in group.parameters %}
                               <li class="parameter-item">
-                                <input type="checkbox" class="parameter-checkbox form-check-input" 
-                                       name="samples-{{ forloop.parentloop.parentloop.counter0 }}-parameters" 
-                                       value="{{ param.id }}" 
-                                       id="param-{{ forloop.parentloop.parentloop.counter0 }}-{{ param.id }}">
-                                <label class="form-check-label" for="param-{{ forloop.parentloop.parentloop.counter0 }}-{{ param.id }}">
-                                  {{ param.name }}
-                                </label>
+                               <input type="checkbox" class="parameter-checkbox form-check-input" 
+       name="{{ form.prefix }}-parameters" 
+       value="{{ param.id }}" 
+       id="{{ form.prefix }}-param-{{ param.id }}">
+<label class="form-check-label" for="{{ form.prefix }}-param-{{ param.id }}">
+  {{ param.name }}
+</label>
+
                                 <span class="parameter-price">₦{{ param.default_price }}</span>
                                 <input type="hidden" class="param-price" value="{{ param.default_price }}">
                               </li>
