@@ -358,157 +358,172 @@
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      let totalForms = {{ sample_formset.total_form_count }};
-      const container = document.getElementById('sample-forms-container');
-      const managementInput = document.getElementById('id_samples-TOTAL_FORMS');
-      const originalForm = container.children[0]?.cloneNode(true);
-      
-      // Add new sample form
-      document.getElementById('add-sample-btn').addEventListener('click', function() {
-        if (!originalForm) return;
-        
-        const newForm = originalForm.cloneNode(true);
-        const formIndex = totalForms;
-        
-        // Update all field names/IDs with new index
-        const regex = /samples-(\d+)-/g;
-        newForm.innerHTML = newForm.innerHTML.replace(regex, `samples-${formIndex}-`);
-        newForm.dataset.index = formIndex;
-        
-        // Reset form values
-        newForm.querySelectorAll('input, select').forEach(field => {
-          if (field.type !== 'hidden') {
-            field.value = '';
-            field.checked = false;
-          }
-        });
-        
-        // Reset price display
-        newForm.querySelector('.sample-price-value').textContent = '0.00';
-        
-        container.appendChild(newForm);
-        totalForms++;
-        managementInput.value = totalForms;
-        
-        renumberSamples();
-        wireUpForm(newForm);
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    let totalForms = {{ sample_formset.total_form_count }};
+    const container = document.getElementById('sample-forms-container');
+    const managementInput = document.getElementById('id_samples-TOTAL_FORMS');
+    const originalForm = container.children[0]?.cloneNode(true);
+
+    // Add new sample form
+    document.getElementById('add-sample-btn').addEventListener('click', function () {
+      if (!originalForm) return;
+
+      const newForm = originalForm.cloneNode(true);
+      const formIndex = totalForms;
+
+      // Replace name, id, and label-for references
+      const regex = /samples-(\d+)-/g;
+      const idRegex = /id_samples-(\d+)-/g;
+
+      newForm.innerHTML = newForm.innerHTML
+        .replace(regex, `samples-${formIndex}-`)
+        .replace(idRegex, `id_samples-${formIndex}-`);
+
+      newForm.dataset.index = formIndex;
+
+      // Reset input values
+      newForm.querySelectorAll('input, select, textarea').forEach(field => {
+        if (field.type === 'checkbox' || field.type === 'radio') {
+          field.checked = false;
+        } else if (field.type !== 'hidden') {
+          field.value = '';
+        }
       });
 
-      // Remove sample form
-      function removeSampleForm(btn) {
-        if (container.children.length <= 1) {
-          alert('You must have at least one sample.');
-          return;
+      // Reset price display
+      const priceEl = newForm.querySelector('.sample-price-value');
+      if (priceEl) priceEl.textContent = '0.00';
+
+      container.appendChild(newForm);
+      totalForms++;
+      managementInput.value = totalForms;
+
+      renumberSamples();
+      wireUpForm(newForm);
+    });
+
+    // Remove sample form
+    function removeSampleForm(btn) {
+      if (container.children.length <= 1) {
+        alert('You must have at least one sample.');
+        return;
+      }
+
+      btn.closest('.sample-form').remove();
+      totalForms--;
+      managementInput.value = totalForms;
+
+      renumberSamples();
+      updateTotalPrice();
+    }
+
+    // Renumber sample headings and form attributes
+    function renumberSamples() {
+      document.querySelectorAll('.sample-form').forEach((form, i) => {
+        form.querySelector('h5').textContent = `Sample ${i + 1}`;
+        form.dataset.index = i;
+
+        // Update input names
+        form.querySelectorAll('[name*="samples-"]').forEach(input => {
+          input.name = input.name.replace(/samples-(\d+)-/, `samples-${i}-`);
+        });
+
+        // Update input IDs
+        form.querySelectorAll('[id*="samples-"]').forEach(el => {
+          el.id = el.id.replace(/samples-(\d+)-/, `samples-${i}-`);
+        });
+
+        // Update label "for" attributes
+        form.querySelectorAll('label[for*="samples-"]').forEach(label => {
+          label.htmlFor = label.htmlFor.replace(/samples-(\d+)-/, `samples-${i}-`);
+        });
+      });
+    }
+
+    // Calculate price for a sample
+    function updateSamplePrice(form) {
+      let total = 0;
+
+      form.querySelectorAll('.parameter-checkbox:checked').forEach(checkbox => {
+        const priceInput = checkbox.closest('.parameter-item').querySelector('.param-price');
+        if (priceInput) {
+          total += parseFloat(priceInput.value) || 0;
         }
-        
-        btn.closest('.sample-form').remove();
-        totalForms--;
-        managementInput.value = totalForms;
-        
-        renumberSamples();
-        updateTotalPrice();
-      }
+      });
 
-      // Renumber sample headings
-      function renumberSamples() {
-        document.querySelectorAll('.sample-form').forEach((form, i) => {
-          form.querySelector('h5').textContent = `Sample ${i + 1}`;
-          form.dataset.index = i;
-          
-          // Update all parameter names with new index
-          form.querySelectorAll('[name*="parameters"]').forEach(input => {
-            input.name = input.name.replace(/samples-(\d+)-parameters/, `samples-${i}-parameters`);
-          });
-        });
-      }
+      const priceDisplay = form.querySelector('.sample-price-value');
+      if (priceDisplay) priceDisplay.textContent = total.toFixed(2);
 
-      // Calculate and update price for a single sample
-      function updateSamplePrice(form) {
-        let total = 0;
-        
-        form.querySelectorAll('.parameter-checkbox:checked').forEach(checkbox => {
-          const priceInput = checkbox.closest('.parameter-item').querySelector('.param-price');
-          if (priceInput) {
-            total += parseFloat(priceInput.value) || 0;
-          }
-        });
-        
-        const priceDisplay = form.querySelector('.sample-price-value');
-        priceDisplay.textContent = total.toFixed(2);
-        
-        return total;
-      }
+      return total;
+    }
 
-      // Update total price across all samples
-      function updateTotalPrice() {
-        let grandTotal = 0;
-        
-        document.querySelectorAll('.sample-form').forEach(form => {
-          grandTotal += updateSamplePrice(form);
-        });
-        
-        document.getElementById('total-price').textContent = grandTotal.toFixed(2);
-      }
+    // Calculate total price across all forms
+    function updateTotalPrice() {
+      let grandTotal = 0;
 
-      // Toggle parameter group visibility
-      function toggleParameterGroup(header) {
-        const group = header.closest('.parameter-group');
-        group.classList.toggle('active');
-        
-        const arrow = header.querySelector('.toggle-arrow');
+      document.querySelectorAll('.sample-form').forEach(form => {
+        grandTotal += updateSamplePrice(form);
+      });
+
+      document.getElementById('total-price').textContent = grandTotal.toFixed(2);
+    }
+
+    // Toggle parameter group visibility
+    function toggleParameterGroup(header) {
+      const group = header.closest('.parameter-group');
+      group.classList.toggle('active');
+
+      const arrow = header.querySelector('.toggle-arrow');
+      if (arrow) {
         arrow.classList.toggle('fa-chevron-down');
         arrow.classList.toggle('fa-chevron-up');
       }
+    }
 
-      // Toggle all parameters in a group
-      function toggleGroupParameters(checkbox) {
-        const group = checkbox.closest('.parameter-group');
-        const parameters = group.querySelectorAll('.parameter-checkbox');
-        
-        parameters.forEach(param => {
-          param.checked = checkbox.checked;
-          param.dispatchEvent(new Event('change'));
+    // Toggle entire parameter group selection
+    function toggleGroupParameters(checkbox) {
+      const group = checkbox.closest('.parameter-group');
+      const parameters = group.querySelectorAll('.parameter-checkbox');
+
+      parameters.forEach(param => {
+        param.checked = checkbox.checked;
+        param.dispatchEvent(new Event('change'));
+      });
+    }
+
+    // Wire up all controls for a form
+    function wireUpForm(form) {
+      // Remove button
+      const removeBtn = form.querySelector('.remove-sample-btn');
+      if (removeBtn) {
+        removeBtn.addEventListener('click', function () {
+          removeSampleForm(this);
         });
       }
 
-      // Initialize event handlers for a form
-      function wireUpForm(form) {
-        // Remove sample button
-        const removeBtn = form.querySelector('.remove-sample-btn');
-        if (removeBtn) {
-          removeBtn.addEventListener('click', function() {
-            removeSampleForm(this);
-          });
-        }
-        
-        // Parameter group headers
-        form.querySelectorAll('.parameter-group-header').forEach(header => {
-          header.addEventListener('click', function() {
-            toggleParameterGroup(this);
-          });
+      // Expand/collapse parameter groups
+      form.querySelectorAll('.parameter-group-header').forEach(header => {
+        header.addEventListener('click', function () {
+          toggleParameterGroup(this);
         });
-        
-        // Group checkboxes
-        form.querySelectorAll('.group-check').forEach(checkbox => {
-          checkbox.addEventListener('change', function() {
-            toggleGroupParameters(this);
-          });
-        });
-        
-        // Parameter checkboxes
-        form.querySelectorAll('.parameter-checkbox').forEach(checkbox => {
-          checkbox.addEventListener('change', updateTotalPrice);
-        });
-      }
+      });
 
-      // Initialize all existing forms
-      document.querySelectorAll('.sample-form').forEach(wireUpForm);
-      
-      // Initialize total price
-      updateTotalPrice();
-    });
-  </script>
-</body>
-</html>
+      // Group-wide check toggle
+      form.querySelectorAll('.group-check').forEach(checkbox => {
+        checkbox.addEventListener('change', function () {
+          toggleGroupParameters(this);
+        });
+      });
+
+      // Individual parameter toggles recalculate price
+      form.querySelectorAll('.parameter-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateTotalPrice);
+      });
+    }
+
+    // Initialize page
+    document.querySelectorAll('.sample-form').forEach(wireUpForm);
+    updateTotalPrice();
+  });
+</script>
