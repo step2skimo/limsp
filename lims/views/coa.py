@@ -75,13 +75,14 @@ def generate_coa_pdf(request, client_id):
 
     client = samples.first().client
 
-    summary_input = {}
+    summary_input_by_type = {}
     parameters = set()
 
     for sample in samples:
         sample.results = []
         param_values = {}
         sample_environment = None
+        sample_type = (sample.sample_type or "default").strip().lower()
 
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
@@ -98,7 +99,7 @@ def generate_coa_pdf(request, client_id):
                     "unit": ta.parameter.unit,
                 })
 
-                summary_input.setdefault(param_name, []).append(value)
+                summary_input_by_type.setdefault(sample_type, {}).setdefault(param_name, []).append(value)
                 parameters.add((param_name, ta.parameter.unit, ta.parameter.method))
 
             env = getattr(ta, "testenvironment", None)
@@ -128,8 +129,8 @@ def generate_coa_pdf(request, client_id):
                 "unit": "kcal/100g",
             })
 
-            summary_input.setdefault("CHO", []).append(cho)
-            summary_input.setdefault("ME", []).append(me)
+            summary_input_by_type.setdefault(sample_type, {}).setdefault("CHO", []).append(cho)
+            summary_input_by_type.setdefault(sample_type, {}).setdefault("ME", []).append(me)
             parameters.add(("CHO", "%", "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)"))
             parameters.add(("ME", "kcal/100g", "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)"))
 
@@ -137,14 +138,14 @@ def generate_coa_pdf(request, client_id):
 
     parameters = sorted(parameters)
 
-    # Generate AI summary
-    summary_text = generate_dynamic_summary(summary_input)
+    # ✅ Generate AI Summary using grouped data
+    summary_text = generate_dynamic_summary(summary_input_by_type)
 
-    # Build letterhead path for WeasyPrint
+    # 🔧 Letterhead path for WeasyPrint
     letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
     letterhead_url = f"file://{letterhead_path}"
 
-    # Render HTML
+    # Render COA HTML
     html = render_to_string(
         "lims/coa_template.html",
         {
@@ -159,7 +160,7 @@ def generate_coa_pdf(request, client_id):
         }
     )
 
-    # Generate PDF
+    # Generate PDF with WeasyPrint
     pdf_file = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
     return HttpResponse(pdf_file, content_type="application/pdf")
 
@@ -200,7 +201,7 @@ def release_client_coa(request, client_id):
     client.coa_released = True
     client.save()
 
-    # ✅ Fetch completed samples with results
+    # ✅ Fetch completed samples (excluding QC)
     samples = (
         Sample.objects
         .exclude(sample_code__startswith="QC-")
@@ -218,37 +219,69 @@ def release_client_coa(request, client_id):
 
     for sample in samples:
         param_values = {}
+        sample.results = []  # ✅ Prepare result list per sample
+
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
             if res:
                 value = res.value
                 param_values[ta.parameter.name.lower()] = value
+
+                # ✅ Add to sample results
+                sample.results.append({
+                    "parameter": ta.parameter.name,
+                    "method": ta.parameter.method,
+                    "value": value,
+                    "unit": ta.parameter.unit,
+                })
+
                 summary_input.setdefault(ta.parameter.name, []).append(value)
                 parameters.add((ta.parameter.name, ta.parameter.unit, ta.parameter.method))
 
-        # Add CHO and ME if all required
+        # ✅ Add CHO and ME if all required parameters are present
         required = ["protein", "fat", "ash", "moisture", "fiber"]
         if all(k in param_values for k in required):
             cho = round(100 - sum(param_values[k] for k in required), 2)
             me = round((param_values["protein"] * 4) + (param_values["fat"] * 9) + (cho * 4), 2)
+
+            # Add CHO to sample results
+            sample.results.append({
+                "parameter": "CHO",
+                "method": "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)",
+                "value": cho,
+                "unit": "%",
+            })
+
+            # Add ME to sample results
+            sample.results.append({
+                "parameter": "ME",
+                "method": "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)",
+                "value": me,
+                "unit": "kcal/100g",
+            })
+
             summary_input.setdefault("CHO", []).append(cho)
             summary_input.setdefault("ME", []).append(me)
             parameters.add(("CHO", "%", "Calculated"))
             parameters.add(("ME", "kcal/100g", "Estimated"))
 
+    # ✅ Generate AI summary
     summary_text = generate_dynamic_summary(summary_input)
+
+    # ✅ Final parameter structure
     param_list = [{"name": p[0], "unit": p[1], "method": p[2]} for p in sorted(parameters)]
 
-    # ✅ Notify client with attached COA
+    # ✅ Notify client with email (with samples now fully populated)
     notify_client_on_coa_release(
-        client,
-        samples,
-        summary_text,
-        param_list
+        client=client,
+        samples=samples,
+        summary_text=summary_text,
+        parameters=param_list
     )
 
     messages.success(request, f"✅ COA released and emailed to {client.name}.")
     return redirect("coa_dashboard")
+
 
 
 
