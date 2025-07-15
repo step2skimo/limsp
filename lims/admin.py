@@ -3,8 +3,8 @@ from .models import Client, Sample, ParameterGroup, Parameter, TestAssignment, T
 from .models import QCMetrics
 from .models.equipment import Equipment, CalibrationRecord
 from .models.ai import LabAIHistory
-from .models import Reagent, ReagentLot, ReagentUsage
-
+from .models import Reagent, ReagentUsage
+from .models import ReagentIssue
 
 @admin.register(LabAIHistory)
 class LabAIHistoryAdmin(admin.ModelAdmin):
@@ -67,20 +67,21 @@ class CalibrationAdmin(admin.ModelAdmin):
 
 
 
+
 @admin.register(Reagent)
 class ReagentAdmin(admin.ModelAdmin):
-    list_display = ['name']
-    search_fields = ['name']
-
-@admin.register(ReagentLot)
-class ReagentLotAdmin(admin.ModelAdmin):
-    list_display = ['reagent', 'lot_number', 'expiry_date', 'quantity', 'status']
-    list_filter = ['status', 'expiry_date']
-    search_fields = ['lot_number', 'reagent__name']
+    list_display = [
+        'name', 'batch_number', 'manufacturer', 'supplier_name',
+        'number_of_containers', 'quantity_per_container', 'unit', 'expiry_date'
+    ]
+    search_fields = ['name', 'batch_number', 'supplier_name']
+    list_filter = ['expiry_date']
 
 @admin.register(ReagentUsage)
 class ReagentUsageAdmin(admin.ModelAdmin):
-    list_display = ['parameter', 'lot', 'quantity_used', 'used_by', 'date_used']
-    list_filter = ['parameter', 'lot__reagent', 'used_by', 'date_used']
-    search_fields = ['lot__lot_number', 'parameter__name', 'used_by__username']
+    list_display = ['reagent', 'analyst', 'quantity_used', 'date_used', 'purpose']
+    list_filter = ['reagent', 'analyst', 'date_used']
+    search_fields = ['reagent__name', 'analyst__username', 'purpose']
 
+
+admin.site.register(ReagentIssue)

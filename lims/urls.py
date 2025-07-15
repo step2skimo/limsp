@@ -15,13 +15,39 @@ from lims.views.ai_views import ask_lab_ai
 from lims.views.coa import *
 from lims.views.charts import *
 from lims.views.test_email import test_email
-from lims.views.reagent import *
+from lims.views.reagents import *
 
 urlpatterns = [
 
-     path("", views.landing_view, name="home"),
+    path("", views.landing_view, name="home"),
      
-     path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('logout/', LogoutView.as_view(next_page='login'), name='logout'),
+    path('inventory-dashboard/', inventory_dashboard, name='inventory_dashboard'),
+    path('reagents/', reagent_list, name='reagent_list'),
+    path('reagents/<int:pk>/', reagent_detail, name='reagent_detail'),
+    path('reagents/add/', add_reagent, name='add_reagent'),
+    path('reagents/<int:pk>/upload-docs/', upload_documents, name='upload_documents'),
+    path('reagents/use/', use_reagent, name='use_reagent'),
+    path('reagents/download/pdf/<int:pk>/', download_reagent_pdf, name='download_reagent_pdf'),
+    path('reagents/download/csv/', download_inventory_csv, name='download_inventory_csv'),
+    path('reagent/preview/', preview_reagent_request, name='preview_reagent_request'),
+    path('reagent/send/', send_reagent_request, name='send_reagent_request'),
+    path('reagent/issues/', reagent_issue_list, name='reagent_issue_list'),
+
+
+
+    path('audit/', inventory_audit, name='inventory_audit'),
+    path('consumption/', consumption_report, name='consumption_report'),
+    path('expiry/', expiry_report, name='expiry_report'),
+    path('suppliers/', supplier_evaluation, name='supplier_evaluation'),
+    path('consumption/csv/', export_consumption_csv, name='export_consumption_csv'),
+    path('consumption/pdf/', export_consumption_pdf, name='export_consumption_pdf'),
+    path('sds/', safety_data_sheets, name='safety_data_sheets'),
+    path('coa/', certificate_analysis, name='certificate_analysis'),
+    path('reagent/request/', request_reagent, name='request_reagent'),
+    path('reagent/report-issue/', report_issue, name='report_issue'),
+
+
 
      path("dashboard/", dashboard_redirect, name="dashboard"),
      path('analyst/results/history/', views.result_history_view, name='result_history'),
@@ -33,6 +59,12 @@ urlpatterns = [
     path('results/batch/<str:client_id>/<int:parameter_id>/', views.enter_batch_result, name='enter_batch_result'),
 
     path("test-email/", test_email, name="test_email"),
+   
+    path('reagents/download/csv/', download_inventory_csv, name='download_csv'),
+    path('reagents/<int:pk>/download/pdf/', download_reagent_pdf, name='download_pdf'),
+
+
+    
 
      
      path("client/token-entry/", enter_token_view, name="enter_token"),
@@ -43,6 +75,9 @@ urlpatterns = [
      path("samples/status-stats/", views.sample_status_stats, name="sample_stats"),
      path("clerk/summary/", views.clerk_activity_summary, name="clerk_activity_summary"),
      path("intake/", views.sample_intake_view, name="sample_intake"),
+     path('update-client-field/', views.update_client_field, name='update_client_field'),
+     path("edit-summary/<str:client_id>/", views.edit_summary, name="edit_summary"),
+
      
 
     path('manager/assign-by-parameter-overview/<str:client_id>/', views.assign_by_parameter_overview, name="assign_by_parameter_overview"),
@@ -71,7 +106,7 @@ urlpatterns = [
         views.batch_result_success,
         name="result_success_batch"
     ),
-    # urls.py
+  
     path("manager/review/<int:parameter_id>/", views.review_by_parameter, name="review_by_parameter"),
     
     path("manager/review/", views.parameter_review_list, name="parameter_review_list"),
@@ -141,26 +176,6 @@ urlpatterns = [
   #  path('manager/review/grouped/', review_panel_grouped_by_client, name='review_panel_grouped_by_client'),
     path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
 
-
-
-
-
-    # Form + Success
-    path('reagent-usage/log/', log_reagent_usage, name='reagent-usage-log'),
-    path('reagent-usage/success/', reagent_usage_success, name='reagent-usage-success'),
-
-    # Manager dashboard
-    path('reagent-usage/dashboard/', manager_reagent_dashboard, name='reagent-dashboard'),
-
-    # Alerts
-    path('reagent-usage/alerts/', reagent_alerts, name='reagent-alerts'),
-
-    # Usage history
-    path('reagent-usage/history/', usage_history, name='reagent-usage-history'),
-
-    # CSV Export
-    path('reagent-usage/export/', export_csv, name='export-csv'),
-    path('reagent-usage/analyst/', analyst_dashboard, name='analyst-dashboard'),
 
 
 

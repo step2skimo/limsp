@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; color: #333; }
+    table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+    th, td { border: 1px solid #ccc; padding: 10px; }
+    th { background-color: #f0f0f0; }
+    h2 { color: #2c3e50; }
+    .footer { margin-top: 30px; font-size: 0.9em; color: #888; }
+  </style>
+</head>
+<body>
+  <h2>🧪 Reagent Request Summary</h2>
+
+  <p><strong>Requested by:</strong> {{ requested_by }}</p>
+  <p><strong>Email:</strong> {{ email }}</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Reagent</th>
+        <th>Qty</th>
+        <th>Unit</th>
+        <th>Amount (₦)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in reagents %}
+        <tr>
+          <td>{{ forloop.counter }}</td>
+          <td>{{ item.name }}</td>
+          <td>{{ item.qty }}</td>
+          <td>{{ item.unit }}</td>
+          <td>₦{{ item.amt|floatformat:2 }}</td>
+        </tr>
+      {% endfor %}
+      <tr>
+        <td colspan="4" style="text-align:right;"><strong>Total</strong></td>
+        <td><strong>₦{{ total_amount|floatformat:2 }}</strong></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="footer">
+    This is an automated summary from the LIMS at JaaGee Lab.
+  </p>
+</body>
+</html>

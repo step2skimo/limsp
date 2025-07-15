@@ -6,4 +6,4 @@ from .test_environment import TestEnvironment
 from .qc import QCMetrics
 from .qc_control import ControlSpec
 from .equipment import Equipment, CalibrationRecord
-from .reagent import Reagent, ReagentLot, ReagentUsage
+from .reagents import *

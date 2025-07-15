@@ -22,24 +22,62 @@ from django.conf import settings
 
 from weasyprint import HTML
 
+from django.core.mail import EmailMultiAlternatives
+from django.utils.html import strip_tags
+
+def notify_low_stock(manager_email, reagent_name, batch_number, number_of_bottles, threshold):
+    subject = f"⚠️ Low Stock Alert: {reagent_name}"
+
+    html_content = f"""
+    <html>
+      <body style="font-family: Arial, sans-serif; color: #333;">
+        <p>Hello <strong>Lab Manager</strong>,</p>
+
+        <p>
+          This is to notify you that the reagent <strong>{reagent_name}</strong> (Batch <strong>{batch_number}</strong>)
+          has dropped to <strong>{number_of_bottles} bottle(s)</strong>, which is below the set threshold of <strong>{threshold}</strong>.
+        </p>
+
+        <p style="color: red;"><strong>Action may be required to restock this reagent.</strong></p>
+
+        <p>
+          👉 <a href="https://jaagee-lab.onrender.com/">Go to Reagent Inventory</a>
+        </p>
+
+        <p style="margin-top: 30px;">
+          Regards,<br>
+          <strong>JaaGee LIMS</strong>
+        </p>
+      </body>
+    </html>
+    """
+
+    text_content = strip_tags(html_content)
+
+    email = EmailMultiAlternatives(
+        subject,
+        text_content,
+        from_email="lims@jaagee-lab.com",
+        to=[manager_email]
+    )
+    email.attach_alternative(html_content, "text/html")
+    email.send()
+
+
 
 def notify_client_on_coa_release(client, samples, summary_text, parameters):
     subject = "Your Certificate of Analysis (COA) is Now Available"
 
-    # Email content
+    # ✅ Email body with summary included
     html_body = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color: #333;">
         <p>Dear <strong>{client.name}</strong>,</p>
 
         <p>We are pleased to inform you that the Certificate of Analysis (COA) for your submitted samples (Client ID: <strong>{client.client_id}</strong>) has been released.</p>
-
-        <p>You can track your result status and access your reports using the token below:</p>
-        <ul>
-            <li><strong>Tracking Token:</strong> {client.token}</li>
-        </ul>
-
-        <p>👉 <a href="https://jaagee-lab.onrender.com/">Click here to track or view your results</a></p>
+        <hr>
+        <p><strong>Summary Interpretation:</strong></p>
+        <p>{summary_text}</p>
 
         <p style="margin-top: 30px;">Thank you for choosing <strong>JaaGee Laboratory</strong>.</p>
 
@@ -49,7 +87,7 @@ def notify_client_on_coa_release(client, samples, summary_text, parameters):
     """
     text_body = strip_tags(html_body)
 
-    # Render COA HTML
+    # ✅ Generate COA PDF for attachment
     letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
     letterhead_url = f"file://{letterhead_path}"
 
@@ -65,27 +103,24 @@ def notify_client_on_coa_release(client, samples, summary_text, parameters):
         }
     )
 
-    # File paths
+    # ✅ Save PDF to temporary location
     timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
     filename = f"COA_{client.client_id}_{timestamp}.pdf"
     path = f"coa_reports/{filename}"
     temp_path = os.path.join(tempfile.gettempdir(), filename)
 
-    # Generate PDF
     HTML(string=coa_html).write_pdf(target=temp_path)
 
-    # Read and store PDF
     with open(temp_path, "rb") as f:
         pdf_bytes = f.read()
         default_storage.save(path, ContentFile(pdf_bytes))
 
-    # Clean up temp file
     try:
         os.remove(temp_path)
     except Exception as e:
         print(f"Warning: Could not delete temp file: {e}")
 
-    # Send email
+    # ✅ Send Email
     msg = EmailMultiAlternatives(
         subject,
         text_body,
@@ -97,11 +132,9 @@ def notify_client_on_coa_release(client, samples, summary_text, parameters):
     msg.attach(filename, pdf_bytes, "application/pdf")
     msg.send()
 
-    # Save path to client model
+    # ✅ Save path to client model
     if hasattr(client, "latest_coa_file"):
         client.latest_coa_file = path
-        client.save(update_fields=["latest_coa_file"])
-
         client.save(update_fields=["latest_coa_file"])
 
 

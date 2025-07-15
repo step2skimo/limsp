@@ -1,0 +1,13 @@
+
+<h2>Upload SDS/COA for {{ reagent.name }}</h2>
+
+<form method="POST" enctype="multipart/form-data">
+  {% csrf_token %}
+  {{ form.safety_data_sheet.label_tag }} {{ form.safety_data_sheet }}
+  <br>
+  {{ form.certificate_of_analysis.label_tag }} {{ form.certificate_of_analysis }}
+  <br><br>
+  <button type="submit" class="btn btn-success">📤 Upload Documents</button>
+</form>
+
+<a href="{% url 'reagent_detail' reagent.pk %}" class="btn btn-link mt-3">← Back to Details</a>

@@ -44,7 +44,7 @@ INSTALLED_APPS = [
 ]
 
 AUTH_USER_MODEL = 'users.User'
-COA_INTERNAL_RECIPIENTS = ["manager@jaageelab.com", "qa@jaageelab.com"]
+COA_INTERNAL_RECIPIENTS = ["manager@jaageelab.com"]
 
 LOGGING = {
     'version': 1,

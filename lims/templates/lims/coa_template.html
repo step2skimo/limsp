@@ -34,7 +34,7 @@
     }
 
     .content {
-      margin: 5cm 2cm 2cm 2cm; /* pushes below letterhead banner */
+      margin: 5cm 2cm 2cm 2cm;
     }
 
     table {
@@ -42,18 +42,23 @@
       border-collapse: collapse;
     }
 
-    table th, table td {
+    th, td {
       border: 1px solid #333;
       padding: 4px;
-      text-align: center;
       font-size: 10px;
     }
 
+    th {
+      background-color: #f5f5f5;
+      text-align: center;
+    }
+
+    td {
+      text-align: center;
+    }
+
     .metadata-table {
-      font-size: 10px;
-      border: 1px solid #333;
-      border-collapse: collapse;
-      margin-bottom: 2px;
+      margin-bottom: 5px;
     }
 
     .metadata-table td {
@@ -74,9 +79,11 @@
       margin-top: 4px;
     }
 
-    .methods {
+    .method-row {
       font-size: 9px;
-      margin-top: 10px;
+      font-style: italic;
+      background-color: #f2f2f2;
+      text-align: left;
     }
 
     .signatures {
@@ -93,117 +100,111 @@
     .center {
       text-align: center;
     }
-
-    .final-block {
-      margin-top: 30px;
-      text-align: center;
-      font-size: 9px;
-      /* Removed "- END OF REPORT -" text from here, since footer handles it */
-    }
   </style>
 </head>
 <body>
-  <div class="content">
+<div class="content">
 
-    <table class="metadata-table">
-      <tr>
-        <td><strong>CLIENT NAME:</strong> {{ client.name }}</td>
-        <td><strong>REPORT DATE:</strong> {{ today }}</td>
-      </tr>
-      <tr>
-        <td><strong>ORGANIZATION:</strong> {{ client.organization }}</td>
-        <td><strong>SAMPLE STORAGE:</strong> Ambient Temperature</td>
-      </tr>
-      <tr>
-        <td><strong>ADDRESS:</strong> {{ client.address }}</td>
-        <td><strong>CONDITION OF SAMPLE:</strong> Tested As Received</td>
-      </tr>
-      <tr>
-        <td><strong>EMAIL:</strong> {{ client.email }}</td>
-        <td><strong>LAB CONTACT:</strong> 07015568976</td>
-      </tr>
-      <tr>
-        <td><strong>PHONE NO:</strong> {{ client.phone }}</td>
-        <td><strong>ENVIRONMENTAL DATA:</strong> {{ samples.0.environment }}</td>
-      </tr>
-      <tr>
-        <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|date:"jS F Y" }}</td>
-        <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
-      </tr>
-    </table>
+  <!-- Metadata -->
+  <table class="metadata-table" width="100%">
+    <tr>
+      <td><strong>CLIENT NAME:</strong> {{ client.name }}</td>
+      <td><strong>REPORT DATE:</strong> {{ today }}</td>
+    </tr>
+    <tr>
+      <td><strong>ORGANIZATION:</strong> {{ client.organization }}</td>
+      <td><strong>SAMPLE STORAGE:</strong> Ambient Temperature</td>
+    </tr>
+    <tr>
+      <td><strong>ADDRESS:</strong> {{ client.address }}</td>
+      <td><strong>CONDITION OF SAMPLE:</strong> Tested As Received</td>
+    </tr>
+    <tr>
+      <td><strong>EMAIL:</strong> {{ client.email }}</td>
+      <td><strong>LAB CONTACT:</strong> 07015568976</td>
+    </tr>
+    <tr>
+      <td><strong>PHONE NO:</strong> {{ client.phone }}</td>
+      <td><strong>ENVIRONMENTAL DATA:</strong> {{ samples.0.environment }}</td>
+    </tr>
+    <tr>
+  <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|date:"jS F Y" }}</td>
+  <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
+</tr>
+<tr>
+  <td colspan="2"><strong>SAMPLE WEIGHT:</strong> {{ sample_weight_display }}</td>
+</tr>
 
-    <div class="footnote">
-      Please Note: sample not requested for after three weeks of completion of analysis will be assumed not needed and will be discarded.
-    </div>
+  </table>
 
-    <h2>CERTIFICATE OF ANALYSIS</h2>
-
-    <table>
-      <thead>
-        <tr>
-          <th>Sample ID</th>
-          {% for param in parameters %}
-            <th>{{ param.name }}<br>{{ param.unit }}</th>
-          {% endfor %}
-        </tr>
-      </thead>
-      <tbody>
-        {% for sample in samples %}
-          <tr>
-            <td>{{ sample.sample_code }}</td>
-            {% for param in parameters %}
-              <td>
-                {% with found=None %}
-                  {% for r in sample.results %}
-                    {% if r.parameter == param.name %}
-                      {% with found=r %}
-                        {{ r.value|floatformat:2 }}
-                      {% endwith %}
-                    {% endif %}
-                  {% endfor %}
-                  {% if not found %} — {% endif %}
-                {% endwith %}
-              </td>
-            {% endfor %}
-          </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-
-    <div class="footnote">
-      <strong>Summary interpretation:</strong> {{ summary_text }}
-    </div>
-
-    <div class="center footnote">
-      JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial, and various
-      chemical analysis to improve the quality and healthiness of foods and feeds.
-    </div>
-
-    <div class="methods">
-      <strong>ANALYSIS METHODS:</strong><br>
-      {% for param in parameters %}
-        {{ param.name|upper }}: {{ param.method }}<br>
-      {% endfor %}
-    </div>
-
-    <div class="signatures">
-      <div>
-        ___________________________<br>
-        Kehinde K. Hannah<br>
-        HEAD OF LABORATORY
-      </div>
-      <div>
-        ___________________________<br>
-        Julius Gbolade Famoriyo<br>
-        FELLOW NISLT REG NO: F0256
-      </div>
-    </div>
-
-    <!-- Keep this empty or remove - footer shows end of report -->
-    <div class="final-block">
-      <!-- Intentionally left blank -->
-    </div>
-
+  <div class="footnote">
+    Please Note: Sample not requested for after three weeks of completion of analysis will be assumed not needed and will be discarded.
   </div>
+
+  <h2>CERTIFICATE OF ANALYSIS</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Parameter</th>
+      <th>Unit</th>
+      <th>Method</th>
+      {% for sample in samples %}
+        <th>{{ sample.sample_code }}</th>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for param in parameters %}
+      <tr>
+        <td>{{ param.name }}</td>
+        <td>{{ param.unit }}</td>
+        <td>{{ param.method }}</td>
+        {% for sample in samples %}
+          <td>
+            {% with value="—" %}
+              {% for r in sample.results %}
+                {% if r.parameter == param.name %}
+                  {{ r.value|floatformat:2 }}
+                {% endif %}
+              {% endfor %}
+              {% if value == "—" %}{{ value }}{% endif %}
+            {% endwith %}
+          </td>
+        {% endfor %}
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+
+
+  <!-- Summary Interpretation -->
+  <div class="footnote mt-3">
+    <strong>Summary interpretation:</strong><br>
+    {{ summary_text|linebreaksbr }}
+  </div>
+
+  <!-- Lab Info -->
+  <div class="center footnote mt-2">
+    JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial, and various
+    chemical analysis to improve the quality and healthiness of foods and feeds.
+  </div>
+
+  <!-- Signatures -->
+<div class="signatures">
+  <div class="text-center">
+    <img src="{% static 'images/signatures/hannah-sign.jpg' %}" alt="Hannah Signature" style="max-height: 60px;"><br>
+    <strong>Kehinde K. Hannah</strong><br>
+    HEAD OF LABORATORY
+  </div>
+  <div class="text-center">
+    <img src="{% static 'images/signatures/julius-sign.png' %}" alt="Julius Signature" style="max-height: 60px;"><br>
+    <strong>Julius Gbolade Famoriyo</strong><br>
+    FELLOW NISLT REG NO: F0256
+  </div>
+</div>
+
+</div>
 </body>
 </html>

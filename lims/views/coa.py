@@ -53,8 +53,23 @@ import os
 from django.conf import settings
 from django.contrib import messages
 from lims.utils.notifications import notify_client_on_coa_release
+from lims.forms import COAInterpretationForm
+from lims.models.coa import COAInterpretation
+from django.contrib import messages
+from django.shortcuts import get_object_or_404, redirect
+import re
 
 logger = logging.getLogger(__name__)
+
+
+
+def clean_method(method_str):
+    """
+    Extracts only the AOAC reference from a full method string.
+    E.g., from 'Kjedahl (AOAC 984.13 2000)' it returns 'AOAC 984.13'
+    """
+    match = re.search(r"(AOAC\s+\d{3,4}\.\d{1,2})", method_str, re.IGNORECASE)
+    return match.group(1) if match else method_str
 
 
 @login_required
@@ -74,15 +89,15 @@ def generate_coa_pdf(request, client_id):
         return HttpResponse("No samples found for this client.", status=404)
 
     client = samples.first().client
-
-    summary_input_by_type = {}
     parameters = set()
+    grouped_summary = defaultdict(lambda: {"sample_type": "", "results": defaultdict(list)})
 
     for sample in samples:
         sample.results = []
         param_values = {}
         sample_environment = None
-        sample_type = (sample.sample_type or "default").strip().lower()
+
+        sample_type = sample.sample_type or "Unknown"
 
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
@@ -99,7 +114,8 @@ def generate_coa_pdf(request, client_id):
                     "unit": ta.parameter.unit,
                 })
 
-                summary_input_by_type.setdefault(sample_type, {}).setdefault(param_name, []).append(value)
+                grouped_summary[sample_type]["sample_type"] = sample_type
+                grouped_summary[sample_type]["results"][param_name].append(value)
                 parameters.add((param_name, ta.parameter.unit, ta.parameter.method))
 
             env = getattr(ta, "testenvironment", None)
@@ -129,8 +145,8 @@ def generate_coa_pdf(request, client_id):
                 "unit": "kcal/100g",
             })
 
-            summary_input_by_type.setdefault(sample_type, {}).setdefault("CHO", []).append(cho)
-            summary_input_by_type.setdefault(sample_type, {}).setdefault("ME", []).append(me)
+            grouped_summary[sample_type]["results"]["CHO"].append(cho)
+            grouped_summary[sample_type]["results"]["ME"].append(me)
             parameters.add(("CHO", "%", "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)"))
             parameters.add(("ME", "kcal/100g", "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)"))
 
@@ -138,33 +154,70 @@ def generate_coa_pdf(request, client_id):
 
     parameters = sorted(parameters)
 
-    # ✅ Generate AI Summary using grouped data
-    summary_text = generate_dynamic_summary(summary_input_by_type)
+    # Generate AI summary using structured grouping
+    interpretation = COAInterpretation.objects.filter(client=client).first()
+    summary_text = interpretation.summary_text if interpretation else "Summary not available."
 
-    # 🔧 Letterhead path for WeasyPrint
+
+    # ✅ Sample weight logic
+    weights = [s.weight for s in samples if s.weight is not None]
+    if len(weights) == 1:
+        sample_weight_display = f"{weights[0]} g"
+    elif weights:
+        sample_weight_display = f"{min(weights)} g – {max(weights)} g"
+    else:
+        sample_weight_display = "N/A"
+
+
+    # Build letterhead path for WeasyPrint
     letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
     letterhead_url = f"file://{letterhead_path}"
 
-    # Render COA HTML
+    # Render HTML
     html = render_to_string(
         "lims/coa_template.html",
         {
             "client": client,
             "samples": samples,
+            "sample_weight_display": sample_weight_display,
             "summary_text": summary_text,
             "parameters": [
-                {"name": p[0], "unit": p[1], "method": p[2]} for p in parameters
+                {"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters
             ],
             "today": datetime.date.today(),
             "letterhead_url": letterhead_url,
         }
     )
 
-    # Generate PDF with WeasyPrint
+    # Generate PDF
     pdf_file = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
     return HttpResponse(pdf_file, content_type="application/pdf")
 
 
+
+@login_required
+def edit_summary(request, client_id):
+    client = get_object_or_404(Client, client_id=client_id)
+    interpretation, created = COAInterpretation.objects.get_or_create(client=client)
+
+    if request.method == 'POST':
+        form = COAInterpretationForm(request.POST, instance=interpretation)
+        if form.is_valid():
+            form.save()
+
+            # ✅ Confirm the summary so COA can be released
+            client.summary_confirmed = True
+            client.save()
+
+            messages.success(request, "Summary updated and confirmed successfully.")
+            return redirect('preview_coa', client_id=client_id)
+    else:
+        form = COAInterpretationForm(instance=interpretation)
+
+    return render(request, "lims/edit_summary.html", {
+        "client": client,
+        "form": form,
+    })
 
 
 @login_required
@@ -192,16 +245,19 @@ def coa_dashboard(request):
     return render(request, "lims/coa_dashboard.html", context)
 
 
-
 @login_required
 def release_client_coa(request, client_id):
+    print("✅ Release view triggered.")
+
+    if request.method != "POST":
+        return HttpResponse("❌ Not a POST request", status=405)
+
     client = get_object_or_404(Client, id=client_id)
-    client_id_str = client.client_id.upper()
 
-    client.coa_released = True
-    client.save()
+    # ✅ Fetch from COAInterpretation
+    interpretation = COAInterpretation.objects.filter(client=client).first()
+    summary_text = interpretation.summary_text if interpretation else "Summary not available"
 
-    # ✅ Fetch completed samples (excluding QC)
     samples = (
         Sample.objects
         .exclude(sample_code__startswith="QC-")
@@ -213,21 +269,21 @@ def release_client_coa(request, client_id):
         )
     )
 
-    # ✅ Build summary and parameter list
     summary_input = {}
     parameters = set()
 
     for sample in samples:
+        sample.results = []
         param_values = {}
-        sample.results = []  # ✅ Prepare result list per sample
 
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
             if res:
                 value = res.value
                 param_values[ta.parameter.name.lower()] = value
+                summary_input.setdefault(ta.parameter.name, []).append(value)
+                parameters.add((ta.parameter.name, ta.parameter.unit, ta.parameter.method))
 
-                # ✅ Add to sample results
                 sample.results.append({
                     "parameter": ta.parameter.name,
                     "method": ta.parameter.method,
@@ -235,43 +291,36 @@ def release_client_coa(request, client_id):
                     "unit": ta.parameter.unit,
                 })
 
-                summary_input.setdefault(ta.parameter.name, []).append(value)
-                parameters.add((ta.parameter.name, ta.parameter.unit, ta.parameter.method))
-
-        # ✅ Add CHO and ME if all required parameters are present
         required = ["protein", "fat", "ash", "moisture", "fiber"]
         if all(k in param_values for k in required):
             cho = round(100 - sum(param_values[k] for k in required), 2)
             me = round((param_values["protein"] * 4) + (param_values["fat"] * 9) + (cho * 4), 2)
-
-            # Add CHO to sample results
-            sample.results.append({
-                "parameter": "CHO",
-                "method": "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)",
-                "value": cho,
-                "unit": "%",
-            })
-
-            # Add ME to sample results
-            sample.results.append({
-                "parameter": "ME",
-                "method": "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)",
-                "value": me,
-                "unit": "kcal/100g",
-            })
 
             summary_input.setdefault("CHO", []).append(cho)
             summary_input.setdefault("ME", []).append(me)
             parameters.add(("CHO", "%", "Calculated"))
             parameters.add(("ME", "kcal/100g", "Estimated"))
 
-    # ✅ Generate AI summary
-    summary_text = generate_dynamic_summary(summary_input)
+            sample.results.append({
+                "parameter": "CHO",
+                "method": "Calculated",
+                "value": cho,
+                "unit": "%",
+            })
+            sample.results.append({
+                "parameter": "ME",
+                "method": "Estimated",
+                "value": me,
+                "unit": "kcal/100g",
+            })
 
-    # ✅ Final parameter structure
+    # ✅ Mark COA as released
+    client.coa_released = True
+    client.save()
+
     param_list = [{"name": p[0], "unit": p[1], "method": p[2]} for p in sorted(parameters)]
 
-    # ✅ Notify client with email (with samples now fully populated)
+    # ✅ Notify client with correct summary
     notify_client_on_coa_release(
         client=client,
         samples=samples,
@@ -304,8 +353,21 @@ def preview_coa(request, client_id):
 
     client = samples.first().client
 
+    # Get or create the interpretation
+    interpretation, _ = COAInterpretation.objects.get_or_create(client=client)
+
+    # ✅ Handle POST (Save Summary)
+    if request.method == "POST":
+        summary_text = request.POST.get("summary_text", "").strip()
+        interpretation.summary_text = summary_text
+        interpretation.save()
+        messages.success(request, "Summary updated successfully.")
+        return redirect("preview_coa", client_id=client_id)
+
+    # Continue with sample processing
     table_data = []
     parameter_set = set()
+    summary_input = {}
 
     for sample in samples:
         row_data = {
@@ -315,6 +377,7 @@ def preview_coa(request, client_id):
             "results": [],
         }
         param_values = {}
+
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
             param = ta.parameter
@@ -329,12 +392,11 @@ def preview_coa(request, client_id):
                     "unit": param.unit,
                 })
 
-            # environment
             env = getattr(ta, "testenvironment", None)
             if env and not row_data["environment"]:
                 row_data["environment"] = f"{env.temperature}°C, {env.humidity}%RH"
 
-        # CHO + ME if all proximate are there
+        # CHO and ME calculations
         required = ["protein", "fat", "ash", "moisture", "fiber"]
         if all(k in param_values for k in required):
             cho = round(
@@ -371,19 +433,23 @@ def preview_coa(request, client_id):
         row_data["environment"] = row_data["environment"] or "Ambient 25°C 50%RH"
         table_data.append(row_data)
 
-    parameters = sorted(list(parameter_set))
-
-    # summary
-    summary_input = {}
-    for row in table_data:
-        for result in row["results"]:
+        for result in row_data["results"]:
             summary_input.setdefault(result["parameter"], []).append(result["value"])
 
-    summary_text = generate_dynamic_summary(summary_input)
+    # Auto-generate summary if empty
+    if not interpretation.summary_text:
+        interpretation.summary_text = generate_dynamic_summary([{
+            "sample_type": samples.first().sample_type or "Unknown",
+            "results": summary_input
+        }])
+        interpretation.save()
+
+    parameters = sorted(list(parameter_set))
+    summary_text = interpretation.summary_text
 
     return render(
         request,
-        "lims/coa_template.html",
+        "lims/preview_coa.html",
         {
             "client": client,
             "samples": table_data,

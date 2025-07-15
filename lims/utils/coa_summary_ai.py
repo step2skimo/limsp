@@ -1,6 +1,15 @@
-import google.generativeai as genai
+def generate_dynamic_summary(summary_data):
+    import google.generativeai as genai
 
-def generate_dynamic_summary(summary_data_by_type):
+    # Normalize input
+    if isinstance(summary_data, dict):
+        summary_data = [{
+            "sample_type": "Unknown",
+            "results": summary_data
+        }]
+    elif not isinstance(summary_data, list):
+        raise ValueError(f"Expected a list or dict, got: {type(summary_data)} — {summary_data}")
+
     base_context = (
         "You are a senior food laboratory reporting officer. "
         "Write a single, concise interpretation (max 100 words) based on the sample results below. "
@@ -12,14 +21,19 @@ def generate_dynamic_summary(summary_data_by_type):
 
     prompt = base_context + "\n\nHere are the summarized test results by sample type:\n"
 
-    for sample_type, param_data in summary_data_by_type.items():
+    for sample in summary_data:
+        sample_type = sample.get("sample_type", "Unknown")
+        param_data = sample.get("results", {})
         prompt += f"\nSample Type: {sample_type.title()}\n"
         for param, values in param_data.items():
             prompt += f"{param}: {', '.join(str(v) for v in values)}\n"
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
-    chat = model.start_chat()
-    response = chat.send_message(prompt)
-
-    return response.text.strip()
-
+    try:
+        model = genai.GenerativeModel("gemini-2.5-flash")  
+        chat = model.start_chat()
+        response = chat.send_message(prompt)
+        result = response.text.strip()
+        return result if result else "No summary generated."
+    except Exception as e:
+        # Optional: log this
+        return f"Summary generation failed: {str(e)}"

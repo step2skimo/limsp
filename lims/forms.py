@@ -1,11 +1,103 @@
 from django import forms
-from .models import Client, Sample, Parameter, ParameterGroup, QCMetrics, Equipment, TestResult, TestEnvironment, TestAssignment
+from .models import Client, Sample, Parameter, ParameterGroup, QCMetrics, Equipment, TestResult, TestEnvironment, TestAssignment 
 from django.forms import formset_factory
-from django import forms
 from decimal import Decimal, ROUND_HALF_UP
-from lims.models import QCMetrics
-from .models.reagent import ReagentUsage, ReagentLot
+from lims.models import QCMetrics, Reagent
+from .models.reagents import *
 from itertools import groupby
+from .models.coa import COAInterpretation
+from .models.reagents import InventoryAudit
+from django import forms
+from lims.models import ReagentUsage, ReagentRequest, ReagentIssue
+from django.forms import modelformset_factory
+
+class ReagentUsageForm(forms.ModelForm):
+    class Meta:
+        model = ReagentUsage
+        fields = ['reagent', 'quantity_used', 'analyst']
+
+
+
+class ReagentRequestForm(forms.ModelForm):
+    class Meta:
+        model = ReagentRequest
+        fields = ['requested_by', 'email', 'reason']
+
+class ReagentRequestItemForm(forms.ModelForm):
+    class Meta:
+        model = ReagentRequestItem
+        fields = ['reagent_name', 'quantity', 'unit', 'amount']
+
+ReagentRequestItemFormSet = modelformset_factory(
+    ReagentRequestItem,
+    form=ReagentRequestItemForm,
+    extra=1,
+    can_delete=True
+)
+
+
+class ReagentRequestForm(forms.ModelForm):
+    class Meta:
+        model = ReagentRequest
+        fields = ['requested_by', 'email', 'reason']
+
+
+ReagentRequestItemFormSet = modelformset_factory(
+    ReagentRequestItem,
+    form=ReagentRequestItemForm,
+    extra=1,
+    can_delete=True
+)
+
+
+class ReagentRequestEmailForm(forms.Form):
+    email = forms.EmailField(label="Recipient Email", widget=forms.EmailInput(attrs={"class": "form-control"}))
+
+class ReagentRequestItemForm(forms.Form):
+    reagent_name = forms.CharField(label="Reagent Name", max_length=100, widget=forms.TextInput(attrs={"class": "form-control"}))
+    quantity = forms.FloatField(label="Quantity", widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}))
+    unit = forms.CharField(label="Unit", max_length=10, widget=forms.TextInput(attrs={"class": "form-control"}))
+    amount = forms.FloatField(label="Amount", widget=forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}))
+
+ReagentRequestFormSet = formset_factory(ReagentRequestItemForm, extra=1)
+
+
+class ReagentIssueForm(forms.ModelForm):
+    class Meta:
+        model = ReagentIssue
+        fields = ['reagent', 'issue_type', 'description', 'reported_by']
+
+
+
+class ReagentForm(forms.ModelForm):
+    class Meta:
+        model = Reagent
+        fields = [
+            'name', 'batch_number', 'manufacturer',
+            'supplier_name', 'supplier_contact', 'supplier_email',
+            'date_received', 'expiry_date',
+            'number_of_containers', 'quantity_per_container', 'unit',
+            'storage_condition',
+            'safety_data_sheet', 'certificate_of_analysis'
+        ]
+        widgets = {
+            'date_received': forms.DateInput(attrs={'type': 'date'}),
+            'expiry_date': forms.DateInput(attrs={'type': 'date'}),
+        }
+
+
+class UseReagentForm(forms.ModelForm):
+    class Meta:
+        model = ReagentUsage
+        fields = ['reagent', 'quantity_used', 'purpose']
+        widgets = {
+            'purpose': forms.Textarea(attrs={'rows': 3}),
+        }
+        labels = {
+            'reagent': 'Select Reagent',
+            'quantity_used': 'Containers Used',
+            'purpose': 'Purpose of Use',
+        }
 
 
 class ClientForm(forms.ModelForm):
@@ -42,6 +134,11 @@ class ParameterSelectionForm(forms.Form):
                 widget=forms.CheckboxSelectMultiple
             )
 
+
+class InventoryAuditForm(forms.ModelForm):
+    class Meta:
+        model = InventoryAudit
+        fields = ['reagent', 'actual_containers', 'notes']
 
 
 
@@ -156,6 +253,15 @@ class TestEnvironmentForm(forms.ModelForm):
 
 
 
+class COAInterpretationForm(forms.ModelForm):
+    class Meta:
+        model = COAInterpretation
+        fields = ['summary_text']
+        widgets = {
+            'summary_text': forms.Textarea(attrs={'rows': 6, 'cols': 80}),
+        }
+
+
 
 # class ResultEntryForm(forms.ModelForm):
 #     temp = forms.DecimalField(
@@ -197,60 +303,3 @@ class TestEnvironmentForm(forms.ModelForm):
 #         return cleaned
 
 
-
-
-
-class GroupedLotChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return f"Lot {obj.lot_number} ({obj.quantity}{obj.unit} remaining)"
-
-    def optgroups(self, name, value, attrs=None):
-        queryset = self.queryset.select_related("reagent").order_by("reagent__name")
-        groups = []
-        for reagent_name, lots in groupby(queryset, key=lambda l: l.reagent.name):
-            group_lots = list(lots)
-            group_choices = [(lot.pk, self.label_from_instance(lot)) for lot in group_lots]
-            groups.append((reagent_name, group_choices, 0))
-        return groups
-
-
-class ReagentUsageForm(forms.ModelForm):
-    class Meta:
-        model = ReagentUsage
-        fields = ['parameter', 'lot', 'quantity_used', 'purpose']
-        widgets = {
-            'parameter': forms.Select(attrs={'class': 'form-select'}),
-            'quantity_used': forms.NumberInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'e.g. 2.5'
-            }),
-            'purpose': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 2,
-                'placeholder': 'Optional notes'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-        # Grouped reagent lots by reagent name
-        self.fields['lot'] = GroupedLotChoiceField(
-            queryset=ReagentLot.objects.filter(status='active'),
-            widget=forms.Select(attrs={'class': 'form-select'}),
-            label='Reagent Lot'
-        )
-
-        # Order parameters nicely
-        self.fields['parameter'].queryset = Parameter.objects.select_related('group').order_by('group__name', 'name')
-
-    def clean_quantity_used(self):
-        quantity = self.cleaned_data.get('quantity_used')
-        lot = self.cleaned_data.get('lot')
-
-        if lot and quantity:
-            if quantity > lot.quantity:
-                raise forms.ValidationError(
-                    f"Not enough reagent available. Only {lot.quantity} {lot.unit} left in Lot {lot.lot_number}."
-                )
-        return quantity

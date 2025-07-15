@@ -12,6 +12,10 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_GET
 from collections import defaultdict
 from django.db.models import Prefetch
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_exempt
+from django.http import JsonResponse
+
 
 @login_required
 def clerk_dashboard_view(request):
@@ -24,6 +28,37 @@ def clerk_dashboard_view(request):
 def view_all_clients(request):
     clients = Client.objects.all()
     return render(request, "lims/client_list.html", {"clients": clients})
+
+
+@csrf_exempt
+@require_POST
+def update_client_field(request):
+    client_id = request.POST.get('id')
+    field = request.POST.get('field')
+    value = request.POST.get('value')
+
+    try:
+        client = Client.objects.get(id=client_id)
+        if hasattr(client, field):
+            setattr(client, field, value)
+
+            if field == "email":
+                client.coa_released = False  
+
+            client.save()
+
+            has_approved = client.sample_set.filter(status='approved').exists()
+
+            return JsonResponse({
+                'status': 'success',
+                'has_approved': has_approved,
+                'coa_released': client.coa_released
+            })
+
+        return JsonResponse({'status': 'error', 'message': 'Invalid field'}, status=400)
+
+    except Client.DoesNotExist:
+        return JsonResponse({'status': 'error', 'message': 'Client not found'}, status=404)
 
 
 def view_client_samples(request, client_id):

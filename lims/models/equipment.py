@@ -6,13 +6,33 @@ from django.utils import timezone
 
 
 ALLOWED_PARAMETERS = [
+    # 🔬 Proximate Analysis
     ("Protein", "Protein"),
     ("Fat", "Fat"),
     ("Moisture", "Moisture"),
     ("Ash", "Ash"),
     ("Fiber", "Fiber"),
-    # Add more as needed
+
+    # 🌾 Fiber Fractions
+    ("Neutral Detergent Fiber", "Neutral Detergent Fiber"),
+    ("Acid Detergent Fiber", "Acid Detergent Fiber"),
+    ("Acid Detergent Lignin", "Acid Detergent Lignin"),
+
+    # 🔬 Mycotoxins
+    ("Total Aflatoxins", "Total Aflatoxins"),
+    ("Aflatoxin B1", "Aflatoxin B1"),
+
+    # ⚡ Energy
+    ("Gross Energy", "Gross Energy"),
+
+    # 💊 Vitamins (for use with HPLC)
+    ("Vitamin A", "Vitamin A"),
+    ("Vitamin C", "Vitamin C"),
+    ("Vitamin E", "Vitamin E"),
+    ("Vitamin B1", "Vitamin B1"),
+    ("Vitamin B2", "Vitamin B2"),
 ]
+
 
 class Equipment(models.Model):
     parameters_supported = models.ManyToManyField("lims.Parameter", blank=True)
@@ -21,6 +41,7 @@ class Equipment(models.Model):
     model = models.CharField(max_length=100, blank=True)
     category = models.CharField(max_length=50, blank=True)
     date_installed = models.DateField()
+    manufacturer = models.CharField(max_length=100, blank=True)
     is_active = models.BooleanField(default=True)
 
     def __str__(self):

@@ -1,0 +1,14 @@
+
+{% load static %}
+
+
+<h2>Edit Summary Interpretation for {{ client.name }}</h2>
+
+<form method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Save Summary</button>
+</form>
+
+<p><a href="{% url 'preview_coa' client.client_id %}">← Back to Preview</a></p>
+

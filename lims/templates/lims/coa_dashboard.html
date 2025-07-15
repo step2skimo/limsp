@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>COA Dashboard</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
   <style>
     :root {
       --primary: #3498db;
@@ -12,270 +12,113 @@
       --danger: #e74c3c;
       --warning: #f39c12;
       --dark: #2c3e50;
-      --light: #f9f9f9;
       --white: #ffffff;
       --border-radius: 8px;
       --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
     }
-    
     body {
-      font-family: 'Segoe UI', Roboto, -apple-system, sans-serif;
-      padding: 2em;
+      font-family: 'Segoe UI', Roboto, sans-serif;
       background-color: #f5f7fa;
-      color: #333;
-      line-height: 1.6;
-    }
-    
-    .container {
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2rem;
-    }
-    
-    h2 {
+      padding: 2rem;
       color: var(--dark);
-      margin: 0;
-      font-size: 1.8rem;
-      font-weight: 600;
     }
-    
+    .container { max-width: 1200px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
     .back-link {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--primary);
-      text-decoration: none;
-      font-weight: 500;
-      padding: 0.5rem 1rem;
-      border-radius: var(--border-radius);
-      transition: all 0.2s ease;
+      color: var(--primary); text-decoration: none; font-weight: 500;
+      padding: 0.5rem 1rem; border-radius: var(--border-radius);
+      transition: background-color 0.2s ease;
     }
-    
-    .back-link:hover {
-      background-color: rgba(52, 152, 219, 0.1);
-      transform: translateX(-2px);
-    }
-    
+    .back-link:hover { background-color: rgba(52, 152, 219, 0.1); }
+
     .client-card {
-      background: var(--white);
-      padding: 1.5rem;
-      margin-bottom: 2rem;
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      background: var(--white); padding: 1.5rem; margin-bottom: 2rem;
+      border-radius: var(--border-radius); box-shadow: var(--box-shadow);
     }
-    
-    .client-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .client-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1rem;
-      padding-bottom: 1rem;
-      border-bottom: 1px solid #eee;
-    }
-    
-    h3 {
-      color: var(--dark);
-      margin: 0;
-      font-size: 1.3rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    
-    .client-meta {
-      display: flex;
-      gap: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    
-    .meta-item {
-      font-size: 0.9rem;
-    }
-    
-    .meta-item strong {
-      color: var(--dark);
-    }
-    
+
+    .client-header { display: flex; justify-content: space-between; margin-bottom: 1rem; }
+    .client-meta { display: flex; flex-wrap: wrap; gap: 1.5rem; margin-bottom: 1rem; }
+    .meta-item { font-size: 0.9rem; }
+
     .status-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.3rem;
-      padding: 0.4rem 0.8rem;
-      border-radius: 20px;
-      font-size: 0.8rem;
-      font-weight: 500;
+      border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+      padding: 0.4rem 0.8rem; display: inline-flex; align-items: center; gap: 0.3rem;
     }
-    
-    .released {
-      background-color: var(--secondary);
-      color: white;
-    }
-    
-    .pending {
-      background-color: var(--warning);
-      color: white;
-    }
-    
-    .table-container {
-      overflow-x: auto;
-      margin: 1.5rem 0;
-      border-radius: var(--border-radius);
-      box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.05);
-    }
-    
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      background: var(--white);
-    }
-    
-    th, td {
-      padding: 12px 15px;
-      text-align: left;
-      border-bottom: 1px solid #eee;
-    }
-    
-    th {
-      background-color: #f8fafc;
-      font-weight: 600;
-      color: var(--dark);
-      white-space: nowrap;
-    }
-    
-    tr:hover {
-      background-color: #f8fafc;
-    }
-    
-    .action-bar {
-      display: flex;
-      gap: 0.8rem;
-      flex-wrap: wrap;
-      align-items: center;
-      margin-top: 1.5rem;
-      padding-top: 1.5rem;
-      border-top: 1px solid #eee;
-    }
-    
+
+    .released { background-color: var(--secondary); color: white; }
+    .pending { background-color: var(--warning); color: white; }
+
+    .table-container { overflow-x: auto; margin-top: 1rem; }
+    table { width: 100%; border-collapse: collapse; background: var(--white); }
+    th, td { padding: 12px; border-bottom: 1px solid #eee; text-align: left; }
+    th { background-color: #f8fafc; }
+
+    .action-bar { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: 0.8rem; }
+
     .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.5rem;
-      padding: 0.6rem 1rem;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: var(--border-radius);
-      font-size: 0.85rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.2s ease;
+      display: inline-flex; align-items: center; gap: 0.5rem;
+      padding: 0.6rem 1rem; border: none; border-radius: var(--border-radius);
+      font-size: 0.85rem; font-weight: 500; text-decoration: none;
+      cursor: pointer; color: white; background-color: var(--primary);
     }
-    
-    .btn:hover {
-      background-color: #2980b9;
-      transform: translateY(-1px);
-      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    }
-    
-    .btn-secondary {
-      background-color: #6c757d;
-    }
-    
-    .btn-secondary:hover {
-      background-color: #5a6268;
-    }
-    
-    .btn-success {
-      background-color: var(--secondary);
-    }
-    
-    .btn-success:hover {
-      background-color: #27ae60;
-    }
-    
+
+    .btn:hover { background-color: #2980b9; }
+    .btn-secondary { background-color: #6c757d; }
+    .btn-success { background-color: var(--secondary); }
+
     .empty-state {
-      text-align: center;
-      padding: 3rem;
-      background: var(--white);
-      border-radius: var(--border-radius);
-      box-shadow: var(--box-shadow);
+      text-align: center; padding: 3rem; background: var(--white);
+      border-radius: var(--border-radius); box-shadow: var(--box-shadow);
     }
-    
-    @media (max-width: 768px) {
-      body {
-        padding: 1em;
-      }
-      
-      .client-meta {
-        flex-direction: column;
-        gap: 0.5rem;
-      }
-      
-      .action-bar {
-        flex-direction: column;
-        align-items: flex-start;
-      }
+
+    input.editable-email {
+      padding: 6px 10px; border: 1px solid #ccc;
+      border-radius: 6px; font-size: 0.9rem; width: 250px;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="header">
-      <h2><i class="fas fa-file-certificate"></i> COA Manager Dashboard</h2>
-      <a href="{% url 'manager_dashboard' %}" class="back-link">
-        <i class="fas fa-arrow-left"></i> Back to Manager Dashboard
-      </a>
-    </div>
+<div class="container">
+  <div class="header">
+    <h2><i class="fas fa-file-certificate"></i> COA Manager Dashboard</h2>
+    <a href="{% url 'manager_dashboard' %}" class="back-link"><i class="fas fa-arrow-left"></i> Back</a>
+  </div>
 
-    {% for client, data in grouped.items %}
-      {% with samples=data.samples has_approved=data.has_approved %}
-      <div class="client-card">
-        <div class="client-header">
-          <h3><i class="fas fa-user-tie"></i> {{ client.name }} <small>(Client ID: {{ client.client_id }})</small></h3>
-          <span class="status-badge {% if client.coa_released %}released{% else %}pending{% endif %}">
-            {% if client.coa_released %}
-              <i class="fas fa-check-circle"></i> Released
-            {% else %}
-              <i class="fas fa-clock"></i> Pending
-            {% endif %}
-          </span>
+  {% for client, data in grouped.items %}
+    {% with samples=data.samples has_approved=data.has_approved %}
+    <div class="client-card" id="client-card-{{ client.id }}">
+      <div class="client-header">
+        <h3><i class="fas fa-user-tie"></i> {{ client.name }} ({{ client.client_id }})</h3>
+        <span class="status-badge {% if client.coa_released %}released{% else %}pending{% endif %}">
+          {% if client.coa_released %}
+            <i class="fas fa-check-circle"></i> Released
+          {% else %}
+            <i class="fas fa-clock"></i> Pending
+          {% endif %}
+        </span>
+      </div>
+
+      <div class="client-meta">
+        <div class="meta-item"><strong><i class="fas fa-building"></i> Organization:</strong> {{ client.organization }}</div>
+        <div class="meta-item"><strong><i class="fas fa-flask"></i> Samples:</strong> {{ samples|length }}</div>
+        <div class="meta-item">
+          <strong><i class="fas fa-envelope"></i> Email:</strong>
+          <input type="email" class="editable-email" value="{{ client.email }}" data-id="{{ client.id }}" />
         </div>
+      </div>
 
-        <div class="client-meta">
-          <div class="meta-item">
-            <strong><i class="fas fa-building"></i> Organization:</strong> {{ client.organization }}
-          </div>
-          <div class="meta-item">
-            <strong><i class="fas fa-flask"></i> Samples:</strong> {{ samples|length }}
-          </div>
-        </div>
-
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Sample Code</th>
-                <th>Received Date</th>
-                <th>Sample Type</th>
-                <th>Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for sample in samples %}
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Sample Code</th>
+              <th>Received Date</th>
+              <th>Sample Type</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sample in samples %}
               <tr>
                 <td>{{ sample.sample_code }}</td>
                 <td>{{ sample.received_date }}</td>
@@ -288,52 +131,92 @@
                   {% endif %}
                 </td>
               </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-        </div>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
 
-        <div class="action-bar">
-          {% if client.coa_released %}
+      <div class="action-bar">
+        {% if client.coa_released %}
+          <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
+            <i class="fas fa-search"></i> Preview COA
+          </a>
+          <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+            <i class="fas fa-file-pdf"></i> Download COA
+          </a>
+          <span class="status-badge released already-released"><i class="fas fa-check-circle"></i> Already Released</span>
+        {% else %}
+          {% if has_approved %}
             <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
               <i class="fas fa-search"></i> Preview COA
             </a>
-            <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
-              <i class="fas fa-file-pdf"></i> Download COA
+            <a class="btn btn-secondary" href="{% url 'generate_coa' client.client_id %}">
+              <i class="fas fa-file-pdf"></i> Download PDF
             </a>
-            <span class="status-badge released">
-              <i class="fas fa-check-circle"></i> Already Released
-            </span>
+          <form method="post" action="{% url 'release_client_coa' client.id %}">
+  {% csrf_token %}
+  <button type="submit" class="btn btn-success release-btn">
+    <i class="fas fa-paper-plane"></i> Release to Client
+  </button>
+</form>
+
           {% else %}
-            {% if has_approved %}
-              <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
-                <i class="fas fa-search"></i> Preview COA
-              </a>
-              <a class="btn btn-secondary" href="{% url 'generate_coa' client.client_id %}">
-                <i class="fas fa-file-pdf"></i> Download PDF
-              </a>
-              <form method="post" action="{% url 'release_client_coa' client.id %}" style="display:inline;">
-                {% csrf_token %}
-                <button type="submit" class="btn btn-success">
-                  <i class="fas fa-paper-plane"></i> Release to Client
-                </button>
-              </form>
-            {% else %}
-              <span class="status-badge pending">
-                <i class="fas fa-clock"></i> Awaiting Approval
-              </span>
-            {% endif %}
+            <span class="status-badge pending"><i class="fas fa-clock"></i> Awaiting Approval</span>
           {% endif %}
-        </div>
+        {% endif %}
       </div>
-      {% endwith %}
-    {% empty %}
-      <div class="empty-state">
-        <i class="fas fa-inbox" style="font-size: 3rem; color: #ccc; margin-bottom: 1rem;"></i>
-        <h3>No client samples found</h3>
-        <p>There are currently no client samples to display</p>
-      </div>
-    {% endfor %}
-  </div>
+    </div>
+    {% endwith %}
+  {% empty %}
+    <div class="empty-state">
+      <i class="fas fa-inbox" style="font-size: 3rem; color: #ccc;"></i>
+      <h3>No client samples found</h3>
+    </div>
+  {% endfor %}
+</div>
+
+<script>
+  document.querySelectorAll('.editable-email').forEach(input => {
+    input.addEventListener('change', function () {
+      const clientId = this.dataset.id;
+      const value = this.value;
+
+      fetch("{% url 'update_client_field' %}", {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: new URLSearchParams({
+          id: clientId,
+          field: 'email',
+          value: value
+        })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success' && !data.coa_released) {
+          const card = document.querySelector(`#client-card-${clientId}`);
+          
+          // Show "Release to Client" button
+          const releaseBtn = card.querySelector('.release-btn');
+          if (releaseBtn) releaseBtn.style.display = 'inline-flex';
+
+          // Hide "Already Released" badge
+          const releasedTag = card.querySelector('.already-released');
+          if (releasedTag) releasedTag.style.display = 'none';
+
+          // Change top badge from Released to Pending
+          const topBadge = card.querySelector('.client-header .status-badge');
+          if (topBadge) {
+            topBadge.classList.remove('released');
+            topBadge.classList.add('pending');
+            topBadge.innerHTML = '<i class="fas fa-clock"></i> Pending';
+          }
+        }
+      });
+    });
+  });
+</script>
 </body>
 </html>

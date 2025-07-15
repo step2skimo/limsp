@@ -19,6 +19,7 @@ from lims.utils.notifications import notify_analyst_by_email
 
 User = get_user_model()
 
+
 @csrf_protect
 @login_required
 def assign_parameter_tests(request, client_id, parameter_id):
@@ -53,54 +54,55 @@ def assign_parameter_tests(request, client_id, parameter_id):
                 sample.status = SampleStatus.ASSIGNED
                 sample.save(update_fields=["status"])
 
-        # Create QC sample if needed
-        base_code = f"QC-{client.client_id}-{parameter.name[:3].upper()}"
-        sample_code = base_code
-        count = 1
-        while Sample.objects.filter(sample_code=sample_code).exists():
-            sample_code = f"{base_code}-{count}"
-            count += 1
+        # Only assign QC sample if parameter's group is in the required list
+        qc_required_groups = ["Proximate", "Gross Energy"]
+        if parameter.group.name in qc_required_groups:
+            base_code = f"QC-{client.client_id}-{parameter.name[:3].upper()}"
+            sample_code = base_code
+            count = 1
+            while Sample.objects.filter(sample_code=sample_code).exists():
+                sample_code = f"{base_code}-{count}"
+                count += 1
 
-        qc_sample, _ = Sample.objects.get_or_create(
-            sample_code=sample_code,
-            defaults={
-                "client": client,
-                "sample_type": "QC",
-                "weight": 0,
-                "status": SampleStatus.ASSIGNED
-                
-            }
-        )
-
-        if qc_sample.status == SampleStatus.RECEIVED:
-            qc_sample.status = SampleStatus.ASSIGNED
-            qc_sample.save(update_fields=["status"])
-
-        qc_assignment, _ = TestAssignment.objects.get_or_create(
-            sample=qc_sample,
-            parameter=parameter,
-            defaults={
-                "analyst": analyst,
-                "is_control": True
-            }
-        )
-
-        if hasattr(parameter, 'control_spec'):
-            spec = parameter.control_spec
-            QCMetrics.objects.update_or_create(
-                test_assignment=qc_assignment,
+            qc_sample, _ = Sample.objects.get_or_create(
+                sample_code=sample_code,
                 defaults={
-                    "min_acceptable": spec.min_acceptable,
-                    "max_acceptable": spec.max_acceptable,
-                    "measured_value": None,
+                    "client": client,
+                    "sample_type": "QC",
+                    "weight": 0,
+                    "status": SampleStatus.ASSIGNED
                 }
             )
 
+            if qc_sample.status == SampleStatus.RECEIVED:
+                qc_sample.status = SampleStatus.ASSIGNED
+                qc_sample.save(update_fields=["status"])
+
+            qc_assignment, _ = TestAssignment.objects.get_or_create(
+                sample=qc_sample,
+                parameter=parameter,
+                defaults={
+                    "analyst": analyst,
+                    "is_control": True
+                }
+            )
+
+            if hasattr(parameter, 'control_spec'):
+                spec = parameter.control_spec
+                QCMetrics.objects.update_or_create(
+                    test_assignment=qc_assignment,
+                    defaults={
+                        "min_acceptable": spec.min_acceptable,
+                        "max_acceptable": spec.max_acceptable,
+                        "measured_value": None,
+                    }
+                )
+
         sample_count = selected_samples.count()
-        notify(
-            analyst,
-            f"Hi {analyst.first_name}, You’ve been assigned to analyze {sample_count} sample(s) for Client ID CID-{client.client_id}.\nParameter: {parameter.name}"
-        )
+        # notify(
+        #     analyst,
+        #     f"Hi {analyst.first_name}, You’ve been assigned to analyze {sample_count} sample(s) for Client ID CID-{client.client_id}.\nParameter: {parameter.name}"
+        # )
 
         notify_analyst_by_email(
             analyst.email,

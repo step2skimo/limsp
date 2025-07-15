@@ -20,9 +20,9 @@ def generate_client_id():
         try:
             number = int(last.client_id.replace("JGLSP", "")) + 1
         except ValueError:
-            number = 2500
+            number = 2501
     else:
-        number = 2500
+        number = 2501
     return f"JGLSP{number}"
 
 

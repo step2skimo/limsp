@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reagent Inventory Management</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.0/font/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --success-gradient: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --danger-gradient: linear-gradient(135deg, #fc466b 0%, #3f5efb 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.2);
+            --shadow-soft: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 12px 48px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow-x: hidden;
+        }
+
+        .container-fluid {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-soft);
+            margin: 20px;
+            padding: 30px;
+            animation: slideInUp 0.8s ease-out;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .header-section {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .main-title {
+            color: white;
+            font-weight: 700;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            margin-bottom: 0;
+        }
+
+        .reagent-icon {
+            font-size: 3rem;
+            background: var(--success-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: pulse 2s infinite;
+        }
+
+        .count-badge {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            animation: fadeInRight 1s ease-out 0.5s both;
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .btn-modern {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-hover);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.2));
+            color: white;
+        }
+
+        .btn-modern:active {
+            transform: translateY(0);
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+            backdrop-filter: blur(15px);
+            border-radius: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: var(--shadow-soft);
+            animation: slideInLeft 0.8s ease-out 0.2s both;
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .form-control, .form-select {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            border-radius: 10px;
+            padding: 12px 16px;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus, .form-select:focus {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 0 0.2rem rgba(255, 255, 255, 0.25);
+            color: white;
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .form-select option {
+            background: #333;
+            color: white;
+        }
+
+        .table-responsive {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            animation: slideInUp 0.8s ease-out 0.4s both;
+        }
+
+        .table {
+            margin-bottom: 0;
+            background: transparent;
+        }
+
+        .table-dark {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        .table-dark th {
+            border: none;
+            padding: 20px 15px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+
+        .sortable {
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .sortable:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background: rgba(0, 0, 0, 0.02);
+        }
+
+        .table-hover tbody tr:hover {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            transform: translateX(5px);
+            transition: all 0.3s ease;
+        }
+
+        .table td {
+            padding: 15px;
+            vertical-align: middle;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            animation: bounceIn 0.5s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .bg-danger {
+            background: var(--danger-gradient) !important;
+        }
+
+        .bg-warning {
+            background: var(--warning-gradient) !important;
+        }
+
+        .bg-success {
+            background: var(--success-gradient) !important;
+        }
+
+        .btn-outline-primary, .btn-outline-secondary {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+            border: 1px solid rgba(102, 126, 234, 0.3);
+            color: #667eea;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            margin: 0 2px;
+        }
+
+        .btn-outline-primary:hover, .btn-outline-secondary:hover {
+            background: var(--primary-gradient);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.8);
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            opacity: 0.6;
+        }
+
+        .modal-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            border-bottom: none;
+        }
+
+        .iso-badge {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container-fluid {
+                margin: 10px;
+                padding: 20px;
+            }
+            
+            .main-title {
+                font-size: 2rem;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+            
+            .table-responsive {
+                font-size: 0.9rem;
+            }
+        }
+
+        @media print {
+            .container-fluid { 
+                padding: 0; 
+                background: white;
+                box-shadow: none;
+                border: none;
+            }
+            .card, .btn-group, #search-input, #expiry-filter, #sort-select, .btn-modern { 
+                display: none; 
+            }
+            .table { 
+                font-size: 0.8rem; 
+            }
+            .header-section {
+                background: white;
+                color: black;
+            }
+            .main-title {
+                color: black;
+            }
+        }
+
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.5);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid px-4">
+        <!-- Header Section -->
+        <div class="header-section d-flex justify-content-between align-items-center mb-4" data-aos="fade-down">
+            <div class="header-content">
+                <h2 class="main-title mb-0">
+                    <i class="bi bi-droplet-fill reagent-icon me-2"></i>Reagent Inventory Management
+                    <span class="count-badge ms-2" id="reagent-count">{{ reagents|length }} items</span>
+                </h2>
+            </div>
+            <div>
+                <button class="btn-modern me-2" id="download-btn" title="Export full inventory data">
+                    <i class="bi bi-file-earmark-arrow-down"></i> CSV Export
+                </button>
+                <a href="{% url 'inventory_dashboard' %}" class="btn-modern" title="Analytical dashboard">
+                    <i class="bi bi-speedometer2"></i> Dashboard
+                </a>
+            </div>
+        </div>
+
+        <!-- Control Panel -->
+        <div class="card mb-4 shadow-sm" data-aos="fade-right">
+            <div class="card-body py-2">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-3">
+                        <input type="text" id="search-input" class="form-control" placeholder="Search reagents...">
+                    </div>
+                    <div class="col-md-2">
+                        <select id="expiry-filter" class="form-select">
+                            <option value="all">All Status</option>
+                            <option value="expired">Expired</option>
+                            <option value="near-expiry">Near Expiry</option>
+                            <option value="valid">Valid</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="sort-select" class="form-select">
+                            <option value="name-asc">Sort by Name (A-Z)</option>
+                            <option value="name-desc">Sort by Name (Z-A)</option>
+                            <option value="expiry-asc">Sort by Expiry (Oldest)</option>
+                            <option value="expiry-desc">Sort by Expiry (Newest)</option>
+                            <option value="quantity-asc">Sort by Quantity (Low)</option>
+                            <option value="quantity-desc">Sort by Quantity (High)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-5 text-end">
+                        <div class="btn-group">
+                            <button class="btn btn-outline-secondary" id="column-toggle-btn" title="Customize columns">
+                                <i class="bi bi-layout-sidebar-inset"></i> Columns
+                            </button>
+                            <button class="btn btn-outline-primary" id="print-btn">
+                                <i class="bi bi-printer"></i> Print
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Inventory Table -->
+        <div class="table-responsive" data-aos="fade-up">
+            <table class="table table-striped table-hover table-bordered" id="reagent-table">
+                <thead class="table-dark">
+                    <tr>
+                        <th scope="col" data-column="name" class="sortable">Reagent Name <i class="bi bi-arrow-down-up"></i></th>
+                        <th scope="col" data-column="batch" class="sortable">Batch/Lot <i class="bi bi-arrow-down-up"></i></th>
+                        <th scope="col" data-column="bottles">Bottles</th>
+                        <th scope="col" data-column="qty">Qty/Bottle</th>
+                        <th scope="col" data-column="total" class="sortable">Total Qty <i class="bi bi-arrow-down-up"></i></th>
+                        <th scope="col" data-column="unit">Unit</th>
+                        <th scope="col" data-column="expiry" class="sortable">Expiry <i class="bi bi-arrow-down-up"></i></th>
+                        <th scope="col" data-column="status">Status</th>
+                        <th scope="col" data-column="actions">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                  {% for reagent in reagents %}
+<tr data-expiry="{{ reagent.expiry_date|date:'Y-m-d' }}" 
+    data-quantity="{{ reagent.number_of_containers|floatformat:2|add:'0.0'|floatformat:2|floatformat:'g'|add:reagent.quantity_per_container }}"
+    data-status="{% if reagent.expiry_date and reagent.expiry_date <= today %}expired
+                 {% elif reagent.expiry_date and today < reagent.expiry_date <= near_expiry_date %}near-expiry
+                 {% else %}valid{% endif %}">
+
+    <td>{{ reagent.name }}</td>
+    <td>{{ reagent.batch_number|default:"N/A" }}</td>
+    <td class="text-center">{{ reagent.number_of_containers }}</td>
+    <td class="text-center">{{ reagent.quantity_per_container }}</td>
+    <td class="text-center">{{ reagent.number_of_containers|floatformat:2|add:'0.0'|floatformat:2|floatformat:'g'|add:reagent.quantity_per_container }}</td>
+    <td class="text-center">{{ reagent.unit }}</td>
+    <td>{{ reagent.expiry_date|date:"Y-m-d" }}</td>
+    <td class="text-center">
+        {% if reagent.expiry_date and reagent.expiry_date <= today %}
+            <span class="badge bg-danger">Expired</span>
+        {% elif reagent.expiry_date and today < reagent.expiry_date <= near_expiry_date %}
+            <span class="badge bg-warning text-dark">Expiring Soon</span>
+        {% else %}
+            <span class="badge bg-success">Valid</span>
+        {% endif %}
+    </td>
+    <td class="text-center">
+        <div class="btn-group btn-group-sm">
+            <a href="{% url 'reagent_detail' reagent.pk %}" class="btn btn-outline-primary" title="View details">
+                <i class="bi bi-eye"></i>
+            </a>
+            <button class="btn btn-outline-secondary btn-quickview" data-id="{{ reagent.pk }}" title="Quick view">
+                <i class="bi bi-info-circle"></i>
+            </button>
+        </div>
+    </td>
+</tr>
+{% endfor %}
+  </tbody>
+            </table>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state text-center py-5 d-none">
+            <i class="bi bi-droplet empty-icon" style="font-size: 3rem;"></i>
+            <h4 class="mt-3">No reagents found</h4>
+            <p class="text-muted">Try adjusting your search or filters</p>
+        </div>
+
+        <!-- Quick View Modal -->
+        <div class="modal fade" id="quickViewModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="quickViewTitle">Reagent Details</h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body" id="quickViewContent">
+                        <div class="text-center py-4">
+                            <div class="loading-spinner"></div>
+                            <p class="mt-2">Loading...</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <a href="#" class="btn btn-primary" id="full-details-link">View Full Details</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ISO 17025 Compliance Badge -->
+        <div class="mt-4 text-end" data-aos="fade-up">
+            <span class="iso-badge badge bg-light text-dark border">
+                <i class="bi bi-shield-check text-success me-1"></i> ISO/IEC 17025 Compliant
+            </span>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({
+            duration: 800,
+            easing: 'ease-out-cubic',
+            once: true
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // DOM Elements
+            const table = document.getElementById('reagent-table');
+            const tbody = table.querySelector('tbody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            const searchInput = document.getElementById('search-input');
+            const expiryFilter = document.getElementById('expiry-filter');
+            const sortSelect = document.getElementById('sort-select');
+            const emptyState = document.getElementById('empty-state');
+            const reagentCount = document.getElementById('reagent-count');
+            const downloadBtn = document.getElementById('download-btn');
+            
+            // Initialize tooltips
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[title]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+
+            // Quick View Modal
+            const quickViewModal = new bootstrap.Modal('#quickViewModal');
+            document.querySelectorAll('.btn-quickview').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const reagentId = this.getAttribute('data-id');
+                    
+                    // Show loading state
+                    document.getElementById('quickViewContent').innerHTML = `
+                        <div class="text-center py-4">
+                            <div class="loading-spinner"></div>
+                            <p class="mt-2">Loading...</p>
+                        </div>
+                    `;
+                    
+                    fetch(`/reagents/${reagentId}/quickview/`)
+                        .then(response => response.text())
+                        .then(html => {
+                            document.getElementById('quickViewContent').innerHTML = html;
+                            document.getElementById('full-details-link').href = `/reagents/${reagentId}/`;
+                            document.getElementById('quickViewTitle').textContent = `Reagent: ${this.closest('tr').querySelector('td').textContent}`;
+                            quickViewModal.show();
+                        })
+                        .catch(error => {
+                            document.getElementById('quickViewContent').innerHTML = `
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    Error loading reagent details. Please try again.
+                                </div>
+                            `;
+                        });
+                });
+            });
+
+            // Search Functionality
+            searchInput.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const rowText = row.textContent.toLowerCase();
+                    const isVisible = rowText.includes(searchTerm);
+                    row.style.display = isVisible ? '' : 'none';
+                    if (isVisible) visibleCount++;
+                });
+                
+                updateEmptyState(visibleCount);
+                updateCounter(visibleCount);
+            });
+
+            // Expiry Filter
+            expiryFilter.addEventListener('change', function() {
+                const filterValue = this.value;
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const status = row.getAttribute('data-status');
+                    const shouldShow = filterValue === 'all' || status === filterValue;
+                    row.style.display = shouldShow ? '' : 'none';
+                    if (shouldShow) visibleCount++;
+                });
+                
+                updateEmptyState(visibleCount);
+                updateCounter(visibleCount);
+            });
+
+            // Sorting Functionality
+            sortSelect.addEventListener('change', function() {
+                const sortValue = this.value;
+                let sortedRows = Array.from(rows);
+                
+                sortedRows.sort((a, b) => {
+                    switch(sortValue) {
+                        case 'name-asc':
+                            return a.cells[0].textContent.localeCompare(b.cells[0].textContent);
+                        case 'name-desc':
+                            return b.cells[0].textContent.localeCompare(a.cells[0].textContent);
+                        case 'expiry-asc':
+                            return new Date(a.getAttribute('data-expiry')) - new Date(b.getAttribute('data-expiry'));
+                        case 'expiry-desc':
+                            return new Date(b.getAttribute('data-expiry')) - new Date(a.getAttribute('data-expiry'));
+                        case 'quantity-asc':
+                            return parseFloat(a.getAttribute('data-quantity')) - parseFloat(b.getAttribute('data-quantity'));
+                        case 'quantity-desc':
+                            return parseFloat(b.getAttribute('data-quantity')) - parseFloat(a.getAttribute('data-quantity'));
+                        default:
+                            return 0;
+                    }
+                });
+                
+                // Re-append rows in sorted order
+                sortedRows.forEach(row => tbody.appendChild(row));
+            });
+
+            // Column Toggle (simplified version)
+            document.getElementById('column-toggle-btn').addEventListener('click', function() {
+                // In a real implementation, you would use a proper column toggle library
+                alert('Column customization would be implemented here with a proper modal interface');
+            });
+
+            // Print Functionality
+            document.getElementById('print-btn').addEventListener('click', function() {
+                window.print();
+            });
+
+            // Download CSV - preserving Django URL
+            downloadBtn.addEventListener('click', function() {
+                window.location.href = "{% url 'download_csv' %}";
+            });
+
+            // Helper Functions
+            function updateEmptyState(visibleCount) {
+                emptyState.classList.toggle('d-none', visibleCount > 0);
+                table.parentElement.classList.toggle('d-none', visibleCount === 0);
+            }
+            
+            function updateCounter(count) {
+                reagentCount.textContent = `${count} items`;
+            }
+
+            // Initialize
+            updateCounter(rows.length);
+        });
+    </script>
+</body>
+</html>
