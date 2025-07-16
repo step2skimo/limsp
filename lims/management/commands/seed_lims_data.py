@@ -25,23 +25,30 @@ class Command(BaseCommand):
             # Proximate
             ("Moisture", "Proximate", "%", "Oven (AOAC 930.15 2000)", "≤ 12%", 4000),
             ("Ash", "Proximate", "%", "Furnace (AOAC 942.05, 2000)", "≤ 5%", 4000),
-            ("Crude Fibre", "Proximate", "%", "AOAC 962.09, 2000", "≤ 5%", 4000),
-            ("Crude Fat", "Proximate", "%", "Soxhlet Extraction (AOAC 2003.05)", "≥ 2%", 4000),
-            ("Protein", "Proximate", "%", "Kjedahl (AOAC 984.13 2000)", "≥ 10%", 4000),
+            ("Crude Fibre", "Proximate", "%", "AOAC 978.10, 2000", "≤ 5%", 4000),
+            ("Crude Fat", "Proximate", "%", "Soxhlet Extraction (AOAC 920.39)", "≥ 2%", 4000),
+            ("Protein", "Proximate", "%", "Kjedahl (AOAC 942.05 2000)", "≥ 10%", 4000),
            
 
             # Functional Properties
-            ("pH", "Functional Properties", "", "pH Meter", "-", 1000),
-            ("Bulk Density", "Functional Properties", "", "Volumetric Cylinder", "-", 2000),
-            ("Water Absorption", "Functional Properties", "", "Analytical Balance", "-", 2000),
-            ("Oil Absorption", "Functional Properties", "", "Analytical Balance", "-", 2000),
-            ("Swelling Index", "Functional Properties", "", "Measuring Cylinder", "-", 2000),
-            ("Foaming Capacity", "Functional Properties", "", "Volumetric Cylinder", "-", 2000),
-            ("Gelation Capacity", "Functional Properties", "", "Water Bath", "-", 2000),
+           ("pH", "Functional Properties", "", "pH Meter", "-", 2000),
+           ("Bulk Density", "Functional Properties", "", "", "-", 2500),
+           ("Swelling Capacity", "Functional Properties", "", "", "-", 2500),
+           ("Total Solids", "Functional Properties", "", "", "-", 2500),
+           ("Emulsification Capacity", "Functional Properties", "", "", "-", 2500),
+           ("Water Absorption Capacity", "Functional Properties", "", "", "-", 2500),
+           ("Oil Absorption Capacity", "Functional Properties", "", "", "-", 2500),
+           ("Foaming Capacity", "Functional Properties", "", "", "-", 2500),
+           ("Wettability", "Functional Properties", "", "", "-", 2500),
+           ("Gluten (Dry & Wet)", "Functional Properties", "", "", "-", 2500),
+           ("Dispersibility", "Functional Properties", "", "", "-", 2500),
+           ("Brix Content", "Functional Properties", "", "Refractometer", "-", 2500),
+           ("Salt Content", "Functional Properties", "", "Refractometer", "-", 2500),
+           ("Viscosity", "Functional Properties", "", "Viscometer", "-", 2500),
 
             # Phytochemicals
             *[(name, "Phytochemicals", "", "Spectrophotometric", "-", 4500)
-              for name in ["Alkaloids", "Flavonoids", "Tannins", "Saponins", "Phenolics"]],
+              for name in ["Alkaloids", "Flavonoids", "Tannins", "Saponins", "Phenolics", "Phytate", "Oxalate", "Carotenoids", "Cyanides", "Total Antioxidant Capacity/DPPH", "Total starch"]],
 
             # Protein Digestibility
             ("Protein Digestibility", "Protein Digestibility", "", "AOAC", "-", 8000),
@@ -117,6 +124,7 @@ class Command(BaseCommand):
         equipment_list = [
             ("Kjeltec Distillation Unit", "91819250", "8200", "FOSS"),
             ("Kjelroc Digestor", "01210-A-1097", "", "OPSIS Liquid Line"),
+            ("Magnetic Stirrer", "","","",),
             ("Fibretec (Hot & Cold Extraction Unit)", "91816165", "FT 121 & 122", "FOSS"),
             ("Soxtec", "91703799", "2050", "FOSS"),
             ("Moisture Analyzer", "P1018035", "ML-50", "A&D"),
@@ -130,7 +138,15 @@ class Command(BaseCommand):
             ("HPLC", "150-428", "System 4", "Cecil Instrument"),
             ("Digital Titrator", "", "", "Hirschman"),
             ("pH Meter", "", "GP 353", "EDT Instrument"),
+            ("Viscometer", "", "SV10", "AND"),
+            ("Viscometer", "", "VISCO", "ATAGO"),
+            ("Salt Meter", "", "", "ATAGO"),
+            ("Incubator", "", "DNP", "SearchTech Instrument"),
+            ("Autoclave", "", "", "Biobase"),
+            ("Centrifuge", "", "80-2", "SearchTech Instrument"),
             ("Water Purifier", "", "D-303A", "Biobase"),
+            ("Colony Counter", "", "BC-50", "Biobase"),
+            ("Ultrasonic Bath", "", "", "Grant"),
             ("Accuscan Gold", "Accu-024", "ASG-5420", "Neogen"),
         ]
 
@@ -195,107 +211,3 @@ class Command(BaseCommand):
         self.stdout.write(self.style.SUCCESS("✅ All lab data seeded successfully."))
 
 
-reagents = [
-Reagent.objects.create(name="ACETONE/Liter", number_of_containers=7, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ACETONITIRATE HPLC GRADE", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ALANINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ALBUMIN", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ALUMINIUM CHLORIDE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ALUTAMINE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM CHLORIDE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIA SOLUTION", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM FERROUS", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM HEPTAMOLYBDATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM HYDROXIDE(2.5L)", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM METAVANADATE(300g)", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM MOLYBDATE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM MONOVANADATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM SULFATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="AMMONIUM THIOCYNANATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ANILINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ANTHRONE(4g)", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ARGININE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ASCORBIC ACID", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ASPARAGINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="BARIUM CHLORIDE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="BARIUM NITRATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="BENZENE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="BORIC ACID 500g", number_of_containers=3, quantity_per_container=1, unit="")
-Reagent.objects.create(name="BROMOCRESOL GREEN", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CACIUM CARBONATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CAESIUM CHLORIDE )", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CASEIN PROTEIN RICH", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CELITE 545(20g)", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CHLOROFOAM(2.5L)", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="CTAB 100g", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="DIETHYL ETHER", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="DIETHYLENE GLYCOL(2.5l)", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="DISODIUM HYDROGEN OTHOPHOSPHATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="DI-SODIUM TETRABORATE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="EDTA (500g)", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="EHANEDIOL", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ETHANOL 2.5L", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="FERRIC CHLORIDE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="FOMIC ACID", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="GIEMSA’S STAIN", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="GLACIAL ACETIC ACID", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="GLUCOSE", number_of_containers=0, quantity_per_container=1, unit="")
-Reagent.objects.create(name="GLUTAMIC ACID", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="GLYCINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="HISTIDINE MONOHYDROCHLORIDE MONOHYDRATE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="HYDROCHLORIC ACID 2.5L", number_of_containers=3, quantity_per_container=1, unit="")
-Reagent.objects.create(name="ISOPROPYL ALCOHOL", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="L-ASCORBIC ACID", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="L-ASPARTIC", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="LEUCINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="L-ISOLEUCINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="L-PROLINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="LYSINE MONOCHLORIDE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="METHANOL", number_of_containers=2, quantity_per_container=1, unit="")
-Reagent.objects.create(name="METHIONINE", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="NINHYDRIN", number_of_containers=1, quantity_per_container=1, unit="")
-Reagent.objects.create(name="NITRIC ACID 2.5L", number_of_containers=3, quantity_per_container=1, unit="")
-Reagent.objects.create(name="N-OCTANOL", number_of_containers=1, quantity_per_container=1, unit="")
-
-    {"name": "Glutamic Acid", "number_of_containers": 1},
-    {"name": "Glycine", "number_of_containers": 1},
-    {"name": "Histidine Monohydrochloride Monohydrate", "number_of_containers": 1},
-    {"name": "Hydrochloric Acid 2.5L", "number_of_containers": 3},
-    {"name": "Isopropyl Alcohol", "number_of_containers": 1},
-    {"name": "L-Ascorbic Acid", "number_of_containers": 2},
-    {"name": "L-Aspartic", "number_of_containers": 1},
-    {"name": "Leucine", "number_of_containers": 1},
-    {"name": "L-Isoleucine", "number_of_containers": 1},
-    {"name": "L-Proline", "number_of_containers": 1},
-    {"name": "Lysine Monochloride", "number_of_containers": 1},
-    {"name": "Methanol", "number_of_containers": 2},
-    {"name": "Methionine", "number_of_containers": 1},
-    {"name": "Ninhydrin", "number_of_containers": 1},
-    {"name": "Nitric Acid 2.5L", "number_of_containers": 3},
-    {"name": "N-Octanol", "number_of_containers": 1},
-    {"name": "Petroleum Spirit 2.5L", "number_of_containers": 6},
-    {"name": "Phenolphthalein (20g)", "number_of_containers": 1},
-    {"name": "Polyvinylpyrrolidone", "number_of_containers": 1},
-    {"name": "Potassium Hydroxide", "number_of_containers": 1},
-
-    # --- Batch 5 ---
-    {"name": "Silica Gel", "number_of_containers": 2},
-    {"name": "Sodium Chloride", "number_of_containers": 2},
-    {"name": "Sodium Dihydrogen Phosphate", "number_of_containers": 1},
-    {"name": "Sodium Hydroxide 500g", "number_of_containers": 4},
-    {"name": "Sodium Lauryl Sulphate", "number_of_containers": 1},
-    {"name": "Sulphosalicylic Acid", "number_of_containers": 1},
-    {"name": "Sulphuric Acid 2.5L", "number_of_containers": 3},
-    {"name": "Threonine", "number_of_containers": 1},
-    {"name": "Tyrosine", "number_of_containers": 1},
-    {"name": "Valine", "number_of_containers": 1},
-    {"name": "Alanine", "number_of_containers": 1},
-    {"name": "Aniline", "number_of_containers": 1},
-    {"name": "Asparagine", "number_of_containers": 1},
-    {"name": "Boric Acid 500g", "number_of_containers": 3},
-    {"name": "Chlorofoam (2.5L)", "number_of_containers": 2},
-    {"name": "CTAB 100g", "number_of_containers": 2},
-    {"name": "Diethylene Glycol (2.5L)", "number_of_containers": 2},
-    {"name": "Disodium Hydrogen Orthophosphate", "number_of_containers": 0},
-    {"name": "Di-sodium Tetraborate", "number_of_containers": 0},
-    {"name": "EDTA (500g)", "number_of_containers": 0},

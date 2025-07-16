@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial; font-size: 12px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+    </style>
+</head>
+<body>
+<h2>Equipment List</h2>
+<table>
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Serial No</th>
+            <th>Model</th>
+            <th>Category</th>
+            <th>Date Installed</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for eq in equipments %}
+        <tr>
+            <td>{{ eq.name }}</td>
+            <td>{{ eq.serial_number }}</td>
+            <td>{{ eq.model }}</td>
+            <td>{{ eq.category }}</td>
+            <td>{{ eq.date_installed }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+</body>
+</html>

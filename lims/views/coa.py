@@ -134,13 +134,13 @@ def generate_coa_pdf(request, client_id):
             )
             sample.results.append({
                 "parameter": "CHO",
-                "method": "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)",
+                "method":"",
                 "value": cho,
                 "unit": "%",
             })
             sample.results.append({
                 "parameter": "ME",
-                "method": "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)",
+                "method": "",
                 "value": me,
                 "unit": "kcal/100g",
             })
@@ -318,7 +318,8 @@ def release_client_coa(request, client_id):
     client.coa_released = True
     client.save()
 
-    param_list = [{"name": p[0], "unit": p[1], "method": p[2]} for p in sorted(parameters)]
+    param_list = [{"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters]
+    
 
     # ✅ Notify client with correct summary
     notify_client_on_coa_release(
@@ -410,7 +411,7 @@ def preview_coa(request, client_id):
             )
             row_data["results"].append({
                 "parameter": "CHO",
-                "method": "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)",
+                "method": "",
                 "value": cho,
                 "unit": "%",
             })
@@ -424,7 +425,7 @@ def preview_coa(request, client_id):
             )
             row_data["results"].append({
                 "parameter": "ME",
-                "method": "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)",
+                "method": "",
                 "value": me,
                 "unit": "kcal/100g",
             })
@@ -454,7 +455,7 @@ def preview_coa(request, client_id):
             "client": client,
             "samples": table_data,
             "parameters": [
-                {"name": p[0], "unit": p[1], "method": p[2]} for p in parameters
+                {"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters
             ],
             "summary_text": summary_text,
             "today": datetime.date.today(),

@@ -1,0 +1,80 @@
+{% load static %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<div class="container mt-4">
+    <h2 class="mb-4">
+        {% if form.instance.pk %}
+            Edit Equipment
+        {% else %}
+            Add Equipment
+        {% endif %}
+    </h2>
+
+    <div class="card shadow-sm p-4">
+        <form method="post">
+            {% csrf_token %}
+            <div class="row g-3">
+                <!-- Equipment Name -->
+                <div class="col-md-6">
+                    <label class="form-label">Equipment Name</label>
+                    {{ form.name }}
+
+                </div>
+
+                <!-- Serial Number -->
+                <div class="col-md-6">
+                    <label class="form-label">Serial Number</label>
+                    {{ form.serial_number }}
+                </div>
+
+                <!-- Model -->
+                <div class="col-md-6">
+                    <label class="form-label">Model</label>
+                    {{ form.model }}
+                </div>
+
+                <!-- Category -->
+                <div class="col-md-6">
+                    <label class="form-label">Category</label>
+                    {{ form.category }}
+                </div>
+
+                <!-- Date Installed -->
+                <div class="col-md-6">
+                    <label class="form-label">Date Installed</label>
+                    {{ form.date_installed }}
+                </div>
+
+                <!-- Manufacturer -->
+                <div class="col-md-6">
+                    <label class="form-label">Manufacturer</label>
+                    {{ form.manufacturer }}
+                </div>
+
+                <!-- Status -->
+                <div class="col-md-6">
+                    <label class="form-label">Status</label>
+                    {{ form.is_active }}
+                </div>
+
+                <!-- Parameters Supported -->
+                <div class="col-12">
+                    <label class="form-label">Parameters Supported</label>
+                    {{ form.parameters_supported }}
+                    <small class="text-muted">Hold CTRL (or CMD on Mac) to select multiple parameters</small>
+                </div>
+            </div>
+
+            <!-- Submit Buttons -->
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    {% if form.instance.pk %}Update{% else %}Save{% endif %}
+                </button>
+                <a href="{% url 'equipment_dashboard' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

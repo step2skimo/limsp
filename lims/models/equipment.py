@@ -52,6 +52,7 @@ class CalibrationRecord(models.Model):
     calibration_date = models.DateField()
     calibrated_by = models.CharField(max_length=100)
     expires_on = models.DateField()
+    certificate = models.FileField(upload_to="calibration_certificates/", blank=True, null=True)
     comments = models.TextField(blank=True)
 
     def is_valid(self):

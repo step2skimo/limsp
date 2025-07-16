@@ -206,7 +206,7 @@ def review_by_parameter(request, parameter_id):
             messages.success(request, f"✅ {assignment.sample.sample_code} approved.")
 
         elif action == "reject":
-            assignment.status = "assigned"
+            assignment.status = "rejected"
             assignment.manager_comment = comment
             assignment.save(update_fields=["status", "manager_comment"])
             messages.warning(request, f"❌ {assignment.sample.sample_code} rejected.")

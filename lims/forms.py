@@ -10,6 +10,18 @@ from .models.reagents import InventoryAudit
 from django import forms
 from lims.models import ReagentUsage, ReagentRequest, ReagentIssue
 from django.forms import modelformset_factory
+from django import forms
+from .models import Equipment, CalibrationRecord
+
+class EquipmentForm(forms.ModelForm):
+    class Meta:
+        model = Equipment
+        fields = ['name', 'serial_number', 'model', 'category', 'date_installed', 'manufacturer', 'is_active', 'parameters_supported']
+
+class CalibrationRecordForm(forms.ModelForm):
+    class Meta:
+        model = CalibrationRecord
+        fields = ['calibration_date', 'calibrated_by', 'expires_on', 'comments', 'certificate']
 
 class ReagentUsageForm(forms.ModelForm):
     class Meta:

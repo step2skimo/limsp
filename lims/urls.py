@@ -16,6 +16,7 @@ from lims.views.coa import *
 from lims.views.charts import *
 from lims.views.test_email import test_email
 from lims.views.reagents import *
+from .views.equipment import *
 
 urlpatterns = [
 
@@ -33,6 +34,25 @@ urlpatterns = [
     path('reagent/preview/', preview_reagent_request, name='preview_reagent_request'),
     path('reagent/send/', send_reagent_request, name='send_reagent_request'),
     path('reagent/issues/', reagent_issue_list, name='reagent_issue_list'),
+
+   
+    # Equipment Dashboard
+    path('equipment-dashboard/', equipment_dashboard, name='equipment_dashboard'),
+
+    # Equipment CRUD
+    path('equipment/add/', add_equipment, name='add_equipment'),
+    path('equipment/<int:pk>/', equipment_detail, name='equipment_detail'),
+    path('equipment/<int:pk>/edit/', edit_equipment, name='edit_equipment'),
+    path('equipment/<int:pk>/delete/', delete_equipment, name='delete_equipment'),
+
+    # Calibration CRUD
+    path('equipment/<int:equipment_id>/add-calibration/', add_calibration, name='add_calibration'),
+
+    # Export Features
+    path('equipment/export/csv/', export_equipment_csv, name='export_equipment_csv'),
+    path('equipment/export/pdf/', export_equipment_pdf, name='export_equipment_pdf'),
+
+
 
 
 

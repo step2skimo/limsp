@@ -1,0 +1,215 @@
+<div class="modern-calibration-grid">
+  {% for record in calibrations %}
+  <div class="calibration-card {% if not record.is_valid %}invalid-card{% endif %}">
+    <div class="card-header">
+      <div class="date-display">
+        <div class="full-date">{{ record.calibration_date|date:"M d, Y" }}</div>
+        <div class="time-ago">{{ record.calibration_date|timesince }} ago</div>
+      </div>
+      <div class="status-indicator {% if record.is_valid %}valid{% else %}invalid{% endif %}">
+        {% if record.is_valid %}
+          <i class="fas fa-check-circle"></i> Valid
+        {% else %}
+          <i class="fas fa-exclamation-triangle"></i> Invalid
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="card-details">
+      <div class="detail-row">
+        <span>Calibrated By:</span>
+        <strong>{{ record.calibrated_by|default:"-" }}</strong>
+      </div>
+      <div class="detail-row">
+        <span>Expires On:</span>
+        <strong class="{% if record.is_expired %}expired{% elif record.expires_soon %}expiring-soon{% endif %}">
+          {{ record.expires_on|date:"M d, Y" }}
+          {% if record.is_expired %}
+            <span class="expiry-label">(Expired)</span>
+          {% elif record.expires_soon %}
+            <span class="expiry-label">(Soon)</span>
+          {% endif %}
+        </strong>
+      </div>
+      <div class="detail-row comments">
+        <span>Comments:</span>
+        <p>{{ record.comments|default:"No comments" }}</p>
+      </div>
+    </div>
+
+    <div class="card-actions">
+      {% if record.certificate %}
+        <a href="{{ record.certificate.url }}" target="_blank" class="action-btn view-cert">
+          <i class="fas fa-file-alt"></i> Certificate
+        </a>
+        <a href="{{ record.certificate.url }}" download class="action-btn download">
+          <i class="fas fa-download"></i>
+        </a>
+      {% else %}
+        <span class="no-cert">No Certificate</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.modern-calibration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 20px;
+  padding: 15px;
+}
+
+.calibration-card {
+  background: white;
+  border-radius: 10px;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+  overflow: hidden;
+  transition: all 0.3s ease;
+  border-left: 4px solid #4CAF50;
+}
+
+.invalid-card {
+  border-left-color: #F44336;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: #f8f9fa;
+  border-bottom: 1px solid #eee;
+}
+
+.date-display {
+  line-height: 1.2;
+}
+
+.full-date {
+  font-weight: 600;
+  color: #333;
+  font-size: 15px;
+}
+
+.time-ago {
+  font-size: 13px;
+  color: #666;
+}
+
+.status-indicator {
+  padding: 5px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-indicator.valid {
+  background: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+}
+
+.status-indicator.invalid {
+  background: rgba(244, 67, 54, 0.1);
+  color: #F44336;
+}
+
+.card-details {
+  padding: 15px;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.detail-row > span {
+  color: #666;
+}
+
+.detail-row > strong {
+  color: #333;
+  text-align: right;
+}
+
+.detail-row.comments {
+  display: block;
+  margin-bottom: 0;
+}
+
+.detail-row.comments p {
+  margin: 5px 0 0;
+  color: #555;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.expired {
+  color: #F44336 !important;
+}
+
+.expiring-soon {
+  color: #FF9800 !important;
+}
+
+.expiry-label {
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.card-actions {
+  display: flex;
+  padding: 12px 15px;
+  border-top: 1px solid #eee;
+}
+
+.action-btn {
+  flex: 1;
+  text-align: center;
+  padding: 8px;
+  border-radius: 5px;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.view-cert {
+  background: #2196F3;
+  color: white;
+  margin-right: 8px;
+}
+
+.view-cert:hover {
+  background: #0b8dee;
+  color: white;
+  text-decoration: none;
+}
+
+.download {
+  background: #f1f1f1;
+  color: #555;
+  max-width: 40px;
+}
+
+.download:hover {
+  background: #e1e1e1;
+  color: #333;
+  text-decoration: none;
+}
+
+.no-cert {
+  color: #999;
+  font-size: 13px;
+  padding: 8px;
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .modern-calibration-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

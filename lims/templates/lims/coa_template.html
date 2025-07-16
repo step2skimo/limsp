@@ -162,13 +162,13 @@
         <td>{{ param.method }}</td>
         {% for sample in samples %}
           <td>
-            {% with value="—" %}
+            {% with value="" %}
               {% for r in sample.results %}
                 {% if r.parameter == param.name %}
                   {{ r.value|floatformat:2 }}
                 {% endif %}
               {% endfor %}
-              {% if value == "—" %}{{ value }}{% endif %}
+              {% if value == "" %}{{ value }}{% endif %}
             {% endwith %}
           </td>
         {% endfor %}

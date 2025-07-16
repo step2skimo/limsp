@@ -40,7 +40,8 @@ from datetime import timedelta
 def analyst_dashboard_view(request):
     assignments = TestAssignment.objects.select_related(
         'sample', 'sample__client', 'parameter'
-    ).filter(status='pending', analyst=request.user)
+    ).filter(status__in=['pending', 'rejected'], analyst=request.user)
+
 
     grouped = defaultdict(list)
     total_samples = 0
