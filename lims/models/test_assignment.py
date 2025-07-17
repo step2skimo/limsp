@@ -20,6 +20,7 @@ class TestAssignment(models.Model):
     help_text="Equipment used for this test"
 )
     is_control = models.BooleanField(default=False)
+    is_reference = models.BooleanField(default=False)
     manager_comment = models.TextField(null=True, blank=True)
 
 class TestResult(models.Model):

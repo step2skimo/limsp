@@ -14,7 +14,7 @@ class Command(BaseCommand):
     def handle(self, *args, **kwargs):
         # 1. Parameter Groups
         group_names = [
-            "Proximate", "Functional Properties", "Phytochemicals", "Protein Digestibility",
+            "Proximate", "Functional Properties", "Phytochemicals", "Protein Digestibility", "Gross Energy",
             "Oil Analysis", "Fiber Fractions", "Minerals",
             "Vitamins & Contaminants", "Water Analysis"
         ]
@@ -22,57 +22,74 @@ class Command(BaseCommand):
 
         # 2. Parameters
         param_data = [
-            # Proximate
-            ("Moisture", "Proximate", "%", "Oven (AOAC 930.15 2000)", "≤ 12%", 4000),
-            ("Ash", "Proximate", "%", "Furnace (AOAC 942.05, 2000)", "≤ 5%", 4000),
-            ("Crude Fibre", "Proximate", "%", "AOAC 978.10, 2000", "≤ 5%", 4000),
-            ("Crude Fat", "Proximate", "%", "Soxhlet Extraction (AOAC 920.39)", "≥ 2%", 4000),
-            ("Protein", "Proximate", "%", "Kjedahl (AOAC 942.05 2000)", "≥ 10%", 4000),
-           
+          
+    # Proximate
+    ("Moisture", "Proximate", "%", "Oven (AOAC 930.15 2000)", "≤ 12%", 4000),
+    ("Ash", "Proximate", "%", "Furnace (AOAC 942.05, 2000)", "≤ 5%", 4000),
+    ("Crude Fibre", "Proximate", "%", "AOAC 978.10, 2000", "≤ 5%", 4000),
+    ("Crude Fat", "Proximate", "%", "Soxhlet Extraction (AOAC 920.39)", "≥ 2%", 4000),
+    ("Protein", "Proximate", "%", "Kjeldahl (AOAC 942.05 2000)", "≥ 10%", 4000),
 
-            # Functional Properties
-           ("pH", "Functional Properties", "", "pH Meter", "-", 2000),
-           ("Bulk Density", "Functional Properties", "", "", "-", 2500),
-           ("Swelling Capacity", "Functional Properties", "", "", "-", 2500),
-           ("Total Solids", "Functional Properties", "", "", "-", 2500),
-           ("Emulsification Capacity", "Functional Properties", "", "", "-", 2500),
-           ("Water Absorption Capacity", "Functional Properties", "", "", "-", 2500),
-           ("Oil Absorption Capacity", "Functional Properties", "", "", "-", 2500),
-           ("Foaming Capacity", "Functional Properties", "", "", "-", 2500),
-           ("Wettability", "Functional Properties", "", "", "-", 2500),
-           ("Gluten (Dry & Wet)", "Functional Properties", "", "", "-", 2500),
-           ("Dispersibility", "Functional Properties", "", "", "-", 2500),
-           ("Brix Content", "Functional Properties", "", "Refractometer", "-", 2500),
-           ("Salt Content", "Functional Properties", "", "Refractometer", "-", 2500),
-           ("Viscosity", "Functional Properties", "", "Viscometer", "-", 2500),
+    # Functional Properties
+    ("pH", "Functional Properties", "pH", "pH Meter", "-", 2000),
+    ("Bulk Density", "Functional Properties", "g/mL", "", "-", 2500),  # alt: g/cm3
+    ("Swelling Capacity", "Functional Properties", "mL/g", "", "-", 2500),
+    ("Total Solids", "Functional Properties", "%", "", "-", 2500),
+    ("Emulsification Capacity", "Functional Properties", "%", "", "-", 2500),  # alt: mL oil/g
+    ("Water Absorption Capacity", "Functional Properties", "g/g", "", "-", 2500),
+    ("Oil Absorption Capacity", "Functional Properties", "g/g", "", "-", 2500),
+    ("Foaming Capacity", "Functional Properties", "%", "", "-", 2500),  # % volume increase
+    ("Wettability", "Functional Properties", "s", "", "-", 2500),  # time to wet
+    ("Gluten (Dry & Wet)", "Functional Properties", "%", "", "-", 2500),
+    ("Dispersibility", "Functional Properties", "%", "", "-", 2500),
+    ("Brix Content", "Functional Properties", "°Bx", "Refractometer", "-", 2500),
+    ("Salt Content", "Functional Properties", "%", "Refractometer", "-", 2500),  
+    ("Viscosity", "Functional Properties", "mPa·s", "Viscometer", "-", 2500), 
 
-            # Phytochemicals
-            *[(name, "Phytochemicals", "", "Spectrophotometric", "-", 4500)
-              for name in ["Alkaloids", "Flavonoids", "Tannins", "Saponins", "Phenolics", "Phytate", "Oxalate", "Carotenoids", "Cyanides", "Total Antioxidant Capacity/DPPH", "Total starch"]],
+    # Phytochemicals (spectrophotometric results typically reported per 100g or per g dry matter; adjust as needed)
+    ("Alkaloids", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4000),
+    ("Flavonoids", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4500),
+    ("Tannins", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4500),
+    ("Saponins", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4000),
+    ("Phenolics", "Phytochemicals", "mg GAE/100g", "Spectrophotometric", "-", 4000),  
+    ("Phytate", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4000),
+    ("Oxalate", "Phytochemicals", "mg/100g", "Spectrophotometric", "-", 4000),
+    ("Carotenoids", "Phytochemicals", "µg/g", "Spectrophotometric", "-", 4000),
+    ("Cyanides", "Phytochemicals", "mg HCN/kg", "Spectrophotometric", "-", 4500),
+    ("Total Antioxidant Capacity/DPPH", "Phytochemicals", "% inhibition", "Spectrophotometric", "-", 4000),  
+    ("Total starch", "Phytochemicals", "%", "Spectrophotometric", "-", 5000),
 
-            # Protein Digestibility
-            ("Protein Digestibility", "Protein Digestibility", "", "AOAC", "-", 8000),
-            ("FRAB", "Protein Digestibility", "", "-", "-", 5000),
+    # Protein Digestibility
+    ("Protein Digestibility", "Protein Digestibility", "%", "AOAC", "-", 8000),
+    ("FRAP", "Protein Digestibility", "µmol Fe2+/g", "-", "-", 5000),  
 
-            # Oil Analysis
-            ("Total Free Fatty Acid", "Oil Analysis", "", "Titrimetric", "-", 3000),
-            ("Peroxide Value", "Oil Analysis", "", "Titrimetric", "-", 4000),
-            ("Iodine Value", "Oil Analysis", "", "Titrimetric", "-", 4000),
-            ("Saponification Value", "Oil Analysis", "", "Titrimetric", "-", 3500),
-            ("Acid/Titratable Acid Value", "Oil Analysis", "", "Titrimetric", "-", 3000),
+    # Oil Analysis
+    ("Total Free Fatty Acid", "Oil Analysis", "% oleic acid", "Titrimetric", "-", 3000),
+    ("Peroxide Value", "Oil Analysis", "meq O2/kg", "Titrimetric", "-", 4000),
+    ("Iodine Value", "Oil Analysis", "g I2/100g", "Titrimetric", "-", 4000),
+    ("Saponification Value", "Oil Analysis", "mg KOH/g", "Titrimetric", "-", 3500),
+    ("Acid/Titratable Acid Value", "Oil Analysis", "mg KOH/g", "Titrimetric", "-", 3000),
 
-            # Fiber Fractions
-            *[(name, "Fiber Fractions", "", "AOAC", "-", 4500) for name in [
-                "Neutral Detergent Fiber", "Acid Detergent Fiber", "Acid Detergent Lignin",
-                "Cellulose", "Hemicelluloses", "Digestibility", "Dry Matter Intake",
-                "Relative Feed Value", "Volatile Matter", "Fixed Carbon"
-            ]],
+    # Fiber Fractions (usually reported on a dry-matter basis)
+    ("Neutral Detergent Fiber", "Fiber Fractions", "% DM", "AOAC", "-", 4000),
+    ("Acid Detergent Fiber", "Fiber Fractions", "% DM", "AOAC", "-", 4000),
+    ("Acid Detergent Lignin", "Fiber Fractions", "% DM", "AOAC", "-", 4500),
+    ("Cellulose", "Fiber Fractions", "% DM", "AOAC", "-", 4500),
+    ("Hemicelluloses", "Fiber Fractions", "% DM", "AOAC", "-", 4500),
+    ("Digestibility", "Fiber Fractions", "%", "AOAC", "-", 4500),  
+    ("Dry Matter Intake", "Fiber Fractions", "% BW", "AOAC", "-", 4500),  
+    ("Relative Feed Value", "Fiber Fractions", "index", "AOAC", "-", 4500),
+    ("Volatile Matter", "Fiber Fractions", "%", "AOAC", "-", 4500),
+    ("Fixed Carbon", "Fiber Fractions", "%", "AOAC", "-", 4000),
+
+
 
             # Minerals
             ("Digestion (prep for AAS)", "Minerals", "", "-", "-", 1000),
             ("Elemental Determination (Ca, Mg, Zn...)", "Minerals", "", "AAS", "-", 1000),
             *[(name, "Minerals", "", "-", "-", 4500) for name in ["Nitrate", "Carbonate", "Bromate", "NaCl", "Organic Matter"]],
-            ("Gross Energy", "Minerals", "kcal/kg", "Calorimeter", "-", 3500),
+            #Gross Energy
+            ("Gross Energy", "Gross Energy", "kcal/kg", "Calorimeter", "-", 4500),
 
             # Vitamins & Contaminants
             *[(f"Vitamin {v}", "Vitamins & Contaminants", unit, "HPLC", "-", 10000)
@@ -93,7 +110,7 @@ class Command(BaseCommand):
 
         param_objs = {}
         for name, group, unit, method, ref_limit, price in param_data:
-            obj, _ = Parameter.objects.get_or_create(
+            obj, created = Parameter.objects.update_or_create(
                 name=name,
                 defaults={
                     "group": groups[group],

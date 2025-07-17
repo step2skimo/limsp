@@ -149,7 +149,7 @@ def review_by_parameter(request, parameter_id):
     assignments = (
         TestAssignment.objects
         .filter(parameter=parameter, status="completed")
-        .exclude(sample__sample_type="QC")
+        #.exclude(sample__sample_type="QC")
         .select_related("sample__client", "testresult", "qc_metrics")
         .order_by("sample__client__client_id", "sample__sample_code")
     )

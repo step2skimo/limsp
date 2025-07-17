@@ -17,6 +17,7 @@ from lims.views.charts import *
 from lims.views.test_email import test_email
 from lims.views.reagents import *
 from .views.equipment import *
+from .views.backup import backup_db
 
 urlpatterns = [
 
@@ -52,6 +53,12 @@ urlpatterns = [
     path('equipment/export/csv/', export_equipment_csv, name='export_equipment_csv'),
     path('equipment/export/pdf/', export_equipment_pdf, name='export_equipment_pdf'),
 
+
+
+
+
+  #backup
+    path('backup/', backup_db, name='backup'),
 
 
 

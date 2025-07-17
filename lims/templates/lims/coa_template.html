@@ -147,7 +147,6 @@
   <thead>
     <tr>
       <th>Parameter</th>
-      <th>Unit</th>
       <th>Method</th>
       {% for sample in samples %}
         <th>{{ sample.sample_code }}</th>
@@ -157,8 +156,7 @@
   <tbody>
     {% for param in parameters %}
       <tr>
-        <td>{{ param.name }}</td>
-        <td>{{ param.unit }}</td>
+        <td>{{ param.name }}{% if param.unit %} ({{ param.unit }}){% endif %}</td>
         <td>{{ param.method }}</td>
         {% for sample in samples %}
           <td>
@@ -179,6 +177,7 @@
 
 
 
+
   <!-- Summary Interpretation -->
   <div class="footnote mt-3">
     <strong>Summary interpretation:</strong><br>
@@ -194,7 +193,7 @@
   <!-- Signatures -->
 <div class="signatures">
   <div class="text-center">
-    <img src="{% static 'images/signatures/hannah-sign.jpg' %}" alt="Hannah Signature" style="max-height: 60px;"><br>
+    <img src="{% static 'images/signatures/hannah-sign.png' %}" alt="Hannah Signature" style="max-height: 60px;"><br>
     <strong>Kehinde K. Hannah</strong><br>
     HEAD OF LABORATORY
   </div>

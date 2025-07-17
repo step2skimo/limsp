@@ -33,9 +33,11 @@ def assign_parameter_tests(request, client_id, parameter_id):
         analyst = get_object_or_404(User, id=analyst_id)
         sample_ids = request.POST.getlist("sample_ids")
         control_sample_id = request.POST.get("control_sample_id")
+        include_reference = request.POST.get("include_reference") == "on"  # ✅ New checkbox value
 
         selected_samples = Sample.objects.filter(id__in=sample_ids) if sample_ids else samples
 
+        # Assign selected samples
         for sample in selected_samples:
             is_control = str(sample.id) == control_sample_id
             TestAssignment.objects.update_or_create(
@@ -54,7 +56,35 @@ def assign_parameter_tests(request, client_id, parameter_id):
                 sample.status = SampleStatus.ASSIGNED
                 sample.save(update_fields=["status"])
 
-        # Only assign QC sample if parameter's group is in the required list
+        # ✅ Add Reference Sample if manager chooses AND parameter group is Proximate
+        if include_reference and parameter.group.name == "Proximate":
+            base_code = f"REF-{client.client_id}-{parameter.name[:3].upper()}"
+            sample_code = base_code
+            count = 1
+            while Sample.objects.filter(sample_code=sample_code).exists():
+                sample_code = f"{base_code}-{count}"
+                count += 1
+
+            reference_sample, _ = Sample.objects.get_or_create(
+                sample_code=sample_code,
+                defaults={
+                    "client": client,
+                    "sample_type": "reference",
+                    "weight": 0,
+                    "status": SampleStatus.ASSIGNED
+                }
+            )
+
+            TestAssignment.objects.get_or_create(
+                sample=reference_sample,
+                parameter=parameter,
+                defaults={
+                    "analyst": analyst,
+                    "is_reference": True
+                }
+            )
+
+        # ✅ QC sample logic (unchanged)
         qc_required_groups = ["Proximate", "Gross Energy"]
         if parameter.group.name in qc_required_groups:
             base_code = f"QC-{client.client_id}-{parameter.name[:3].upper()}"
@@ -68,17 +98,13 @@ def assign_parameter_tests(request, client_id, parameter_id):
                 sample_code=sample_code,
                 defaults={
                     "client": client,
-                    "sample_type": "QC",
+                    "sample_type": "qc",
                     "weight": 0,
                     "status": SampleStatus.ASSIGNED
                 }
             )
 
-            if qc_sample.status == SampleStatus.RECEIVED:
-                qc_sample.status = SampleStatus.ASSIGNED
-                qc_sample.save(update_fields=["status"])
-
-            qc_assignment, _ = TestAssignment.objects.get_or_create(
+            TestAssignment.objects.get_or_create(
                 sample=qc_sample,
                 parameter=parameter,
                 defaults={
@@ -87,23 +113,7 @@ def assign_parameter_tests(request, client_id, parameter_id):
                 }
             )
 
-            if hasattr(parameter, 'control_spec'):
-                spec = parameter.control_spec
-                QCMetrics.objects.update_or_create(
-                    test_assignment=qc_assignment,
-                    defaults={
-                        "min_acceptable": spec.min_acceptable,
-                        "max_acceptable": spec.max_acceptable,
-                        "measured_value": None,
-                    }
-                )
-
         sample_count = selected_samples.count()
-        # notify(
-        #     analyst,
-        #     f"Hi {analyst.first_name}, You’ve been assigned to analyze {sample_count} sample(s) for Client ID CID-{client.client_id}.\nParameter: {parameter.name}"
-        # )
-
         notify_analyst_by_email(
             analyst.email,
             analyst.get_full_name(),
@@ -136,6 +146,7 @@ def assign_parameter_tests(request, client_id, parameter_id):
         "assigned_sample_ids": assigned_sample_ids,
         "current_control_id": current_control_id
     })
+
 
 
 @login_required

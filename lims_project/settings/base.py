@@ -109,10 +109,14 @@ EMAIL_HOST='smtp.gmail.com'
 EMAIL_PORT=465
 EMAIL_USE_SSL=True
 EMAIL_USE_TLS=False
-EMAIL_HOST_USER = 'isnevisaac@gmail.com'
-EMAIL_HOST_PASSWORD = 'jdswlskowmzxsrrl'
-DEFAULT_FROM_EMAIL = 'lims@jaageelab.com'
+EMAIL_HOST_USER = 'jaageelab@gmail.com'
+EMAIL_HOST_PASSWORD = 'htbbsaqqilkrzkeg'
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 
+
+# EMAIL_HOST_USER = 'isnevisaac@gmail.com'
+# EMAIL_HOST_PASSWORD = 'jdswlskowmzxsrrl'
+# DEFAULT_FROM_EMAIL = 'lims@jaageelab.com'
 
 
 TEMPLATES = [

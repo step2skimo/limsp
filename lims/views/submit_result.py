@@ -6,7 +6,7 @@ from lims.utils.derived import _inject_derived_result
 from lims.models import TestAssignment, Equipment, TestResult, QCMetrics, SampleStatus, TestEnvironment, Client, Parameter
 from lims.forms import ResultEntryForm, QCMetricsForm, TestEnvironmentForm
 from django.contrib.auth import get_user_model
-from lims.utils.notifications import notify_manager_on_result_submission
+from lims.utils.notifications import notify_lab_manager_on_submission
 from django.contrib.auth.models import User
 from django.forms import modelform_factory
 from django import forms

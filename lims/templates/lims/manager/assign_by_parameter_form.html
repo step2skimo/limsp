@@ -105,104 +105,108 @@
                 <strong>Quality Assurance Notice:</strong> This assignment process ensures compliance with ISO/IEC 17025:2017 requirements for competent personnel assignment and quality control procedures. All analysts must be authorized for the selected test parameter.
             </div>
 
-            <form method="post">
-                {% csrf_token %}
-                
-                <div class="row mb-4">
-                    <div class="col-md-6">
-                        <label for="analyst" class="form-label fw-bold">Select Authorized Analyst:</label>
-                        <select id="analyst" name="analyst" class="form-control analyst-select" required>
-                            <option value="">-- Select Analyst --</option>
-                            {% for analyst in analysts %}
-                                <option value="{{ analyst.id }}">{{ analyst.get_full_name }}</option>
-                            {% endfor %}
-                        </select>
-                        <small class="form-text text-muted">Only analysts authorized for this parameter are listed</small>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="alert alert-info mb-0">
-                            <strong>Sample Count:</strong> {{ samples.count }} sample(s) available for assignment<br>
-                            <strong>Parameter:</strong> {{ parameter.name }}<br>
-                            <strong>Method:</strong> As per laboratory SOP
-                        </div>
-                    </div>
-                </div>
-
-                <div class="control-info">
-                    <h6 class="mb-2"><strong>Quality Control Sample Selection</strong></h6>
-                    <p class="mb-0">Select one sample to serve as the quality control sample for this batch. This ensures compliance with ISO 17025 quality control requirements for analytical procedures.</p>
-                </div>
-
-                <div class="table-container">
-                    <table class="table table-hover mb-0">
-                        <thead class="table-dark">
-                            <tr>
-                                <th width="8%">Select</th>
-                                <th width="25%">Sample Code</th>
-                                <th width="35%">Assignment Status</th>
-                                <th width="32%">Quality Control Sample</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for sample in samples %}
-                               {% with sample.assigned_analyst_name as analyst_name %}
-
-                                <tr class="{% if analyst_name %}table-success{% else %}table-warning{% endif %}">
-                                    <td>
-                                        <div class="form-check">
-                                            <input type="checkbox" name="sample_ids" value="{{ sample.id }}" 
-                                                   class="form-check-input" id="sample_{{ sample.id }}"
-                                                   {% if sample.id in assigned_sample_ids %}checked{% endif %}>
-                                            <label class="form-check-label" for="sample_{{ sample.id }}"></label>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <strong>{{ sample.sample_code }}</strong>
-                                    </td>
-                                    <td>
-                                        {% if analyst_name %}
-                                            <span class="badge bg-success">✅ Assigned to {{ analyst_name }}</span>
-                                        {% else %}
-                                            <span class="badge bg-warning text-dark">⏳ Pending Assignment</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <div class="form-check">
-                                            <input type="radio" name="control_sample_id" value="{{ sample.id }}" 
-                                                   class="form-check-input" id="control_{{ sample.id }}"
-                                                   {% if sample.id == current_control_id %}checked{% endif %}>
-                                            <label class="form-check-label" for="control_{{ sample.id }}">
-                                                Use as QC Sample
-                                            </label>
-                                        </div>
-                                    </td>
-                                </tr>
-                                {% endwith %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <div class="quality-note mt-3">
-                    <strong>ISO 17025 Compliance Note:</strong> By proceeding with this assignment, you confirm that the selected analyst is competent and authorized to perform the specified test parameter according to laboratory procedures and quality management system requirements.
-                </div>
-
-                <div class="d-flex justify-content-between align-items-center mt-4">
-                    <div class="text-muted">
-                        <small>Last updated: <span id="current-time"></span></small>
-                    </div>
-                    <div>
-                        <button type="button" class="btn btn-secondary me-2" onclick="window.history.back()">
-                            Cancel
-                        </button>
-                        <button type="submit" class="btn btn-success btn-lg">
-                            📋 Assign Selected Samples
-                        </button>
-                    </div>
-                </div>
-            </form>
+           <form method="post">
+    {% csrf_token %}
+    
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="analyst" class="form-label fw-bold">Select Authorized Analyst:</label>
+            <select id="analyst" name="analyst" class="form-control analyst-select" required>
+                <option value="">-- Select Analyst --</option>
+                {% for analyst in analysts %}
+                    <option value="{{ analyst.id }}">{{ analyst.get_full_name }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text text-muted">Only analysts authorized for this parameter are listed.</small>
+        </div>
+        <div class="col-md-6">
+            <div class="alert alert-info mb-0">
+                <strong>Sample Count:</strong> {{ samples.count }} sample(s) available for assignment<br>
+                <strong>Parameter:</strong> {{ parameter.name }}<br>
+                <strong>Method:</strong> As per laboratory SOP
+            </div>
         </div>
     </div>
+
+    {# ---- Reference Sample Option (manager-controlled) ---- #}
+    {% if parameter.group.name == "Proximate" %}
+    <div class="alert alert-secondary mb-4">
+        <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="include_reference" name="include_reference">
+            <label class="form-check-label fw-bold" for="include_reference">
+                Include Reference Sample for {{ parameter.name }}
+            </label>
+        </div>
+        <small class="text-muted d-block mt-1">
+            A reference sample provides an independent check on analytical performance for this parameter group.
+            If selected, a system-generated reference sample will be added and assigned to the chosen analyst.
+        </small>
+    </div>
+    {% endif %}
+
+    {# ---- Sample Selection Table ---- #}
+    <div class="table-container">
+        <table class="table table-hover mb-0">
+            <thead class="table-dark">
+                <tr>
+                    <th width="8%">Select</th>
+                    <th width="25%">Sample Code</th>
+                    <th width="67%">Assignment Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sample in samples %}
+                    {% with sample.assigned_analyst_name as analyst_name %}
+                    <tr class="{% if analyst_name %}table-success{% else %}table-warning{% endif %}">
+                        <td>
+                            <div class="form-check">
+                                <input
+                                    type="checkbox"
+                                    name="sample_ids"
+                                    value="{{ sample.id }}"
+                                    class="form-check-input"
+                                    id="sample_{{ sample.id }}"
+                                    {% if sample.id in assigned_sample_ids %}checked{% endif %}
+                                >
+                                <label class="form-check-label" for="sample_{{ sample.id }}"></label>
+                            </div>
+                        </td>
+                        <td>
+                            <strong>{{ sample.sample_code }}</strong>
+                        </td>
+                        <td>
+                            {% if analyst_name %}
+                                <span class="badge bg-success">✅ Assigned to {{ analyst_name }}</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark">⏳ Pending Assignment</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endwith %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="quality-note mt-3">
+        <strong>ISO 17025 Compliance Note:</strong> By proceeding, you confirm the selected analyst is competent and authorized for this parameter and that required QC will be included according to the laboratory quality system. (QC samples are auto-managed by the system.)
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-4">
+        <div class="text-muted">
+            <small>Last updated: <span id="current-time"></span></small>
+        </div>
+        <div>
+            <button type="button" class="btn btn-secondary me-2" onclick="window.history.back()">
+                Cancel
+            </button>
+            <button type="submit" class="btn btn-success btn-lg">
+                📋 Assign Selected Samples
+            </button>
+        </div>
+    </div>
+</form>
+
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
     <script>

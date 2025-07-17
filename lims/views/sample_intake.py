@@ -16,14 +16,15 @@ User = get_user_model()
 
 def generate_client_id():
     last = Client.objects.order_by('created').last()
-    if last and last.client_id.startswith("JGLSP"):
+    if last and last.client_id.lower().startswith("JGLSP"):
         try:
-            number = int(last.client_id.replace("JGLSP", "")) + 1
+            number = int(last.client_id[5:]) + 1 
         except ValueError:
-            number = 2501
+            number = 2500112
     else:
-        number = 2501
-    return f"JGLSP{number}"
+        number = 2500112
+    return f"JGLSP{str(number).zfill(7)}"
+
 
 
 def generate_token():
