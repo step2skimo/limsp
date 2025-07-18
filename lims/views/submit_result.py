@@ -6,12 +6,27 @@ from lims.utils.derived import _inject_derived_result
 from lims.models import TestAssignment, Equipment, TestResult, QCMetrics, SampleStatus, TestEnvironment, Client, Parameter
 from lims.forms import ResultEntryForm, QCMetricsForm, TestEnvironmentForm
 from django.contrib.auth import get_user_model
-from lims.utils.notifications import notify_lab_manager_on_submission
+from lims.utils.notifications import notify_manager_on_result_submission
 from django.contrib.auth.models import User
 from django.forms import modelform_factory
 from django import forms
 from django.db import transaction
 from django.utils.timezone import now as timezone_now
+
+from django.shortcuts import get_object_or_404, redirect, render
+from django.contrib import messages
+from django.db import transaction
+from django.forms import modelform_factory
+from django.utils.timezone import now as timezone_now
+from django.contrib.auth.decorators import login_required
+from decimal import Decimal
+
+from lims.models import (
+    TestAssignment, TestResult, TestEnvironment, Equipment,
+    ControlSpec, User
+)
+from lims.forms import QCMetricsForm, TestEnvironmentForm
+
 User = get_user_model()
 
 
@@ -130,12 +145,16 @@ def enter_result(request, assignment_id):
     }) """
 
 
+
+
 @login_required
 def enter_batch_result(request, client_id, parameter_id):
-    assignments = TestAssignment.objects.filter(
-        sample__client__client_id=client_id,
-        parameter_id=parameter_id
-    ).select_related('sample', 'parameter')
+    # Fetch assignments
+    assignments = (
+        TestAssignment.objects
+        .filter(sample__client__client_id=client_id, parameter_id=parameter_id)
+        .select_related('sample', 'parameter')
+    )
 
     if not assignments.exists():
         messages.error(request, "❌ No assignments found for this client and parameter.")
@@ -144,11 +163,14 @@ def enter_batch_result(request, client_id, parameter_id):
     parameter = assignments[0].parameter
     client = assignments[0].sample.client
 
+    # ✅ Fetch ControlSpec for this parameter
+    control_spec = ControlSpec.objects.filter(parameter=parameter).first()
+
     # Split control and test samples
     control_assignment = next((a for a in assignments if a.is_control), None)
     test_assignments = [a for a in assignments if not a.is_control]
 
-    # Result form for each test assignment
+    # ✅ Create result form for each test assignment
     ResultForm = modelform_factory(TestResult, fields=['value'])
     result_forms = []
     for assignment in test_assignments:
@@ -157,52 +179,54 @@ def enter_batch_result(request, client_id, parameter_id):
         form = ResultForm(request.POST or None, instance=instance, prefix=prefix)
         result_forms.append((assignment, form))
 
-    # QC form
+    # ✅ QC Form (with ControlSpec values pre-filled)
     qc_form = None
     if control_assignment:
         qc_instance = getattr(control_assignment, "qc_metrics", None)
+
+        initial_data = {}
+        if control_spec:
+            initial_data.update({
+                "min_acceptable": round(control_spec.min_acceptable, 2),
+                "max_acceptable": round(control_spec.max_acceptable, 2),
+            })
+
         qc_form = QCMetricsForm(
             request.POST or None,
             instance=qc_instance,
-            test_assignment=control_assignment
+            test_assignment=control_assignment,
+            initial=initial_data
         )
 
-    # Environment form
+    # ✅ Environment Form
     env_form = TestEnvironmentForm(request.POST or None)
 
+    # ✅ Promote client if all assignments completed
     def promote_if_complete(client, parameter, analyst_name):
         incomplete = TestAssignment.objects.filter(
             sample__client=client,
             parameter=parameter
         ).exclude(status="completed")
+
         if not incomplete.exists():
             for sample in client.sample_set.all():
                 if sample.status != "under_review":
                     sample.status = "under_review"
                     sample.save(update_fields=["status"])
+
             managers = User.objects.filter(groups__name="Manager", is_active=True)
             for manager in managers:
                 notify_manager_on_result_submission(manager.email, analyst_name, client.client_id, parameter.name)
 
+    # ✅ Handle POST submission
     if request.method == "POST":
         all_valid = all(form.is_valid() for _, form in result_forms)
         qc_valid = qc_form.is_valid() if qc_form else True
         env_valid = env_form.is_valid()
 
-        if not env_valid:
-            print("🛑 Environment Form Errors:", env_form.errors)
-            messages.error(request, "❌ Please correct environment input errors.")
-
-        if not all_valid:
-            for assignment, form in result_forms:
-                if not form.is_valid():
-                    print(f"🛑 Result Form Error for {assignment.sample.sample_code}:", form.errors)
-
-        if qc_form and not qc_valid:
-            print("🛑 QC Form Errors:", qc_form.errors)
-
         if env_valid and all_valid and qc_valid:
             with transaction.atomic():
+                # Save environment data
                 env_data = env_form.save(commit=False)
 
                 for assignment, form in result_forms:
@@ -213,7 +237,8 @@ def enter_batch_result(request, client_id, parameter_id):
                     result.recorded_at = timezone_now()
                     result.save()
 
-                    env_obj, created = TestEnvironment.objects.update_or_create(
+                    # Save environment details for each assignment
+                    TestEnvironment.objects.update_or_create(
                         test_assignment=assignment,
                         defaults={
                             "temperature": env_data.temperature,
@@ -221,14 +246,14 @@ def enter_batch_result(request, client_id, parameter_id):
                             "pressure": env_data.pressure,
                             "instrument": env_data.instrument,
                             "recorded_by": request.user,
-                            }
-                        )
-
+                        }
+                    )
 
                     assignment.status = "completed"
                     assignment.equipment_used = env_data.instrument
                     assignment.save()
 
+                # Save QC form if exists
                 if qc_form and control_assignment:
                     qc = qc_form.save(commit=False)
                     qc.test_assignment = control_assignment
@@ -236,14 +261,15 @@ def enter_batch_result(request, client_id, parameter_id):
                     control_assignment.status = "completed"
                     control_assignment.save()
 
+                # Check if all assignments complete → promote client
                 promote_if_complete(client, parameter, request.user.get_full_name())
+
                 messages.success(request, "✅ Batch result submitted successfully.")
                 return redirect("result_success_batch", client_id=client.client_id, parameter_id=parameter.id)
-
-
         else:
             messages.error(request, "❌ Please correct the errors below.")
 
+    # ✅ Pass everything to template
     context = {
         "parameter": parameter,
         "client": client,
@@ -252,6 +278,7 @@ def enter_batch_result(request, client_id, parameter_id):
         "control_assignment": control_assignment,
         "equipment_qs": Equipment.objects.filter(parameters_supported=parameter, is_active=True),
         "env_form": env_form,
+        "control_spec": control_spec,
     }
 
     return render(request, "lims/batch_result_entry.html", context)

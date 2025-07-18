@@ -26,16 +26,29 @@ def assign_parameter_tests(request, client_id, parameter_id):
     client = get_object_or_404(Client, client_id=client_id)
     parameter = get_object_or_404(Parameter, id=parameter_id)
     analysts = User.objects.filter(groups__name="Analyst")
-    samples = Sample.objects.filter(client=client).exclude(sample_type="QC")
+
+    # --- Only include user-assignable samples (exclude QC + Reference) ---  # <<< changed
+    from django.db.models import Q
+    samples = (
+        Sample.objects
+        .filter(client=client)
+        .exclude(Q(sample_type__iexact="qc") | Q(sample_type__iexact="reference"))
+    )
 
     if request.method == "POST":
         analyst_id = request.POST.get("analyst")
         analyst = get_object_or_404(User, id=analyst_id)
         sample_ids = request.POST.getlist("sample_ids")
         control_sample_id = request.POST.get("control_sample_id")
-        include_reference = request.POST.get("include_reference") == "on"  # ✅ New checkbox value
+        include_reference = request.POST.get("include_reference") == "on"
 
-        selected_samples = Sample.objects.filter(id__in=sample_ids) if sample_ids else samples
+        # Limit to samples the manager was allowed to pick from.             # <<< changed (defensive)
+        allowed_ids = list(samples.values_list("id", flat=True))
+        if sample_ids:
+            filtered_ids = [sid for sid in sample_ids if sid and int(sid) in allowed_ids]
+            selected_samples = Sample.objects.filter(id__in=filtered_ids)
+        else:
+            selected_samples = samples
 
         # Assign selected samples
         for sample in selected_samples:
@@ -50,13 +63,13 @@ def assign_parameter_tests(request, client_id, parameter_id):
                 }
             )
 
-        # Update sample statuses if still in "received"
+        # Update sample statuses
         for sample in selected_samples:
             if sample.status == SampleStatus.RECEIVED:
                 sample.status = SampleStatus.ASSIGNED
                 sample.save(update_fields=["status"])
 
-        # ✅ Add Reference Sample if manager chooses AND parameter group is Proximate
+        # --- Auto Reference (if requested + Proximate) ---------------------
         if include_reference and parameter.group.name == "Proximate":
             base_code = f"REF-{client.client_id}-{parameter.name[:3].upper()}"
             sample_code = base_code
@@ -78,13 +91,10 @@ def assign_parameter_tests(request, client_id, parameter_id):
             TestAssignment.objects.get_or_create(
                 sample=reference_sample,
                 parameter=parameter,
-                defaults={
-                    "analyst": analyst,
-                    "is_reference": True
-                }
+                defaults={"analyst": analyst, "is_reference": True}
             )
 
-        # ✅ QC sample logic (unchanged)
+        # --- Auto QC when required -----------------------------------------
         qc_required_groups = ["Proximate", "Gross Energy"]
         if parameter.group.name in qc_required_groups:
             base_code = f"QC-{client.client_id}-{parameter.name[:3].upper()}"
@@ -107,13 +117,12 @@ def assign_parameter_tests(request, client_id, parameter_id):
             TestAssignment.objects.get_or_create(
                 sample=qc_sample,
                 parameter=parameter,
-                defaults={
-                    "analyst": analyst,
-                    "is_control": True
-                }
+                defaults={"analyst": analyst, "is_control": True}
             )
 
+        # Count *only user-assigned (non QC/Reference)* samples.              # <<< changed
         sample_count = selected_samples.count()
+
         notify_analyst_by_email(
             analyst.email,
             analyst.get_full_name(),
@@ -123,29 +132,40 @@ def assign_parameter_tests(request, client_id, parameter_id):
         )
         return redirect('assign_by_parameter_overview', client_id=client.client_id)
 
+    # --- Assigned sample IDs limited to assignable samples ----------------- # <<< changed
+    assignable_ids = samples.values_list('id', flat=True)
     assigned_sample_ids = TestAssignment.objects.filter(
-        sample__client=client,
+        sample_id__in=assignable_ids,
         parameter=parameter
     ).values_list('sample_id', flat=True)
 
+    # Current control among assignable samples (if any)                       # <<< changed
     current_control_id = TestAssignment.objects.filter(
-        sample__client=client,
+        sample_id__in=assignable_ids,
         parameter=parameter,
         is_control=True
     ).values_list('sample_id', flat=True).first()
 
+    # Decorate for template (safe: assignment may not exist)
     for sample in samples:
         assignment = sample.testassignment_set.filter(parameter=parameter).first()
-        sample.assigned_analyst_name = assignment.analyst.get_full_name() if assignment and assignment.analyst else ""
+        sample.assigned_analyst_name = (
+            assignment.analyst.get_full_name() if assignment and assignment.analyst else ""
+        )
 
-    return render(request, "lims/manager/assign_by_parameter_form.html", {
-        "client": client,
-        "parameter": parameter,
-        "samples": samples,
-        "analysts": analysts,
-        "assigned_sample_ids": assigned_sample_ids,
-        "current_control_id": current_control_id
-    })
+    return render(
+        request,
+        "lims/manager/assign_by_parameter_form.html",
+        {
+            "client": client,
+            "parameter": parameter,
+            "samples": samples,
+            "analysts": analysts,
+            "assigned_sample_ids": assigned_sample_ids,
+            "current_control_id": current_control_id,
+        }
+    )
+
 
 
 

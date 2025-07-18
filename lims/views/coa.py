@@ -96,7 +96,6 @@ def generate_coa_pdf(request, client_id):
         sample.results = []
         param_values = {}
         sample_environment = None
-
         sample_type = sample.sample_type or "Unknown"
 
         for ta in sample.testassignment_set.all():
@@ -122,44 +121,31 @@ def generate_coa_pdf(request, client_id):
             if env and not sample_environment:
                 sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
 
-        # Calculate CHO & ME if possible
-        required = ["protein", "fat", "ash", "moisture", "fiber"]
-        if all(k in param_values for k in required):
-            cho = round(100 - sum(param_values[k] for k in required), 2)
-            me = round(
-                (param_values["protein"] * 4)
-                + (param_values["fat"] * 9)
-                + (cho * 4),
-                2
-            )
-            sample.results.append({
-                "parameter": "CHO",
-                "method":"",
-                "value": cho,
-                "unit": "%",
-            })
-            sample.results.append({
-                "parameter": "ME",
-                "method": "",
-                "value": me,
-                "unit": "kcal/100g",
-            })
+        # CHO & ME (kcal/kg)
+        calc_map = {"protein": "protein", "crude fat": "fat", "ash": "ash", "moisture": "moisture", "crude fibre": "fiber"}
+        mapped_values = {alias: param_values[key] for key, alias in calc_map.items() if key in param_values}
+
+        if all(alias in mapped_values for alias in ["protein", "fat", "ash", "moisture", "fiber"]):
+            cho = round(100 - sum(mapped_values[k] for k in ["protein", "fat", "ash", "moisture", "fiber"]), 2)
+            me = round(((mapped_values["protein"] * 4) + (mapped_values["fat"] * 9) + (cho * 4)) * 10, 2)
+
+            sample.results.append({"parameter": "CHO", "method": "AOAC by difference", "value": cho, "unit": "%"})
+            sample.results.append({"parameter": "ME", "method": "Calculated using Atwater factors", "value": me, "unit": "kcal/kg"})
 
             grouped_summary[sample_type]["results"]["CHO"].append(cho)
             grouped_summary[sample_type]["results"]["ME"].append(me)
-            parameters.add(("CHO", "%", "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)"))
-            parameters.add(("ME", "kcal/100g", "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)"))
+            parameters.add(("CHO", "%", "AOAC by difference"))
+            parameters.add(("ME", "kcal/kg", ""))
 
         sample.environment = sample_environment or "Ambient 25°C 50%RH"
 
     parameters = sorted(parameters)
 
-    # Generate AI summary using structured grouping
+    # Summary text
     interpretation = COAInterpretation.objects.filter(client=client).first()
     summary_text = interpretation.summary_text if interpretation else "Summary not available."
 
-
-    # ✅ Sample weight logic
+    # Sample weight display
     weights = [s.weight for s in samples if s.weight is not None]
     if len(weights) == 1:
         sample_weight_display = f"{weights[0]} g"
@@ -168,31 +154,32 @@ def generate_coa_pdf(request, client_id):
     else:
         sample_weight_display = "N/A"
 
-
-    # Build letterhead path for WeasyPrint
+    # Paths for images
     letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
+    signature1_path = os.path.join(settings.STATIC_ROOT, "images/signatures/hannah-sign.png")
+    signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.png")
+
+    # Convert to file:// URLs
     letterhead_url = f"file://{letterhead_path}"
+    signature_1 = f"file://{signature1_path}"
+    signature_2 = f"file://{signature2_path}"
 
     # Render HTML
-    html = render_to_string(
-        "lims/coa_template.html",
-        {
-            "client": client,
-            "samples": samples,
-            "sample_weight_display": sample_weight_display,
-            "summary_text": summary_text,
-            "parameters": [
-                {"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters
-            ],
-            "today": datetime.date.today(),
-            "letterhead_url": letterhead_url,
-        }
-    )
+    html = render_to_string("lims/coa_template.html", {
+        "client": client,
+        "samples": samples,
+        "sample_weight_display": sample_weight_display,
+        "summary_text": summary_text,
+        "parameters": [{"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters],
+        "today": datetime.date.today(),
+        "letterhead_url": letterhead_url,
+        "signature_1": signature_1,
+        "signature_2": signature_2,
+    })
 
     # Generate PDF
-    pdf_file = HTML(string=html, base_url=request.build_absolute_uri()).write_pdf()
+    pdf_file = HTML(string=html, base_url=settings.STATIC_ROOT).write_pdf()
     return HttpResponse(pdf_file, content_type="application/pdf")
-
 
 
 @login_required
@@ -225,7 +212,7 @@ def coa_dashboard(request):
     # get ALL samples except QC samples
     samples = (
         Sample.objects
-        .exclude(sample_type="QC")
+        .exclude(sample_type="qc")
         .select_related("client")
         .order_by("-client__client_id", "-received_date")
     )
@@ -254,7 +241,7 @@ def release_client_coa(request, client_id):
 
     client = get_object_or_404(Client, id=client_id)
 
-    # ✅ Fetch from COAInterpretation
+    # ✅ Fetch interpretation summary
     interpretation = COAInterpretation.objects.filter(client=client).first()
     summary_text = interpretation.summary_text if interpretation else "Summary not available"
 
@@ -269,7 +256,6 @@ def release_client_coa(request, client_id):
         )
     )
 
-    summary_input = {}
     parameters = set()
 
     for sample in samples:
@@ -281,7 +267,6 @@ def release_client_coa(request, client_id):
             if res:
                 value = res.value
                 param_values[ta.parameter.name.lower()] = value
-                summary_input.setdefault(ta.parameter.name, []).append(value)
                 parameters.add((ta.parameter.name, ta.parameter.unit, ta.parameter.method))
 
                 sample.results.append({
@@ -291,47 +276,54 @@ def release_client_coa(request, client_id):
                     "unit": ta.parameter.unit,
                 })
 
-        required = ["protein", "fat", "ash", "moisture", "fiber"]
-        if all(k in param_values for k in required):
-            cho = round(100 - sum(param_values[k] for k in required), 2)
-            me = round((param_values["protein"] * 4) + (param_values["fat"] * 9) + (cho * 4), 2)
+        # ✅ Calculate CHO & ME
+        calc_map = {
+            "protein": "protein",
+            "crude fat": "fat",
+            "ash": "ash",
+            "moisture": "moisture",
+            "crude fibre": "fiber",
+        }
 
-            summary_input.setdefault("CHO", []).append(cho)
-            summary_input.setdefault("ME", []).append(me)
-            parameters.add(("CHO", "%", "Calculated"))
-            parameters.add(("ME", "kcal/100g", "Estimated"))
+        mapped_values = {alias: param_values[key] for key, alias in calc_map.items() if key in param_values}
 
-            sample.results.append({
-                "parameter": "CHO",
-                "method": "Calculated",
-                "value": cho,
-                "unit": "%",
-            })
-            sample.results.append({
-                "parameter": "ME",
-                "method": "Estimated",
-                "value": me,
-                "unit": "kcal/100g",
-            })
+        if all(k in mapped_values for k in ["protein", "fat", "ash", "moisture", "fiber"]):
+            cho = round(100 - sum(mapped_values[k] for k in ["protein", "fat", "ash", "moisture", "fiber"]), 2)
+            me = round(((mapped_values["protein"] * 4) + (mapped_values["fat"] * 9) + (cho * 4)) * 10, 2)
+
+            sample.results.append({"parameter": "CHO", "method": "AOAC by difference", "value": cho, "unit": "%"})
+            sample.results.append({"parameter": "ME", "method": "Calculated using Atwater factors", "value": me, "unit": "kcal/kg"})
+
+            parameters.add(("CHO", "%", "AOAC by difference"))
+            parameters.add(("ME", "kcal/kg", ""))
+
+    # ✅ Compute sample weight display
+    weights = [s.weight for s in samples if s.weight is not None]
+    if len(weights) == 1:
+        sample_weight_display = f"{weights[0]} g"
+    elif weights:
+        sample_weight_display = f"{min(weights)} g – {max(weights)} g"
+    else:
+        sample_weight_display = "N/A"
+
+    # ✅ Prepare parameter list for template
+    param_list = [{"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters]
 
     # ✅ Mark COA as released
     client.coa_released = True
     client.save()
 
-    param_list = [{"name": p[0], "unit": p[1], "method": clean_method(p[2])} for p in parameters]
-    
-
-    # ✅ Notify client with correct summary
+    # ✅ Send email with signed PDF
     notify_client_on_coa_release(
         client=client,
         samples=samples,
         summary_text=summary_text,
-        parameters=param_list
+        parameters=param_list,
+        sample_weight_display=sample_weight_display
     )
 
     messages.success(request, f"✅ COA released and emailed to {client.name}.")
     return redirect("coa_dashboard")
-
 
 
 
@@ -354,7 +346,7 @@ def preview_coa(request, client_id):
 
     client = samples.first().client
 
-    # Get or create the interpretation
+    # ✅ Get or create interpretation
     interpretation, _ = COAInterpretation.objects.get_or_create(client=client)
 
     # ✅ Handle POST (Save Summary)
@@ -365,7 +357,7 @@ def preview_coa(request, client_id):
         messages.success(request, "Summary updated successfully.")
         return redirect("preview_coa", client_id=client_id)
 
-    # Continue with sample processing
+    # ✅ Prepare table data
     table_data = []
     parameter_set = set()
     summary_input = {}
@@ -379,6 +371,7 @@ def preview_coa(request, client_id):
         }
         param_values = {}
 
+        # Collect results for this sample
         for ta in sample.testassignment_set.all():
             res = getattr(ta, "testresult", None)
             param = ta.parameter
@@ -397,47 +390,53 @@ def preview_coa(request, client_id):
             if env and not row_data["environment"]:
                 row_data["environment"] = f"{env.temperature}°C, {env.humidity}%RH"
 
-        # CHO and ME calculations
-        required = ["protein", "fat", "ash", "moisture", "fiber"]
-        if all(k in param_values for k in required):
-            cho = round(
-                100 - (
-                    param_values["protein"] +
-                    param_values["fat"] +
-                    param_values["ash"] +
-                    param_values["moisture"] +
-                    param_values["fiber"]
-                ), 2
+        # ✅ CHO and ME calculations (kcal/kg)
+        calc_map = {
+            "protein": "protein",
+            "crude fat": "fat",
+            "ash": "ash",
+            "moisture": "moisture",
+            "crude fibre": "fiber",
+        }
+
+        mapped_values = {}
+        for key, alias in calc_map.items():
+            if key in param_values:
+                mapped_values[alias] = param_values[key]
+
+        if all(alias in mapped_values for alias in ["protein", "fat", "ash", "moisture", "fiber"]):
+            cho = round(100 - sum(mapped_values[k] for k in ["protein", "fat", "ash", "moisture", "fiber"]), 2)
+            me = round(
+                ((mapped_values["protein"] * 4)
+                 + (mapped_values["fat"] * 9)
+                 + (cho * 4)) * 10,
+                2
             )
+
             row_data["results"].append({
                 "parameter": "CHO",
-                "method": "",
+                "method": "AOAC by difference",
                 "value": cho,
                 "unit": "%",
             })
-            parameter_set.add(("CHO", "%", "Calculated as: 100 – (Protein + Fat + Ash + Moisture + Fiber)"))
-
-            me = round(
-                (param_values["protein"] * 4)
-                + (param_values["fat"] * 9)
-                + (cho * 4),
-                2
-            )
             row_data["results"].append({
                 "parameter": "ME",
-                "method": "",
+                "method": "Calculated using Atwater factors",
                 "value": me,
-                "unit": "kcal/100g",
+                "unit": "kcal/kg",
             })
-            parameter_set.add(("ME", "kcal/100g", "ME = (Protein × 4) + (Fat × 9) + (CHO × 4)"))
+
+            parameter_set.add(("CHO", "%", "AOAC by difference"))
+            parameter_set.add(("ME", "kcal/kg", "Calculated using Atwater factors"))
 
         row_data["environment"] = row_data["environment"] or "Ambient 25°C 50%RH"
         table_data.append(row_data)
 
+        # ✅ Collect for summary generation
         for result in row_data["results"]:
             summary_input.setdefault(result["parameter"], []).append(result["value"])
 
-    # Auto-generate summary if empty
+    # ✅ Auto-generate summary if empty
     if not interpretation.summary_text:
         interpretation.summary_text = generate_dynamic_summary([{
             "sample_type": samples.first().sample_type or "Unknown",

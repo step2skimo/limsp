@@ -95,6 +95,7 @@
 
     .signatures div {
       width: 45%;
+      text-align: center;
     }
 
     .center {
@@ -128,13 +129,12 @@
       <td><strong>ENVIRONMENTAL DATA:</strong> {{ samples.0.environment }}</td>
     </tr>
     <tr>
-  <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|date:"jS F Y" }}</td>
-  <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
-</tr>
-<tr>
-  <td colspan="2"><strong>SAMPLE WEIGHT:</strong> {{ sample_weight_display }}</td>
-</tr>
-
+      <td><strong>SAMPLE RECEIVED:</strong> {{ samples.0.received_date|date:"jS F Y" }}</td>
+      <td><strong>CLIENT ID:</strong> {{ client.client_id }}</td>
+    </tr>
+    <tr>
+      <td colspan="2"><strong>SAMPLE WEIGHT:</strong> {{ sample_weight_display }}</td>
+    </tr>
   </table>
 
   <div class="footnote">
@@ -143,40 +143,37 @@
 
   <h2>CERTIFICATE OF ANALYSIS</h2>
 
-<table>
-  <thead>
-    <tr>
-      <th>Parameter</th>
-      <th>Method</th>
-      {% for sample in samples %}
-        <th>{{ sample.sample_code }}</th>
-      {% endfor %}
-    </tr>
-  </thead>
-  <tbody>
-    {% for param in parameters %}
+  <table>
+    <thead>
       <tr>
-        <td>{{ param.name }}{% if param.unit %} ({{ param.unit }}){% endif %}</td>
-        <td>{{ param.method }}</td>
+        <th>Parameter</th>
+        <th>Method</th>
         {% for sample in samples %}
-          <td>
-            {% with value="" %}
-              {% for r in sample.results %}
-                {% if r.parameter == param.name %}
-                  {{ r.value|floatformat:2 }}
-                {% endif %}
-              {% endfor %}
-              {% if value == "" %}{{ value }}{% endif %}
-            {% endwith %}
-          </td>
+          <th>{{ sample.sample_code }}</th>
         {% endfor %}
       </tr>
-    {% endfor %}
-  </tbody>
-</table>
-
-
-
+    </thead>
+    <tbody>
+      {% for param in parameters %}
+        <tr>
+          <td>{{ param.name }}{% if param.unit %} ({{ param.unit }}){% endif %}</td>
+          <td>{{ param.method }}</td>
+          {% for sample in samples %}
+            <td>
+              {% with value="" %}
+                {% for r in sample.results %}
+                  {% if r.parameter == param.name %}
+                    {{ r.value|floatformat:2 }}
+                  {% endif %}
+                {% endfor %}
+                {% if value == "" %}{{ value }}{% endif %}
+              {% endwith %}
+            </td>
+          {% endfor %}
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
 
   <!-- Summary Interpretation -->
   <div class="footnote mt-3">
@@ -192,18 +189,16 @@
 
   <!-- Signatures -->
 <div class="signatures">
-  <div class="text-center">
-    <img src="{% static 'images/signatures/hannah-sign.png' %}" alt="Hannah Signature" style="max-height: 60px;"><br>
+  <div>
+    <img src="{{ signature_1 }}" alt="Hannah Signature" style="max-height: 60px;"><br>
     <strong>Kehinde K. Hannah</strong><br>
     HEAD OF LABORATORY
   </div>
-  <div class="text-center">
-    <img src="{% static 'images/signatures/julius-sign.png' %}" alt="Julius Signature" style="max-height: 60px;"><br>
+  <div>
+    <img src="{{ signature_2 }}" alt="Julius Signature" style="max-height: 60px;"><br>
     <strong>Julius Gbolade Famoriyo</strong><br>
     FELLOW NISLT REG NO: F0256
   </div>
 </div>
 
-</div>
-</body>
 </html>
