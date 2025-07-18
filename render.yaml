@@ -20,3 +20,26 @@ services:
       python manage.py collectstatic --noinput
       gunicorn lims_project.wsgi:application  --bind 0.0.0.0:$PORT
 
+services:
+  - type: web
+    name: jaagee-lab
+    env: docker
+    plan: free
+    dockerfilePath: Dockerfile
+    region: oregon
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: lims_project.settings.base
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "False"
+      - key: GEMINI_API_KEY
+        value: your_api_key_here
+      - key: ALLOWED_HOSTS
+        value: .onrender.com,localhost,127.0.0.1
+      - key: DATABASE_URL
+        value: postgresql://jaagee:esLdo0D9g3OAQKU7A5gCdkuWqyDp8oAR@dpg-d1qbjuripnbc738scmug-a.oregon-postgres.render.com/jaageelab
+    startCommand: |
+      python manage.py collectstatic --noinput
+      gunicorn lims_project.wsgi:application --bind 0.0.0.0:$PORT
