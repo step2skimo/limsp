@@ -14,16 +14,23 @@ from users.models import RoleChoices
 
 User = get_user_model()
 
+from django.db.models import Max
+
 def generate_client_id():
-    last = Client.objects.order_by('created').last()
-    if last and last.client_id.lower().startswith("JGLSP"):
+    prefix = "JGLSP"
+    # Get the last numeric part after prefix
+    last_client = Client.objects.aggregate(max_id=Max('client_id'))['max_id']
+    
+    if last_client and last_client.startswith(prefix):
         try:
-            number = int(last.client_id[5:]) + 1 
+            number = int(last_client[len(prefix):]) + 1
         except ValueError:
             number = 2500112
     else:
         number = 2500112
-    return f"JGLSP{str(number).zfill(7)}"
+    
+    return f"{prefix}{str(number).zfill(7)}"
+
 
 
 
