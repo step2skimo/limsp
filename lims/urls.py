@@ -36,6 +36,11 @@ urlpatterns = [
     path('reagent/send/', send_reagent_request, name='send_reagent_request'),
     path('reagent/issues/', reagent_issue_list, name='reagent_issue_list'),
 
+    path('send-report/', send_manager_report, name='send_manager_report'),
+    path("expenses/new/", expense_create, name="expense_create"),
+
+
+
    
     # Equipment Dashboard
     path('equipment-dashboard/', equipment_dashboard, name='equipment_dashboard'),

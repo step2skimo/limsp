@@ -27,7 +27,7 @@ def client_tracking_view(request, token):
     for c in clients:
         samples = (
             Sample.objects.filter(client=c)
-            .exclude(sample_type="QC")
+            .exclude(sample_type="qc")
             .prefetch_related("testassignment_set__parameter")
             .order_by("-received_date")
         )

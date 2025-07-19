@@ -5,6 +5,7 @@ from .models.equipment import Equipment, CalibrationRecord
 from .models.ai import LabAIHistory
 from .models import Reagent, ReagentUsage
 from .models import ReagentIssue
+from .models import Expense
 
 @admin.register(LabAIHistory)
 class LabAIHistoryAdmin(admin.ModelAdmin):
@@ -85,3 +86,12 @@ class ReagentUsageAdmin(admin.ModelAdmin):
 
 
 admin.site.register(ReagentIssue)
+
+
+
+@admin.register(Expense)
+class ExpenseAdmin(admin.ModelAdmin):
+    list_display = ("date", "description", "category", "amount", "entered_by", "created")
+    list_filter = ("category", "date")
+    search_fields = ("description", "note")
+    date_hierarchy = "date"

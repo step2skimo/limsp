@@ -1,166 +1,183 @@
-  {% load static %}
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Laboratory Management Report - {{ range_type|title }}</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            color: #333;
-            line-height: 1.4;
-            padding: 20px;
+        @page {
+            size: A4;
+            margin: 20mm;
+            @bottom-center {
+                content: "Page " counter(page) " of " counter(pages);
+                font-size: 10px;
+                color: #666;
+            }
         }
-        
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            color: #333;
+            line-height: 1.5;
+            font-size: 13px;
+        }
+
+        /* Header */
         .header {
             text-align: center;
-            margin-bottom: 30px;
             border-bottom: 2px solid #3498db;
-            padding-bottom: 20px;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
         }
-        
-        .header h1 {
-            color: #2c3e50;
+
+        .logo {
+            width: 100px;
             margin-bottom: 5px;
         }
-        
-        .report-meta {
+
+        .header h1 {
+            font-size: 22px;
+            margin: 0;
+            color: #2c3e50;
+        }
+
+        .header h3 {
+            font-size: 14px;
+            color: #555;
+            margin-top: 4px;
+        }
+
+        /* Metadata */
+        .meta {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
-            font-size: 14px;
-            color: #666;
+            font-size: 12px;
+            color: #777;
+            margin-bottom: 20px;
         }
-        
+
+        /* Section Title */
+        .section-title {
+            background: #3498db;
+            color: #fff;
+            padding: 6px 10px;
+            font-weight: bold;
+            border-radius: 3px;
+            margin-bottom: 8px;
+        }
+
+        /* Summary Cards */
         .summary-cards {
             display: flex;
             justify-content: space-between;
-            margin-bottom: 30px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
-        
-        .summary-card {
+
+        .card {
             width: 18%;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            padding: 10px;
             text-align: center;
-            margin-bottom: 15px;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
         }
-        
-        .summary-card .value {
-            font-size: 24px;
+
+        .card .value {
+            font-size: 18px;
             font-weight: bold;
-            margin: 10px 0;
+            color: #2c3e50;
         }
-        
+
+        /* Table */
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            page-break-inside: avoid;
-        }
-        
-        th {
-            background-color: #f8f9fa;
-            text-align: left;
-            padding: 8px;
-            border: 1px solid #ddd;
-            font-weight: bold;
-        }
-        
-        td {
-            padding: 8px;
-            border: 1px solid #ddd;
-        }
-        
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        
-        .section {
-            margin-bottom: 30px;
-            page-break-inside: avoid;
-        }
-        
-        .section-title {
-            background-color: #3498db;
-            color: white;
-            padding: 8px 12px;
             margin-bottom: 15px;
-            border-radius: 4px;
         }
-        
+
+        th {
+            background: #f1f3f5;
+            padding: 8px;
+            text-align: left;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+
+        td {
+            padding: 6px 8px;
+            border: 1px solid #ddd;
+            font-size: 12px;
+        }
+
+        tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+
         .total-income {
             text-align: right;
-            font-size: 18px;
             font-weight: bold;
-            margin: 20px 0;
-            color: #2c3e50;
+            font-size: 14px;
+            margin-top: 10px;
         }
-        
+
+        /* Footer */
         .footer {
             text-align: center;
-            margin-top: 50px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-            font-size: 12px;
-            color: #666;
+            font-size: 10px;
+            color: #888;
+            margin-top: 15px;
+            border-top: 1px solid #ccc;
+            padding-top: 8px;
         }
-        
-        .logo {
-            max-width: 150px;
-            margin-bottom: 10px;
-        }
-        
-        .page-break {
-            page-break-after: always;
+
+        /* Smart Page Break */
+        .section-break {
+            page-break-before: always;
         }
     </style>
 </head>
 <body>
     <div class="header">
-      
-
-<img src="{% static 'images/logo.jpg' %}" alt="Laboratory Logo" class="logo">
-
+        <img src="{% static 'images/logo.jpg' %}" class="logo" alt="Lab Logo">
         <h1>Laboratory Management Report</h1>
         <h3>{{ range_type|title }} Report - {{ now|date:"F j, Y" }}</h3>
     </div>
-    
-    <div class="report-meta">
-        <div>Generated on: {{ now|date:"F j, Y H:i" }}</div>
-        <div>Period: {{ range_type|title }}</div>
+
+    <div class="meta">
+        <span>Generated: {{ now|date:"F j, Y H:i" }}</span>
+        <span>ISO 17025:2017 Compliant</span>
     </div>
-    
-    <div class="section">
-        <h2 class="section-title">Key Performance Indicators</h2>
+
+    <!-- Summary Section -->
+    <div>
+        <h2 class="section-title">Key Metrics</h2>
         <div class="summary-cards">
-            <div class="summary-card">
+            <div class="card">
                 <div>Samples Received</div>
                 <div class="value">{{ summary.samples_received }}</div>
             </div>
-            <div class="summary-card">
+            <div class="card">
                 <div>Tests Assigned</div>
                 <div class="value">{{ summary.test_assignments }}</div>
             </div>
-            <div class="summary-card">
-                <div>With Analysts</div>
+            <div class="card">
+                <div>Assigned to Analysts</div>
                 <div class="value">{{ summary.assigned_with_analysts }}</div>
             </div>
-            <div class="summary-card">
+            <div class="card">
                 <div>Active Equipment</div>
                 <div class="value">{{ summary.active_equipment }}</div>
             </div>
-            <div class="summary-card">
+            <div class="card">
                 <div>Expired Calibrations</div>
                 <div class="value">{{ summary.expired_calibrations }}</div>
             </div>
         </div>
     </div>
-    
-    <div class="section">
+
+    <!-- Top Parameters -->
+    <div>
         <h2 class="section-title">Top Parameters by Income</h2>
         <table>
             <thead>
@@ -178,43 +195,14 @@
                     <td>₦{{ param.total_income|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="3">No data found for this range.</td>
-                </tr>
+                <tr><td colspan="3">No data for this range.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    
-    <div class="section">
-        <h2 class="section-title">Analyst Activity</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Analyst</th>
-                    <th>Total Tests</th>
-                    <th>Distinct Samples</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for analyst in analyst_workload %}
-                <tr>
-                    <td>{{ analyst.analyst_name }}</td>
-                    <td>{{ analyst.total_tests }}</td>
-                    <td>
-                        {% for s in sample_per_analyst %}
-                            {% if s.analyst_name == analyst.analyst_name %}
-                                {{ s.sample_count }}
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-    
-    <div class="section">
+
+    <!-- Analysis Summary -->
+    <div class="section-break">
         <h2 class="section-title">Analysis Performed</h2>
         <table>
             <thead>
@@ -236,52 +224,48 @@
                     <td>₦{{ row.income|floatformat:2 }}</td>
                 </tr>
                 {% empty %}
-                <tr>
-                    <td colspan="5">No analysis data found for this range.</td>
-                </tr>
+                <tr><td colspan="5">No analysis data available.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
-        <div class="total-income">
-            Total Income ({{ range_type|title }}): ₦{{ total_income|floatformat:2 }}
-        </div>
     </div>
-    
-    <div class="section">
-        <h2 class="section-title">Revenue Summary</h2>
+
+    <!-- Expenses Section -->
+    <div class="section-break">
+        <h2 class="section-title">Expenses</h2>
         <table>
             <thead>
                 <tr>
-                    <th>Period</th>
-                    <th>Revenue (₦)</th>
+                    <th>Date</th>
+                    <th>Category</th>
+                    <th>Description</th>
+                    <th>Amount (₦)</th>
                 </tr>
             </thead>
             <tbody>
-                {% for r in daily_totals %}
+                {% for exp in expenses %}
                 <tr>
-                    <td>{{ r.day|date:"Y-m-d" }}</td>
-                    <td>₦{{ r.income|floatformat:2 }}</td>
+                    <td>{{ exp.date|date:"Y-m-d" }}</td>
+                    <td>{{ exp.category }}</td>
+                    <td>{{ exp.description }}</td>
+                    <td>₦{{ exp.amount|floatformat:2 }}</td>
                 </tr>
-                {% endfor %}
-                {% for r in weekly_totals %}
-                <tr>
-                    <td>Week of {{ r.week|date:"Y-m-d" }}</td>
-                    <td>₦{{ r.income|floatformat:2 }}</td>
-                </tr>
-                {% endfor %}
-                {% for r in monthly_totals %}
-                <tr>
-                    <td>{{ r.month|date:"F Y" }}</td>
-                    <td>₦{{ r.income|floatformat:2 }}</td>
-                </tr>
+                {% empty %}
+                <tr><td colspan="4">No expenses recorded for this range.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
-    
+
+    <!-- Financial Summary -->
+    <div class="total-income">
+        <p><strong>Gross Income:</strong> ₦{{ gross_income|floatformat:2 }}</p>
+        <p><strong>Total Expenses:</strong> ₦{{ total_expenses|floatformat:2 }}</p>
+        <p><strong>Net Income:</strong> ₦{{ net_income|floatformat:2 }}</p>
+    </div>
+
     <div class="footer">
-        <p>This report was automatically generated by the Laboratory Management System</p>
-        <p>ISO 17025:2017 Compliant | Confidential Document</p>
+        Confidential | Generated by Laboratory Management System | ISO 17025:2017
     </div>
 </body>
 </html>

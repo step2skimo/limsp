@@ -12,6 +12,23 @@ from lims.models import ReagentUsage, ReagentRequest, ReagentIssue
 from django.forms import modelformset_factory
 from django import forms
 from .models import Equipment, CalibrationRecord
+from .models import Expense
+
+from django import forms
+from .models import Expense
+
+class ExpenseForm(forms.ModelForm):
+    class Meta:
+        model = Expense
+        fields = ['date', 'category', 'description', 'amount']
+        widgets = {
+            'date': forms.DateInput(attrs={'type': 'date', 'class': 'form-control'}),
+            'category': forms.Select(attrs={'class': 'form-select'}),
+            'description': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'amount': forms.NumberInput(attrs={'class': 'form-control', 'step': '0.01'}),
+        }
+
+
 
 class EquipmentForm(forms.ModelForm):
     class Meta:

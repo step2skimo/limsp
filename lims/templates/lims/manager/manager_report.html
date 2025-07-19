@@ -1,0 +1,82 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Manager Report</title>
+<style>
+  body { font-family: Arial, sans-serif; color:#333; font-size:14px; line-height:1.4; margin:0; padding:0; }
+  .wrapper { max-width:600px; margin:auto; padding:16px; }
+  h1 { font-size:20px; margin:0 0 8px; color:#2c3e50; }
+  h2 { font-size:16px; margin:20px 0 8px; color:#2c3e50; }
+  .kpi-grid { width:100%; border-collapse:collapse; margin-bottom:16px; }
+  .kpi-grid th, .kpi-grid td { padding:4px 6px; font-size:13px; text-align:left; }
+  .kpi-grid th { color:#666; font-weight:normal; width:60%; }
+  .kpi-grid td.value { font-weight:bold; color:#2c3e50; }
+  .finance { margin-top:8px; margin-bottom:16px; }
+  .finance p { margin:4px 0; }
+  .finance .gross { color:#2c3e50; }
+  .finance .exp { color:#e74c3c; }
+  .finance .net { color:#2ecc71; font-weight:bold; }
+  table.expenses { width:100%; border-collapse:collapse; margin-top:12px; font-size:13px; }
+  table.expenses th { background:#f1f3f5; padding:6px; border:1px solid #ddd; text-align:left; }
+  table.expenses td { padding:6px; border:1px solid #ddd; }
+  .footer-note { margin-top:24px; font-size:11px; color:#888; text-align:center; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+  <h1>Laboratory Manager Report</h1>
+  <p><strong>Period:</strong> {{ range_label|default:range_type|title }}</p>
+  <p><strong>Generated:</strong> {{ now|date:"F j, Y H:i" }}</p>
+
+  <!-- KPI Summary -->
+  <h2>Key Metrics</h2>
+  <table class="kpi-grid">
+    <tr><th>Samples Received</th><td class="value">{{ summary.samples_received }}</td></tr>
+    <tr><th>Tests Assigned</th><td class="value">{{ summary.test_assignments }}</td></tr>
+    <tr><th>Assigned to Analysts</th><td class="value">{{ summary.assigned_with_analysts }}</td></tr>
+    <tr><th>Active Equipment</th><td class="value">{{ summary.active_equipment }}</td></tr>
+    <tr><th>Expired Calibrations</th><td class="value">{{ summary.expired_calibrations }}</td></tr>
+  </table>
+
+  <!-- Finance Summary -->
+  <h2>Financial Summary</h2>
+  <div class="finance">
+    <p class="gross"><strong>Gross Income:</strong> ₦{{ gross_income|floatformat:2|intcomma }}</p>
+    <p class="exp"><strong>Total Expenses:</strong> ₦{{ total_expenses|floatformat:2|intcomma }}</p>
+    <p class="net"><strong>Net Income:</strong> ₦{{ net_income|floatformat:2|intcomma }}</p>
+  </div>
+
+  <!-- Expense Table -->
+  <h2>Expenses ({{ range_label|default:range_type|title }})</h2>
+  <table class="expenses">
+    <thead>
+      <tr>
+        <th style="width:25%;">Date</th>
+        <th>Description</th>
+        <th style="width:20%;">Amount (₦)</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for e in expenses %}
+      <tr>
+        <td>{{ e.date|date:"Y-m-d" }}</td>
+        <td>{{ e.description }}{% if e.get_category_display %} <span style="color:#888;">({{ e.get_category_display }})</span>{% endif %}</td>
+        <td>₦{{ e.amount|floatformat:2|intcomma }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="3" style="text-align:center; color:#888;">No expenses recorded for this period.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <p class="footer-note">
+    Full printable report is attached as PDF.<br>
+    Generated automatically by the Laboratory Management System. ISO 17025:2017 Compliant.
+  </p>
+</div>
+</body>
+</html>

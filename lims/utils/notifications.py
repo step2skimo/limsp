@@ -8,6 +8,10 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import default_storage
 import tempfile, datetime, os, uuid
 
+import uuid
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+from django.templatetags.static import static
 
 def notify_low_stock(manager_email, reagent_name, batch_number, number_of_bottles, threshold):
     subject = f"⚠️ Low Stock Alert: {reagent_name}"
@@ -51,132 +55,60 @@ def notify_low_stock(manager_email, reagent_name, batch_number, number_of_bottle
 
 
 
-def notify_client_on_coa_release(client, samples, summary_text, parameters, sample_weight_display):
+
+
+def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
+    """
+    Email the client letting them know their COA is ready.
+    Attaches the provided PDF (already generated in release_client_coa).
+    """
     subject = "Your Certificate of Analysis (COA) is Now Available"
+    from_email = settings.DEFAULT_FROM_EMAIL
+    to_list = [client.email]
+    bcc_list = getattr(settings, "COA_INTERNAL_RECIPIENTS", [])
     message_id = f"<{uuid.uuid4()}@jaageelab.com>"
 
-    # ✅ Add environmental data like in generate_coa_pdf
-    for sample in samples:
-        sample_environment = None
-        param_values = {}
+    # Fallback public letterhead URL (just cosmetic)
+    letterhead_url = static("letterheads/coa_letterhead.png")
 
-        for ta in sample.testassignment_set.all():
-            # Collect environmental data
-            env = getattr(ta, "testenvironment", None)
-            if env and not sample_environment:
-                sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
-
-            # Collect parameter values for CHO & ME calculation
-            res = getattr(ta, "testresult", None)
-            if res:
-                param_values[ta.parameter.name.lower()] = res.value
-
-        # Default environment if none provided
-        sample.environment = sample_environment or "Ambient 25°C 50%RH"
-
-        # ✅ Add CHO & ME if not already in sample results
-        if all(key in param_values for key in ["protein", "crude fat", "ash", "moisture", "crude fibre"]):
-            protein = param_values["protein"]
-            fat = param_values["crude fat"]
-            ash = param_values["ash"]
-            moisture = param_values["moisture"]
-            fiber = param_values["crude fibre"]
-
-            cho = round(100 - (protein + fat + ash + moisture + fiber), 2)
-            me = round(((protein * 4) + (fat * 9) + (cho * 4)) * 10, 2)
-
-            # Append calculated values to parameters (for table rendering)
-            parameters.append({"name": "CHO", "unit": "%", "method": "AOAC by difference"})
-            parameters.append({"name": "ME", "unit": "kcal/kg", "method": "Calculated using Atwater factors"})
-
-            # Attach to sample for display
-            if not hasattr(sample, "results"):
-                sample.results = []
-            sample.results.append({"parameter": "CHO", "method": "AOAC by difference", "value": cho, "unit": "%"})
-            sample.results.append({"parameter": "ME", "method": "Calculated using Atwater factors", "value": me, "unit": "kcal/kg"})
-
-    # ✅ Absolute paths for letterhead & signatures
-    letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
-    signature1_path = os.path.join(settings.STATIC_ROOT, "images/signatures/hannah-sign.png")
-    signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.png")
-
-    # ✅ Render COA HTML
-    coa_html = render_to_string("lims/coa_template.html", {
-        "client": client,
-        "samples": samples,
-        "summary_text": summary_text,
-        "parameters": parameters,
-        "today": datetime.date.today(),
-        "letterhead_url": f"file://{letterhead_path}",
-        "signature_1": f"file://{signature1_path}",
-        "signature_2": f"file://{signature2_path}",
-        "sample_weight_display": sample_weight_display,
-    })
-
-    # ✅ Generate PDF
-    timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
-    filename = f"COA_{client.client_id}_{timestamp}.pdf"
-    path = f"coa_reports/{filename}"
-    temp_path = os.path.join(tempfile.gettempdir(), filename)
-
-    HTML(string=coa_html, base_url=settings.STATIC_ROOT).write_pdf(target=temp_path)
-
-    with open(temp_path, "rb") as f:
-        pdf_bytes = f.read()
-        default_storage.save(path, ContentFile(pdf_bytes))
-
-    # ✅ Clean up temp file
-    try:
-        os.remove(temp_path)
-    except Exception:
-        pass
-
-    # ✅ Prepare email content
     html_body = f"""
     <html>
       <body style="font-family: Arial, sans-serif; color:#333; line-height:1.6;">
         <h2 style="color:#0073e6;">Certificate of Analysis Released</h2>
         <p>Dear <strong>{client.name}</strong>,</p>
         <p>The COA for your submitted samples (Client ID: <strong>{client.client_id}</strong>) is now available.</p>
-        <hr><p><strong>Summary Interpretation:</strong></p>
+        <hr>
+        <p><strong>Summary Interpretation:</strong></p>
         <p>{summary_text}</p>
         <p style="margin-top:20px;">Thank you for choosing <strong>JaaGee Laboratory</strong>.</p>
         <p>Best regards,<br><strong>JaaGee LIMS Team</strong></p>
         <hr style="border:0;height:1px;background:#ddd;">
-        <p style="font-size:12px;color:#999;">Confidential document attached.</p>
+        <p style="font-size:12px;color:#999;">Confidential COA PDF attached.</p>
+        <p style="font-size:11px;color:#bbb;">If you cannot open the attachment, please reply to this email.</p>
+       
       </body>
     </html>
     """
 
-    text_body = f"""
-    Dear {client.name},
+    text_body = (
+        f"Dear {client.name},\n\n"
+        f"The Certificate of Analysis (COA) for your samples (Client ID: {client.client_id}) is ready.\n\n"
+        f"Summary:\n{summary_text}\n\n"
+        "The PDF is attached.\n\n"
+        "Thank you for choosing JaaGee Laboratory.\n"
+    )
 
-    The Certificate of Analysis (COA) for your samples (Client ID: {client.client_id}) is ready.
-
-    Summary:
-    {summary_text}
-
-    Thank you for choosing JaaGee Laboratory.
-    """
-
-    # ✅ Send email with PDF attachment
     msg = EmailMultiAlternatives(
-        subject,
-        text_body,
-        settings.DEFAULT_FROM_EMAIL,
-        [client.email],
-        bcc=getattr(settings, "COA_INTERNAL_RECIPIENTS", []),
+        subject=subject,
+        body=text_body,
+        from_email=from_email,
+        to=to_list,
+        bcc=bcc_list,
         headers={'Reply-To': 'jaageelab@gmail.com', 'Message-ID': message_id}
     )
     msg.attach_alternative(html_body, "text/html")
     msg.attach(filename, pdf_bytes, "application/pdf")
     msg.send()
-
-    # ✅ Save COA file reference
-    if hasattr(client, "latest_coa_file"):
-        client.latest_coa_file = path
-        client.save(update_fields=["latest_coa_file"])
-
 
 def notify_lab_manager_on_submission(manager_email, num_samples, organization_name, client_id, clerk_name):
     subject = "New Samples Submitted"

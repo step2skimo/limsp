@@ -137,34 +137,38 @@
       </div>
 
       <div class="action-bar">
-        {% if client.coa_released %}
-          <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
+    {% if client.coa_released %}
+        <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
             <i class="fas fa-search"></i> Preview COA
-          </a>
-          <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+        </a>
+        <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
             <i class="fas fa-file-pdf"></i> Download COA
-          </a>
-          <span class="status-badge released already-released"><i class="fas fa-check-circle"></i> Already Released</span>
-        {% else %}
-          {% if has_approved %}
+        </a>
+        <span class="status-badge released already-released">
+            <i class="fas fa-check-circle"></i> Already Released
+        </span>
+    {% else %}
+        {% if data.all_completed %}
             <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
-              <i class="fas fa-search"></i> Preview COA
+                <i class="fas fa-search"></i> Preview COA
             </a>
             <a class="btn btn-secondary" href="{% url 'generate_coa' client.client_id %}">
-              <i class="fas fa-file-pdf"></i> Download PDF
+                <i class="fas fa-file-pdf"></i> Download PDF
             </a>
-          <form method="post" action="{% url 'release_client_coa' client.id %}">
-  {% csrf_token %}
-  <button type="submit" class="btn btn-success release-btn">
-    <i class="fas fa-paper-plane"></i> Release to Client
-  </button>
-</form>
-
-          {% else %}
-            <span class="status-badge pending"><i class="fas fa-clock"></i> Awaiting Approval</span>
-          {% endif %}
+            <form method="post" action="{% url 'release_client_coa' client.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-success release-btn">
+                    <i class="fas fa-paper-plane"></i> Release to Client
+                </button>
+            </form>
+        {% else %}
+            <span class="status-badge pending">
+                <i class="fas fa-clock"></i> Awaiting Completion
+            </span>
         {% endif %}
-      </div>
+    {% endif %}
+</div>
+
     </div>
     {% endwith %}
   {% empty %}

@@ -7,3 +7,4 @@ from .qc import QCMetrics
 from .qc_control import ControlSpec
 from .equipment import Equipment, CalibrationRecord
 from .reagents import *
+from .expense import *

@@ -7,8 +7,15 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     body { background: #f8f9fa; font-size: 0.9rem; }
-    table th, table td { font-size: 0.85rem; vertical-align: middle; }
+    table th, table td { font-size: 0.85rem; vertical-align: middle; text-align: center; }
     textarea { font-size: 0.9rem; resize: vertical; }
+    .letterhead { max-width: 100%; margin-bottom: 10px; }
+    .meta-grid div { margin-bottom: 4px; }
+    .signatures img { max-height: 60px; display: block; margin: auto; }
+    .sticky-actions {
+      position: fixed; bottom: 15px; right: 15px;
+      display: flex; flex-direction: column; gap: 10px;
+    }
   </style>
 </head>
 <body>
@@ -20,20 +27,29 @@
     <a href="{% url 'coa_dashboard' %}" class="btn btn-outline-secondary btn-sm">← Back to Dashboard</a>
   </div>
 
+  <!-- Letterhead Preview
+  <div class="text-center mb-3">
+    <img src="{{ letterhead_url }}" alt="Letterhead" class="letterhead">
+  </div> -->
+
   <!-- Client Info -->
   <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">Client Details</div>
-    <div class="card-body">
-      <div><strong>Client ID:</strong> {{ client.client_id }}</div>
-      <div><strong>Email:</strong> {{ client.email }}</div>
-      <div><strong>Phone:</strong> {{ client.phone }}</div>
-      <div><strong>Address:</strong> {{ client.address }}</div>
+    <div class="card-header bg-light fw-bold">Client Details</div>
+    <div class="card-body row meta-grid">
+      <div class="col-md-6"><strong>Client Name:</strong> {{ client.name }}</div>
+      <div class="col-md-6"><strong>Client ID:</strong> {{ client.client_id }}</div>
+      <div class="col-md-6"><strong>Organization:</strong> {{ client.organization }}</div>
+      <div class="col-md-6"><strong>Email:</strong> {{ client.email }}</div>
+      <div class="col-md-6"><strong>Phone:</strong> {{ client.phone }}</div>
+      <div class="col-md-6"><strong>Address:</strong> {{ client.address }}</div>
+      <div class="col-md-6"><strong>Report Date:</strong> {{ today }}</div>
+      <div class="col-md-6"><strong>Sample Weight:</strong> {{ sample_weight_display }}</div>
     </div>
   </div>
 
-  <!-- Transposed Sample Results -->
+  <!-- Results Table -->
   <div class="card shadow-sm mb-4">
-    <div class="card-header bg-light">Sample Results</div>
+    <div class="card-header bg-light fw-bold">Sample Results</div>
     <div class="card-body p-2">
       <table class="table table-bordered table-sm">
         <thead class="table-light">
@@ -57,10 +73,9 @@
                   {% with val="" %}
                     {% for r in s.results %}
                       {% if r.parameter == param.name %}
-                        {{ r.value|floatformat:2 }} {{ r.unit }}
+                        {{ r.value|floatformat:2 }}
                       {% endif %}
                     {% endfor %}
-                    {% if val == "" %}{{ val }}{% endif %}
                   {% endwith %}
                 </td>
               {% endfor %}
@@ -71,27 +86,46 @@
     </div>
   </div>
 
-  <!-- Editable Summary Form -->
+  <!-- Editable Summary -->
   <form method="post" class="mb-4">
     {% csrf_token %}
     <div class="card shadow-sm">
-      <div class="card-header bg-light">Summary Interpretation</div>
+      <div class="card-header bg-light fw-bold">Summary Interpretation</div>
       <div class="card-body">
         <textarea name="summary_text" rows="5" class="form-control">{{ summary_text }}</textarea>
-        <div class="d-flex justify-content-between mt-3">
+        <div class="d-flex justify-content-end mt-3">
           <button type="submit" class="btn btn-primary btn-sm">💾 Save Summary</button>
         </div>
       </div>
     </div>
   </form>
 
-  <!-- PDF Download -->
-  <div class="text-end mt-3">
-    <a href="{% url 'generate_coa_pdf' client_id=client.client_id %}" class="btn btn-outline-success btn-sm">
-      ⬇️ Download Official COA PDF
-    </a>
+  <!-- Signature Preview -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-header bg-light fw-bold">Signatures</div>
+    <div class="card-body d-flex justify-content-between text-center signatures">
+      <div>
+        <img src="{{ signature_1 }}" alt="Signature 1">
+        <strong>Kehinde K. Hannah</strong><br>
+        HEAD OF LABORATORY
+      </div>
+      <div>
+        <img src="{{ signature_2 }}" alt="Signature 2">
+        <strong>Julius Gbolade Famoriyo</strong><br>
+        FELLOW NISLT REG NO: F0256
+      </div>
+    </div>
   </div>
 
 </div>
+
+<!-- Floating Action Buttons -->
+<div class="sticky-actions">
+  <a href="{% url 'generate_coa_pdf' client_id=client.client_id %}" class="btn btn-success btn-sm">
+    ⬇️ Download PDF
+  </a>
+  <a href="{% url 'coa_dashboard' %}" class="btn btn-secondary btn-sm">← Back</a>
+</div>
+
 </body>
 </html>

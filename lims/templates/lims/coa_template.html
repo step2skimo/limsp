@@ -5,41 +5,62 @@
   <meta charset="utf-8">
   <title>Certificate of Analysis</title>
   <style>
-    @page {
-      size: A4;
-      margin: 0;
-      background: url('{{ letterhead_url }}') no-repeat center top;
-      background-size: cover;
+    /* WeasyPrint Page Settings */
+@page {
+  size: A4;
+  margin: 0;
+  background: url('{{ letterhead_url }}') no-repeat center top;
+  background-size: cover;
 
-      @bottom-center {
-        content: "Page " counter(page) " of " counter(pages);
-        font-size: 9px;
-        margin-bottom: 5mm;
-      }
-    }
+  @bottom-center {
+    content: "Page " counter(page) " of " counter(pages);
+    font-size: 9px;
+    transform: translateY(-15mm); /* Moves footer up */
+  }
+}
 
-    @page :last {
-      @bottom-center {
-        content: "- END OF REPORT - | Page " counter(page) " of " counter(pages);
-        font-size: 9px;
-        margin-bottom: 5mm;
-      }
-    }
+@page last {
+  size: A4;
+  margin: 0;
+  background: url('{{ letterhead_url }}') no-repeat center top;
+  background-size: cover;
+
+  @bottom-center {
+    content: "- END OF REPORT - | Page " counter(page) " of " counter(pages);
+    font-size: 9px;
+    transform: translateY(-15mm);
+  }
+}
+
+
+.page {
+  margin: 5cm 2cm 2cm 2cm;
+}
+
+/* ✅ Only apply page-break to non-last pages */
+.page:not(:last-of-type) {
+  page-break-after: always;
+  break-after: page;
+}
+
+
 
     body {
       margin: 0;
-      padding: 0;
       font-family: Arial, sans-serif;
       font-size: 10px;
     }
 
-    .content {
-      margin: 5cm 2cm 2cm 2cm;
-    }
+    .page:not(:last-of-type) {
+  page-break-after: always;
+  break-after: page;
+}
+
 
     table {
       width: 100%;
       border-collapse: collapse;
+      page-break-inside: auto;
     }
 
     th, td {
@@ -55,6 +76,10 @@
 
     td {
       text-align: center;
+    }
+
+    thead {
+      display: table-header-group;
     }
 
     .metadata-table {
@@ -79,18 +104,12 @@
       margin-top: 4px;
     }
 
-    .method-row {
-      font-size: 9px;
-      font-style: italic;
-      background-color: #f2f2f2;
-      text-align: left;
-    }
-
     .signatures {
       display: flex;
       justify-content: space-between;
       margin-top: 30px;
       font-size: 10px;
+      page-break-inside: avoid;
     }
 
     .signatures div {
@@ -104,7 +123,10 @@
   </style>
 </head>
 <body>
-<div class="content">
+
+{% for sample_chunk in sample_chunks %}
+<div class="page"{% if forloop.last %} style="page: last;"{% endif %}>
+
 
   <!-- Metadata -->
   <table class="metadata-table" width="100%">
@@ -143,62 +165,72 @@
 
   <h2>CERTIFICATE OF ANALYSIS</h2>
 
-  <table>
-    <thead>
+  <!-- Transposed Table -->
+<table>
+  <thead>
+    <tr>
+      <th>Sample Code</th>
+      {% for param in parameters %}
+        <th>{{ param.name }}{% if param.unit %} ({{ param.unit }}){% endif %}</th>
+      {% endfor %}
+    </tr>
+    <tr class="method-row">
+      <td><strong>Method</strong></td>
+      {% for param in parameters %}
+        <td>{{ param.method }}</td>
+      {% endfor %}
+    </tr>
+  </thead>
+  <tbody>
+    {% for sample in sample_chunk %}
       <tr>
-        <th>Parameter</th>
-        <th>Method</th>
-        {% for sample in samples %}
-          <th>{{ sample.sample_code }}</th>
+        <td>{{ sample.sample_code }}</td>
+        {% for param in parameters %}
+          <td>
+            {% for r in sample.results %}
+              {% if r.parameter == param.name %}
+                {{ r.value|floatformat:2 }}
+              {% endif %}
+            {% endfor %}
+          </td>
         {% endfor %}
       </tr>
-    </thead>
-    <tbody>
-      {% for param in parameters %}
-        <tr>
-          <td>{{ param.name }}{% if param.unit %} ({{ param.unit }}){% endif %}</td>
-          <td>{{ param.method }}</td>
-          {% for sample in samples %}
-            <td>
-              {% with value="" %}
-                {% for r in sample.results %}
-                  {% if r.parameter == param.name %}
-                    {{ r.value|floatformat:2 }}
-                  {% endif %}
-                {% endfor %}
-                {% if value == "" %}{{ value }}{% endif %}
-              {% endwith %}
-            </td>
-          {% endfor %}
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+    {% endfor %}
+  </tbody>
+</table>
 
-  <!-- Summary Interpretation -->
-  <div class="footnote mt-3">
-    <strong>Summary interpretation:</strong><br>
-    {{ summary_text|linebreaksbr }}
-  </div>
 
-  <!-- Lab Info -->
-  <div class="center footnote mt-2">
-    JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial, and various
-    chemical analysis to improve the quality and healthiness of foods and feeds.
-  </div>
+  {% if forloop.last %}
+    <!-- Show summary on last page -->
+    <div class="footnote mt-3">
+      <strong>Summary interpretation:</strong><br>
+      {{ summary_text|linebreaksbr }}
+    </div>
 
-  <!-- Signatures -->
-<div class="signatures">
-  <div>
-    <img src="{{ signature_1 }}" alt="Hannah Signature" style="max-height: 60px;"><br>
-    <strong>Kehinde K. Hannah</strong><br>
-    HEAD OF LABORATORY
-  </div>
-  <div>
-    <img src="{{ signature_2 }}" alt="Julius Signature" style="max-height: 60px;"><br>
-    <strong>Julius Gbolade Famoriyo</strong><br>
-    FELLOW NISLT REG NO: F0256
-  </div>
+    <div class="center footnote mt-2">
+      JaaGee Application, Training & Research Laboratory engages in nutritional analysis, microbial,
+      and various chemical analysis to improve the quality and healthiness of foods and feeds.
+    </div>
+
+    <div class="signatures">
+      <div>
+        <img src="{{ signature_1 }}" alt="Hannah Signature" style="max-height: 60px;"><br>
+        <strong>Kehinde K. Hannah</strong><br>
+        HEAD OF LABORATORY
+      </div>
+      <div>
+        <img src="{{ signature_2 }}" alt="Julius Signature" style="max-height: 60px;"><br>
+        <strong>Julius Gbolade Famoriyo</strong><br>
+        FELLOW NISLT REG NO: F0256
+      </div>
+    </div>
+
+  {% endif %}
+
 </div>
+{% endfor %}
 
+
+
+</body>
 </html>
