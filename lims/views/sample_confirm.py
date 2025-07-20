@@ -20,7 +20,7 @@ def intake_confirmation_view(request, client_id):
             total_tests += 1
 
     
-    return render(request, 'lims/intake_confirmation.html', {
+    return render(request, 'lims/clerk/intake_confirmation.html', {
         'client': client,
         'samples': samples,
         'total_price': total_price,
@@ -38,7 +38,7 @@ def send_receipt_email(client, samples):
             total_tests += 1
 
     # Render HTML
-    html_string = render_to_string('lims/intake_receipt_pdf.html', {
+    html_string = render_to_string('lims/clerk/intake_receipt_pdf.html', {
         'client': client,
         'samples': samples,
         'total_price': total_price,

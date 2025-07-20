@@ -1,6 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
-from django.contrib import messages
 from django.utils import timezone
 from lims.utils.derived import _inject_derived_result
 from lims.models import TestAssignment, Equipment, TestResult, QCMetrics, SampleStatus, TestEnvironment, Client, Parameter
@@ -12,13 +11,9 @@ from django.forms import modelform_factory
 from django import forms
 from django.db import transaction
 from django.utils.timezone import now as timezone_now
-
 from django.shortcuts import get_object_or_404, redirect, render
 from django.contrib import messages
 from django.db import transaction
-from django.forms import modelform_factory
-from django.utils.timezone import now as timezone_now
-from django.contrib.auth.decorators import login_required
 from decimal import Decimal
 
 from lims.models import (
@@ -281,14 +276,14 @@ def enter_batch_result(request, client_id, parameter_id):
         "control_spec": control_spec,
     }
 
-    return render(request, "lims/batch_result_entry.html", context)
+    return render(request, "lims/analyst/batch_result_entry.html", context)
 
 
 @login_required
 def batch_result_success(request, client_id, parameter_id):
     client = get_object_or_404(Client, client_id=client_id)
     parameter = get_object_or_404(Parameter, id=parameter_id)
-    return render(request, "lims/batch_result_success.html", {
+    return render(request, "lims/analyst/batch_result_success.html", {
         "client": client,
         "parameter": parameter,
     })

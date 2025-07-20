@@ -22,7 +22,7 @@ from django.contrib.auth import views as auth_views
 urlpatterns = [
     path('notifications/', include('notifications.urls')),
     path('admin/', admin.site.urls),
-    path('', include('lims.urls')),  # Include LIMS app URLs
+    path('', include('lims.urls')), # Main application URLs
 
     path("login/", auth_views.LoginView.as_view(template_name="auth/login.html"), name="login"),
     path("logout/", auth_views.LogoutView.as_view(next_page="login"), name="logout"),

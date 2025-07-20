@@ -115,7 +115,7 @@ def sample_intake_view(request):
 
     parameter_groups = [{'name': k, 'parameters': v} for k, v in group_map.items()]
 
-    return render(request, 'lims/sample_intake.html', {
+    return render(request, 'lims/clerk/sample_intake.html', {
         'client_form': client_form,
         'sample_formset': sample_formset,
         'parameter_groups': parameter_groups,

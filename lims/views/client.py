@@ -3,11 +3,8 @@ from lims.models import *
 from django.urls import reverse
 import logging
 from collections import defaultdict
-from django.shortcuts import render, get_object_or_404
-from django.shortcuts import render, get_object_or_404
 from lims.models import Client, Sample, TestAssignment
 from datetime import datetime
-from collections import defaultdict
 import logging
 
 
@@ -57,13 +54,10 @@ def client_tracking_view(request, token):
             "samples": samples,
         })
 
-    return render(request, "lims/tracking.html", {
+    return render(request, "lims/client/tracking.html", {
         "client_data": client_data,
         "organization": organization_name,
     })
-
-
-
 
 
 
@@ -74,4 +68,4 @@ def enter_token_view(request):
             return redirect("client_tracking", token=token)
         else:
             return render(request, "lims/token_invalid.html", {"token": token})
-    return render(request, "lims/token_entry.html")
+    return render(request, "lims/client/token_entry.html")

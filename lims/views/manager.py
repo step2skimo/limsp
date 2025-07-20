@@ -4,30 +4,21 @@ from django.utils import timezone
 from django.template.loader import render_to_string
 from weasyprint import HTML
 from django.http import HttpResponse
-from collections import defaultdict
 from django.db.models import Prefetch
 from lims.models import QCMetrics
-from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from lims.models import Sample, Client
 from lims.models.equipment import Equipment, CalibrationRecord
 from datetime import timedelta, date
 from django.db.models import Q
-from django.utils import timezone
 from datetime import timedelta
 from collections import defaultdict
-from django.http import HttpResponse
 from django.utils import timezone
-from django.db.models import Prefetch
-from weasyprint import HTML
 from lims.models import Client, Sample, TestAssignment, Parameter
-from collections import defaultdict
-from django.db.models import Count, Q, Prefetch
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, F, Q, Avg
 from django.db.models.functions import TruncMonth
 from lims.models import SampleStatus
-from collections import defaultdict
 from django.contrib import messages
 
 
@@ -123,7 +114,7 @@ def manager_dashboard(request):
     # 🔁 Latest Client for linking assignment overview
     latest_client = Client.objects.order_by('-client_id').first()
 
-    return render(request, "lims/manager_dashboard.html", {
+    return render(request, "lims/manager/manager_dashboard.html", {
         "client_data": client_data,
         "verified_samples": verified_samples,
         "qc_summary": qc_summary,
@@ -216,7 +207,7 @@ def review_by_parameter(request, parameter_id):
 
         return redirect("review_by_parameter", parameter_id=parameter_id)
 
-    return render(request, "lims/review_by_parameter.html", {
+    return render(request, "lims/manager/review_by_parameter.html", {
         "parameter": parameter,
         "grouped_assignments": dict(grouped),
     })
@@ -250,7 +241,7 @@ def parameter_review_list(request):
             param.pending_reviews = count
             grouped_parameters[client_id].append(param)
 
-    return render(request, "lims/parameter_review_list.html", {
+    return render(request, "lims/manager/parameter_review_list.html", {
         "grouped_parameters": dict(grouped_parameters)
     })
 

@@ -1,40 +1,139 @@
+<h2 class="eq-title">
+  <span class="eq-icon">🔧</span> Equipment Usage: 
+  <span class="eq-name">{{ equipment.name }}</span>
+</h2>
 
-  <h2>🔧 Equipment Usage: {{ equipment.name }}</h2>
-
-  <p>
-    <strong>Model:</strong> {{ equipment.model }} |
-    <strong>Serial #:</strong> {{ equipment.serial_number }} |
-    <strong>Category:</strong> {{ equipment.category }}
-  </p>
+<div class="eq-card">
+  <div class="eq-info">
+    <div><strong>Model:</strong> {{ equipment.model }}</div>
+    <div><strong>Serial #:</strong> {{ equipment.serial_number }}</div>
+    <div><strong>Category:</strong> {{ equipment.category }}</div>
+  </div>
 
   {% if usage_records %}
-    <table class="table table-striped">
-      <thead>
-        <tr>
-          <th>Sample</th>
-          <th>Parameter</th>
-          <th>Temperature (°C)</th>
-          <th>Humidity (%)</th>
-         
-          <th>Date Recorded</th>
-          <th>Analyst</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for record in usage_records %}
+    <div class="table-responsive eq-table-container">
+      <table class="table eq-table">
+        <thead>
           <tr>
-            <td>{{ record.test_assignment.sample.sample_code }}</td>
-            <td>{{ record.test_assignment.parameter.name }}</td>
+            <th>Sample</th>
+            <th>Parameter</th>
+            <th>Temperature (°C)</th>
+            <th>Humidity (%)</th>
+            <th>Date Recorded</th>
+            <th>Analyst</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for record in usage_records %}
+          <tr>
+            <td><span class="badge badge-sample">{{ record.test_assignment.sample.sample_code }}</span></td>
+            <td><span class="badge badge-parameter">{{ record.test_assignment.parameter.name }}</span></td>
             <td>{{ record.temperature }}</td>
             <td>{{ record.humidity }}</td>
-           
             <td>{{ record.recorded_at|date:"Y-m-d H:i" }}</td>
-            <td>{{ record.recorded_by.get_full_name|default:record.recorded_by.username }}</td>
+            <td><i class="bi bi-person-circle me-1"></i> {{ record.recorded_by.get_full_name|default:record.recorded_by.username }}</td>
           </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
   {% else %}
-    <p>No test records found for this equipment yet.</p>
+    <p class="eq-empty">No test records found for this equipment yet.</p>
   {% endif %}
+</div>
 
+<style>
+/* Title */
+.eq-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.eq-icon {
+  font-size: 1.6rem;
+}
+
+.eq-name {
+  color: #2563eb;
+}
+
+/* Card */
+.eq-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+/* Equipment info */
+.eq-info {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+  color: #475569;
+}
+
+/* Table */
+.eq-table-container {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.eq-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: white;
+}
+
+.eq-table thead {
+  background: #2563eb;
+  color: white;
+}
+
+.eq-table th, .eq-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.eq-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.3rem 0.6rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-sample {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-parameter {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+/* Empty state */
+.eq-empty {
+  color: #6b7280;
+  font-style: italic;
+  padding: 1rem 0;
+  text-align: center;
+}
+</style>

@@ -4,7 +4,6 @@ from django.utils.timezone import now
 from datetime import timedelta
 from lims.models import Client, Sample, SampleStatus
 from django.http import JsonResponse
-
 from django.db.models import Count
 from lims.models import Sample
 from django.shortcuts import render, redirect, get_object_or_404
@@ -22,12 +21,12 @@ def clerk_dashboard_view(request):
     if not request.user.is_clerk():
         return redirect("dashboard")
 
-    return render(request, "lims/clerk_dashboard.html")
+    return render(request, "lims/clerk/clerk_dashboard.html")
 
 @login_required
 def view_all_clients(request):
     clients = Client.objects.all()
-    return render(request, "lims/client_list.html", {"clients": clients})
+    return render(request, "lims/clerk/client_list.html", {"clients": clients})
 
 
 @csrf_exempt
@@ -78,7 +77,7 @@ def view_client_samples(request, client_id):
             [str(a.testresult.value) for a in assignments if hasattr(a, 'testresult') and a.testresult and a.testresult.value is not None]
         ) or "—"
 
-    return render(request, "lims/client_samples.html", {
+    return render(request, "lims/clerk/client_samples.html", {
         "client": client,
         "samples": samples
     })
@@ -93,14 +92,14 @@ def sample_list(request):
         .select_related("client")
         .order_by("client__client_id", "-received_date")
     )
-    return render(request, "lims/sample_list.html", {"samples": samples})
+    return render(request, "lims/clerk/sample_list.html", {"samples": samples})
 
 
 @login_required
 def search_sample_by_code(request):
     query = request.GET.get("code")
     sample = Sample.objects.filter(sample_code__iexact=query).first()
-    return render(request, "lims/sample_search_result.html", {"sample": sample, "query": query})
+    return render(request, "lims/clerk/sample_search_result.html", {"sample": sample, "query": query})
 
 
 @login_required
@@ -111,7 +110,7 @@ def sample_status_stats(request):
     for s in status_counts:
         s["label"] = status_map.get(s["status"], s["status"])
 
-    return render(request, "lims/sample_stats.html", {"status_counts": status_counts})
+    return render(request, "lims/clerk/sample_stats.html", {"status_counts": status_counts})
 
 @login_required
 def sample_status_json(request):
@@ -158,6 +157,6 @@ def clerk_activity_summary(request):
         "samples_month": samples_month,
     }
 
-    return render(request, "lims/clerk_activity_summary.html", context)
+    return render(request, "lims/clerk/clerk_activity_summary.html", context)
 
 

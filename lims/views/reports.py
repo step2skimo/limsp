@@ -7,11 +7,8 @@ from django.template.loader import get_template
 from django.http import HttpResponse
 from weasyprint import HTML
 import openpyxl
-from django.http import HttpResponse
-from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.db.models import Count, Sum, F
 from django.contrib.auth.decorators import login_required
-from django.db.models import Count, Sum, F
 from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from django.utils import timezone
 from datetime import timedelta
@@ -20,9 +17,7 @@ import pprint
 from django.db.models import Count, Avg, ExpressionWrapper, F, DurationField, Q, FloatField
 from django.utils.timezone import now
 from django.templatetags.static import static
-from django.contrib.auth.decorators import login_required
 from django.db.models import F, Q, Count, Avg, FloatField, DurationField, ExpressionWrapper
-from django.shortcuts import render
 from django.utils import timezone
 from datetime import timedelta
 from lims.models import TestAssignment, QCMetrics
@@ -30,7 +25,6 @@ from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
 from django.http import JsonResponse
-from weasyprint import HTML
 import tempfile
 from django.urls import reverse
 from django.utils.http import urlencode
@@ -45,15 +39,12 @@ from django.db.models.functions import TruncDay, TruncWeek, TruncMonth
 from decimal import Decimal
 from django.contrib import messages
 from django.shortcuts import redirect
-
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
-from django.urls import reverse
 from django.utils.http import urlencode
 from weasyprint import HTML
-import tempfile
-import os
+
 
 @login_required
 def send_manager_report(request):
@@ -237,7 +228,7 @@ def analyst_productivity_view(request):
         "avg_tat_human": total_avg_tat
     }
 
-    return render(request, "lims/analyst_productivity.html", {
+    return render(request, "lims/analyst/analyst_productivity.html", {
         "productivity": productivity,
         "total_metrics": total_metrics,
         "start_date": start_date,
@@ -491,8 +482,6 @@ def export_report_excel(request):
     return response
 
 
-
-
 @login_required
 def expense_create(request):
     # Get current dashboard range to preserve navigation after save
@@ -515,5 +504,5 @@ def expense_create(request):
 
     return render(request, "lims/expense_form.html", {
         "form": form,
-        "range_type": range_type,  # pass to template if needed for UI
+        "range_type": range_type,
     })

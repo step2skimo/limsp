@@ -3,7 +3,6 @@ from lims.models import Client, Sample, Parameter, TestAssignment, User
 from django.urls import reverse
 from django.db.models import Count, Q
 from django.db.models import Count, F
-from django.shortcuts import render, redirect, get_object_or_404
 from lims.models import Client, Sample, Parameter, TestAssignment, QCMetrics, ControlSpec, User, SampleStatus
 import csv
 from django.http import HttpResponse

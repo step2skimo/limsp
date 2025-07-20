@@ -1,89 +1,33 @@
 import io
+import os
+import re
+import uuid
+import logging
+import tempfile
+from collections import defaultdict
+import datetime
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import ImageReader
-from django.http import FileResponse
+from pdfrw import PdfReader, PdfWriter, PageMerge
+from weasyprint import HTML
 from django.conf import settings
-from django.contrib.auth.decorators import login_required
-from lims.models import Sample, TestResult
-from lims.utils.calculations import calculate_cho_and_me
-from lims.utils.coa_summary_ai import generate_dynamic_summary
-from datetime import datetime
-import os
-import datetime
-import tempfile
-import uuid
-from django.shortcuts import get_object_or_404, redirect
-from django.http import HttpResponseNotFound, HttpResponse
-from django.template.loader import render_to_string
+from django.core.files.base import ContentFile
+from django.core.files.storage import default_storage
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.db import transaction
-from django.templatetags.static import static
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-from django.utils import timezone
-
-from weasyprint import HTML
-
-
-import io, os
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from pdfrw import PdfReader, PdfWriter, PageMerge
-from django.http import HttpResponse
-from django.conf import settings
-
-from lims.models import Sample
-from lims.utils.calculations import calculate_cho_and_me
-from lims.utils.coa_summary_ai import generate_dynamic_summary
-
-import io, os
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
-from pdfrw import PdfReader, PdfWriter, PageMerge
-from django.http import HttpResponse
-from django.conf import settings
-import datetime
-from django.shortcuts import redirect
-from lims.models import Sample, SampleStatus
-from lims.utils.calculations import calculate_cho_and_me
-from lims.utils.coa_summary_ai import generate_dynamic_summary
-from django.shortcuts import render
-from lims.models import Client, Sample
-from collections import defaultdict
-from django.http import HttpResponse
-from weasyprint import HTML
-import datetime
-from django.shortcuts import get_object_or_404
-from django.core.files.base import ContentFile
-from django.core.files.storage import default_storage
-from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpResponseNotFound, FileResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.utils import timezone
-from weasyprint import HTML
-import datetime
 from django.templatetags.static import static
-from collections import defaultdict
-import logging
-import os
-from django.conf import settings
-from django.contrib import messages
-from lims.utils.notifications import notify_client_on_coa_release
-from lims.forms import COAInterpretationForm
+from django.utils import timezone
+from lims.models import Client, Sample, SampleStatus, TestResult
 from lims.models.coa import COAInterpretation
-from django.contrib import messages
-from django.shortcuts import get_object_or_404, redirect
-import re
-import datetime
-from collections import defaultdict
-
-from django.conf import settings
-from django.contrib import messages
-from django.contrib.auth.decorators import login_required
-from django.db import transaction
-from django.http import HttpResponse, HttpResponseNotFound
+from lims.forms import COAInterpretationForm
+from lims.utils.calculations import calculate_cho_and_me
+from lims.utils.coa_summary_ai import generate_dynamic_summary
+from lims.utils.notifications import notify_client_on_coa_release
 
 
 
@@ -277,7 +221,7 @@ def generate_coa_pdf(request, client_id):
         # "force_landscape": True,  # if you decide to implement conditional orientation
     }
 
-    html = render_to_string("lims/coa_template.html", context)
+    html = render_to_string("lims/coa/coa_template.html", context)
 
     # ---------------------------------------------------------------
     # Preview mode
@@ -315,7 +259,7 @@ def edit_summary(request, client_id):
     else:
         form = COAInterpretationForm(instance=interpretation)
 
-    return render(request, "lims/edit_summary.html", {
+    return render(request, "lims/coa/edit_summary.html", {
         "client": client,
         "form": form,
     })
@@ -346,7 +290,7 @@ def coa_dashboard(request):
     context = {
         "grouped": dict(grouped),
     }
-    return render(request, "lims/coa_dashboard.html", context)
+    return render(request, "lims/coa/coa_dashboard.html", context)
 
 
 
@@ -484,7 +428,7 @@ def release_client_coa(request, client_id):
     }
 
     # Render HTML & generate PDF
-    html = render_to_string("lims/coa_template.html", pdf_context)
+    html = render_to_string("lims/coa/coa_template.html", pdf_context)
     timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
     filename = f"COA_{client.client_id}_{timestamp}.pdf"
     temp_path = os.path.join(tempfile.gettempdir(), filename)
@@ -782,4 +726,4 @@ def preview_coa(request, client_id):
          "sample_weight_display": sample_weight_display,
     }
 
-    return render(request, "lims/preview_coa.html", context)
+    return render(request, "lims/coa/preview_coa.html", context)

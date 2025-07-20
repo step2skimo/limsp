@@ -3,37 +3,26 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect
 from lims.models import *
 from django.utils import timezone
-from collections import defaultdict
 from lims.forms import ResultEntryForm, QCMetricsForm
 from django.contrib import messages
 from lims.forms import ResultEntryForm
-from ..services.calculators import calculate_nfe_and_me
 from collections import defaultdict
-from django.contrib.auth.decorators import login_required
 from django.utils.timezone import now
 from datetime import timedelta
 from lims.utils.derived import _inject_derived_result
-from django.utils.timezone import now
-from datetime import timedelta
-from collections import defaultdict
 from lims.models import User, ai
 from lims.utils.calculations import calculate_nfe_and_me
 from django.core.paginator import Paginator
-from django.shortcuts import render
 from datetime import datetime
 from collections import defaultdict
 from lims.models import *
 from lims.utils.ai_helpers import generate_efficiency_nudge
 from lims.models.ai import EfficiencySnapshot
-
+from django.contrib.auth import get_user_model
+from django.utils.timezone import now
 
 User = get_user_model()
 
-from collections import defaultdict
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.utils.timezone import now
-from datetime import timedelta
 
 
 @login_required
@@ -104,7 +93,7 @@ def analyst_dashboard_view(request):
             my_snapshot.total_tests
         )
 
-    return render(request, 'lims/analyst_dashboard.html', {
+    return render(request, 'lims/analyst/analyst_dashboard.html', {
         'grouped_assignments': dict(grouped),
         'stats': {
             'samples': total_samples,
@@ -174,7 +163,7 @@ def result_history_view(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    return render(request, 'lims/result_history.html', {
+    return render(request, 'lims/analyst/result_history.html', {
         'page_obj': page_obj,
         'filters': {
             'client_id': client_id or '',
@@ -207,7 +196,7 @@ def begin_parameter_analysis(request, client_id, parameter_id):
             f"⚠️ No samples in 'assigned' status for parameter '{parameter.name}' on this client."
         )
 
-    return redirect("analyst_dashboard")  # adjust this to your actual dashboard route
+    return redirect("analyst_dashboard")
 
 
 
@@ -312,7 +301,7 @@ def enter_result_view(request, assignment_id):
         else:
             messages.error(request, "❌ Please correct the errors below.")
 
-    return render(request, 'lims/enter_result.html', {
+    return render(request, 'lims/analyst/enter_result.html', {
         'test_assignment': test,
         'form': form if not test.is_control else None,
         'qc_form': qc_form if test.is_control else None,
