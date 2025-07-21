@@ -50,6 +50,17 @@ def chunked_samples(samples, chunk_size=8):
         yield samples[i:i + chunk_size]
 
 
+def abs_static(path, pdf_mode=False, request=None):
+    """
+    Return a static file URL:
+    - If pdf_mode=True, return file:// path from STATIC_ROOT.
+    - Otherwise, return an absolute HTTP URL if request is provided.
+    """
+    if pdf_mode:
+        return f"file://{os.path.join(settings.STATIC_ROOT, path)}"
+    
+    # If request is passed, build absolute URL, otherwise return relative static path
+    return request.build_absolute_uri(static(path)) if request else static(path)
 
 @login_required
 def generate_coa_pdf(request, client_id):
@@ -188,21 +199,15 @@ def generate_coa_pdf(request, client_id):
 
     sample_chunks = list(chunk_list(samples, chunk_size))
 
-    # (Optional) If you want landscape automatically when many samples total:
+    #  If you want landscape automatically when many samples total:
     # if len(samples) > 8:
     #     force_landscape = True  # You'd then pass a flag and adjust @page in template.
 
-    # ---------------------------------------------------------------
-    # Static asset absolute URLs (usable in browser + some PDF contexts)
-    # For WeasyPrint backgrounds, file:// paths can be more reliable.
-    # ---------------------------------------------------------------
-    def abs_static(path):
-        # If you find external HTTP blocked, swap to os.path.join STATIC_ROOT + file://
-        return request.build_absolute_uri(static(path))
 
-    letterhead_url = abs_static("letterheads/coa_letterhead.png")
-    signature_1 = abs_static("images/signatures/hannah-sign.png")
-    signature_2 = abs_static("images/signatures/julius-sign.png")
+    letterhead_url = abs_static("letterheads/coa_letterhead.png", pdf_mode=True)
+    signature_1 = abs_static("images/signatures/hannah-sign.png", pdf_mode=True)
+    signature_2 = abs_static("images/signatures/julius-sign.png", pdf_mode=True)
+
 
     # ---------------------------------------------------------------
     # Template context
