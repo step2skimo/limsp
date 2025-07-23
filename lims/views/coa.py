@@ -62,21 +62,13 @@ def abs_static(path, pdf_mode=False, request=None):
     # If request is passed, build absolute URL, otherwise return relative static path
     return request.build_absolute_uri(static(path)) if request else static(path)
 
-from django.shortcuts import render
-from django.template.loader import render_to_string
-from django.http import HttpResponse, HttpResponseNotFound
-from django.contrib.auth.decorators import login_required
-from weasyprint import HTML
-import datetime
-
 @login_required
 def generate_coa_pdf(request, client_id):
     """
     Render Certificate of Analysis for ALL non-QC samples belonging to a client_id.
-    Chooses accredited or unaccredited letterhead based on parameter groups.
     Supports:
       - HTML preview (?preview=1)
-      - Column chunking for many samples (?chunk=12)
+      - Column chunking for many samples (default 8 per table; override with ?chunk=12)
     """
     # ---------------------------------------------------------------
     # Fetch samples
@@ -88,23 +80,24 @@ def generate_coa_pdf(request, client_id):
         .prefetch_related(
             "testassignment_set__parameter",
             "testassignment_set__testresult",
+            # "testassignment_set__testenvironment",  # uncomment if relation exists
         )
         .select_related("client")
-        .order_by("sample_code")
+        .order_by("sample_code")  # stable ordering for reproducible PDFs
     )
 
     if not samples_qs.exists():
         return HttpResponseNotFound("No samples found for this client.")
 
     client = samples_qs.first().client
+
+    # Materialize list early (we modify objects by attaching attributes)
     samples = list(samples_qs)
 
     # ---------------------------------------------------------------
-    # Build per-sample results + parameter registry
+    # Build per-sample results + global parameter registry
     # ---------------------------------------------------------------
-    parameters = {}
-    accredited_groups = {"Gross Energy", "Vitamins & Contaminants", "Aflatoxin", "CHO", "ME", "Fiber"}
-    detected_groups = set()
+    parameters = {}  # param_name -> (unit, method)
 
     for sample in samples:
         sample.results = []
@@ -114,6 +107,7 @@ def generate_coa_pdf(request, client_id):
         for ta in sample.testassignment_set.all():
             param = ta.parameter
             res = getattr(ta, "testresult", None)
+
             if res and res.value is not None:
                 value = float(res.value)
                 param_values[param.name.lower()] = value
@@ -124,7 +118,6 @@ def generate_coa_pdf(request, client_id):
                     "unit": param.unit,
                 })
                 parameters[param.name] = (param.unit, param.method)
-                detected_groups.add(param.group.name if param.group else "")
 
             env = getattr(ta, "testenvironment", None)
             if env and not sample_environment:
@@ -162,23 +155,16 @@ def generate_coa_pdf(request, client_id):
             })
             parameters.setdefault("CHO", ("%", "AOAC (by difference)"))
             parameters.setdefault("ME", ("kcal/kg", "Calculated (Atwater factors)"))
-            detected_groups.add("CHO")
-            detected_groups.add("ME")
 
         sample.environment = sample_environment or "Ambient 25°C 50%RH"
 
     # ---------------------------------------------------------------
-    # Parameter rows
+    # Parameter rows (sorted for deterministic output)
     # ---------------------------------------------------------------
     parameter_rows = [
         {"name": name, "unit": unit, "method": clean_method(method)}
         for name, (unit, method) in sorted(parameters.items(), key=lambda x: x[0].lower())
     ]
-
-    # ---------------------------------------------------------------
-    # Determine if accredited
-    # ---------------------------------------------------------------
-    is_accredited = detected_groups.issubset(accredited_groups)
 
     # ---------------------------------------------------------------
     # Summary text
@@ -213,25 +199,23 @@ def generate_coa_pdf(request, client_id):
 
     sample_chunks = list(chunk_list(samples, chunk_size))
 
-    # ---------------------------------------------------------------
-    # Letterhead
-    # ---------------------------------------------------------------
-    letterhead_url = abs_static(
-        "letterheads/accredited_letterhead.png" if is_accredited else "letterheads/unaccredited_letterhead.jpg",
-        pdf_mode=True
-    )
-    
-    
+    #  If you want landscape automatically when many samples total:
+    # if len(samples) > 8:
+    #     force_landscape = True  # You'd then pass a flag and adjust @page in template.
+
+
+    letterhead_url = abs_static("letterheads/coa_letterhead.png", pdf_mode=True)
     signature_1 = abs_static("images/signatures/hannah-sign.png", pdf_mode=True)
     signature_2 = abs_static("images/signatures/julius-sign.png", pdf_mode=True)
+
 
     # ---------------------------------------------------------------
     # Template context
     # ---------------------------------------------------------------
     context = {
         "client": client,
-        "samples": samples,
-        "sample_chunks": sample_chunks,
+        "samples": samples,              # still used for metadata (samples.0...)
+        "sample_chunks": sample_chunks,  # used for the multi-table section
         "parameters": parameter_rows,
         "summary_text": summary_text,
         "sample_weight_display": sample_weight_display,
@@ -239,6 +223,7 @@ def generate_coa_pdf(request, client_id):
         "letterhead_url": letterhead_url,
         "signature_1": signature_1,
         "signature_2": signature_2,
+        # "force_landscape": True,  # if you decide to implement conditional orientation
     }
 
     html = render_to_string("lims/coa/coa_template.html", context)
@@ -253,11 +238,11 @@ def generate_coa_pdf(request, client_id):
     # PDF generation
     # ---------------------------------------------------------------
     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
+
     filename = f"COA_{client.client_id or client.id}_{datetime.date.today().isoformat()}.pdf"
     response = HttpResponse(pdf, content_type="application/pdf")
     response["Content-Disposition"] = f'attachment; filename="{filename}"'
     return response
-
 
 
 @login_required
