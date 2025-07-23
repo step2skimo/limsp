@@ -6,7 +6,7 @@ These models are part of the Laboratory Information Management System (LIMS).
 
 from django.db import models
 from django.utils import timezone
-
+from simple_history.models import HistoricalRecords
 
 # --------------------------------------------------------------------------------------
 # Allowed Parameters (Predefined Analysis Types)
@@ -73,7 +73,7 @@ class Equipment(models.Model):
     is_active = models.BooleanField(
         default=True, help_text="Indicates whether equipment is active."
     )
-
+    history = HistoricalRecords()
     def __str__(self):
         """
         String representation of equipment for admin and debugging.
@@ -110,7 +110,7 @@ class CalibrationRecord(models.Model):
     comments = models.TextField(
         blank=True, help_text="Additional comments about the calibration."
     )
-
+    history = HistoricalRecords()
     def is_valid(self):
         """
         Checks if the calibration is still valid (not expired).

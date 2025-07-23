@@ -141,9 +141,11 @@
         <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
             <i class="fas fa-search"></i> Preview COA
         </a>
-        <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
-            <i class="fas fa-file-pdf"></i> Download COA
-        </a>
+       <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+    <i class="fas fa-certificate"></i> Download COA
+</a>
+
+
         <span class="status-badge released already-released">
             <i class="fas fa-check-circle"></i> Already Released
         </span>
@@ -152,9 +154,12 @@
             <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
                 <i class="fas fa-search"></i> Preview COA
             </a>
-            <a class="btn btn-secondary" href="{% url 'generate_coa' client.client_id %}">
-                <i class="fas fa-file-pdf"></i> Download PDF
-            </a>
+           <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+    <i class="fas fa-certificate"></i> Download COA
+</a>
+
+
+
             <form method="post" action="{% url 'release_client_coa' client.id %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-success release-btn">

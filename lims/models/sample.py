@@ -1,6 +1,6 @@
 from django.db import models
 from .client import Client
-
+from simple_history.models import HistoricalRecords
 
 class SampleStatus(models.TextChoices):
     RECEIVED = 'received', 'Received'
@@ -22,6 +22,7 @@ class Sample(models.Model):
     verified_at = models.DateTimeField(null=True, blank=True)
     coa_released = models.BooleanField(default=False)
     manager_comment = models.TextField(blank=True, null=True)
+    history = HistoricalRecords()
 
 
 def __str__(self):

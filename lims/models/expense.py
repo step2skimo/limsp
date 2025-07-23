@@ -5,6 +5,7 @@ Description: Defines the Expense model for tracking laboratory-related expenses.
 
 from django.db import models
 from django.conf import settings
+from simple_history.models import HistoricalRecords
 
 
 class Expense(models.Model):
@@ -62,7 +63,7 @@ class Expense(models.Model):
         auto_now_add=True,
         help_text="Timestamp when this expense record was created."
     )
-
+    history = HistoricalRecords()
     class Meta:
         """
         Metadata for Expense model:

@@ -1,5 +1,5 @@
 <h2 class="eq-title">
-  <span class="eq-icon">🔧</span> Equipment Usage: 
+  <span class="eq-icon">🔧</span> Equipment Usage:
   <span class="eq-name">{{ equipment.name }}</span>
 </h2>
 
@@ -15,30 +15,30 @@
       <table class="table eq-table">
         <thead>
           <tr>
-            <th>Sample</th>
+            <th>Client</th>
             <th>Parameter</th>
-            <th>Temperature (°C)</th>
-            <th>Humidity (%)</th>
-            <th>Date Recorded</th>
+            <th>Samples Count</th>
+            <th>First Used</th>
+            <th>Last Used</th>
             <th>Analyst</th>
           </tr>
         </thead>
         <tbody>
           {% for record in usage_records %}
           <tr>
-            <td><span class="badge badge-sample">{{ record.test_assignment.sample.sample_code }}</span></td>
-            <td><span class="badge badge-parameter">{{ record.test_assignment.parameter.name }}</span></td>
-            <td>{{ record.temperature }}</td>
-            <td>{{ record.humidity }}</td>
-            <td>{{ record.recorded_at|date:"Y-m-d H:i" }}</td>
-            <td><i class="bi bi-person-circle me-1"></i> {{ record.recorded_by.get_full_name|default:record.recorded_by.username }}</td>
+            <td><span class="badge badge-client">{{ record.test_assignment__sample__client__name }}</span></td>
+            <td><span class="badge badge-parameter">{{ record.test_assignment__parameter__name }}</span></td>
+            <td>{{ record.total_samples }}</td>
+            <td>{{ record.first_used|date:"Y-m-d H:i" }}</td>
+            <td>{{ record.last_used|date:"Y-m-d H:i" }}</td>
+            <td><i class="bi bi-person-circle me-1"></i> {{ record.recorded_by__full_name|default:record.recorded_by__username }}</td>
           </tr>
           {% endfor %}
         </tbody>
       </table>
     </div>
   {% else %}
-    <p class="eq-empty">No test records found for this equipment yet.</p>
+    <p class="eq-empty">No batch records found for this equipment yet.</p>
   {% endif %}
 </div>
 
@@ -119,9 +119,9 @@
   white-space: nowrap;
 }
 
-.badge-sample {
-  background: #dbeafe;
-  color: #1e40af;
+.badge-client {
+  background: #dcfce7;
+  color: #166534;
 }
 
 .badge-parameter {

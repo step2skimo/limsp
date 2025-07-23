@@ -107,6 +107,7 @@ class Command(BaseCommand):
             *[(name, "Water Analysis", "", "Titrimetric", "-", 4000)
               for name in ["Total Alkalinity", "Total Acidity", "Total Dissolved Solid", "Total Hardness", "Chloride Ion"]]
         ]
+        
 
         param_objs = {}
         for name, group, unit, method, ref_limit, price in param_data:

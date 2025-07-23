@@ -8,7 +8,7 @@ from django.db import models
 from .client import Client
 from .equipment import Equipment
 from django.conf import settings
-
+from simple_history.models import HistoricalRecords
 
 # --------------------------------------------------------------------------------------
 # Parameter Group Model

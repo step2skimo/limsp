@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 from django.conf import settings
 from lims.utils.notifications import notify_low_stock
-
+from simple_history.models import HistoricalRecords
 
 # ------------------------------------------------------------------------------------------------
 # Reagent Model
@@ -51,7 +51,7 @@ class Reagent(models.Model):
         default=2,
         help_text="Threshold to trigger low stock alert"
     )
-
+    history = HistoricalRecords()
     def __str__(self):
         return f"{self.name} (Batch {self.batch_number})"
 

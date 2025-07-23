@@ -18,6 +18,7 @@ from lims.views.test_email import test_email
 from lims.views.reagents import *
 from .views.equipment import *
 from .views.backup import backup_db
+from .views.audit_trail import audit_dashboard
 
 urlpatterns = [
 
@@ -131,7 +132,10 @@ urlpatterns = [
     path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
     path('results/batch/<str:client_id>/<int:parameter_id>/', views.enter_batch_result, name='enter_batch_result'),
 
+   
 
+    # Audit Trail
+    path('audit', audit_dashboard, name='audit_dashboard'),
    #analyst views
     path('analyst/dashboard/', views.analyst_dashboard_view, name='analyst_dashboard'),
     path("analyst/begin-analysis/<str:client_id>/<int:parameter_id>/", views.begin_parameter_analysis, name="begin_parameter_analysis"),

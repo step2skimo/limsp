@@ -1,5 +1,6 @@
 from django.db import models
 import random
+from simple_history.models import HistoricalRecords
 
 def generate_client_id():
     last_client = Client.objects.order_by('-id').first()
@@ -24,6 +25,7 @@ class Client(models.Model):
     coa_released = models.BooleanField(default=False)
     summary_text = models.TextField(blank=True, null=True)
     summary_confirmed = models.BooleanField(default=False)
+    history = HistoricalRecords()
 
 
     def save(self, *args, **kwargs):
