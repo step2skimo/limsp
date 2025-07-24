@@ -137,7 +137,7 @@ def analyst_productivity_view(request):
     # Filter assignments within range
     if start_date:
         assignments = TestAssignment.objects.filter(
-            status="completed",
+            status="verified",
             is_control=False,
             testresult__recorded_at__date__range=(start_date, end_date)
         )

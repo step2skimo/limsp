@@ -10,7 +10,11 @@ def generate_efficiency_nudge(analyst_name, my_avg_sec, percentile_rank, test_co
         "Encourage them with enthusiasm but keep it professional and human. Limit to 2–3 sentences."
     )
 
-    model = genai.GenerativeModel("gemini-2.5-flash")
+    model = genai.GenerativeModel("gemini-2.5-flash")  
 
     response = model.generate_content(prompt)
-    return response.text.strip()
+
+    try:
+        return response.text.strip()
+    except AttributeError:
+        return response.candidates[0].content.parts[0].text.strip()

@@ -6,6 +6,7 @@ from collections import defaultdict
 from lims.models import Client, Sample, TestAssignment
 from datetime import datetime
 import logging
+from lims.utils.coa_utils import split_samples_by_accreditation
 
 
 def client_tracking_view(request, token):
@@ -13,11 +14,11 @@ def client_tracking_view(request, token):
     logger = logging.getLogger(__name__)
     logger.info(f"Client portal accessed for token: {normalized_token}")
 
-    # fetch one client to get its organization
+    # Fetch one client to get its organization
     client = get_object_or_404(Client, token=normalized_token)
     organization_name = client.organization
 
-    # get all clients under same organization
+    # Get all clients under same organization
     clients = Client.objects.filter(organization=organization_name)
 
     client_data = []
@@ -28,6 +29,11 @@ def client_tracking_view(request, token):
             .prefetch_related("testassignment_set__parameter")
             .order_by("-received_date")
         )
+
+        # Detect unaccredited samples
+        accredited_samples, unaccredited_samples = split_samples_by_accreditation(list(samples))
+        has_unaccredited = bool(unaccredited_samples)
+
         for sample in samples:
             assignments = sample.testassignment_set.all()
             sample.assignments = [
@@ -49,15 +55,18 @@ def client_tracking_view(request, token):
                 if latest_result_time and sample.received_date
                 else None
             )
+
         client_data.append({
             "client": c,
             "samples": samples,
+            "has_unaccredited": has_unaccredited,
         })
 
     return render(request, "lims/client/tracking.html", {
         "client_data": client_data,
         "organization": organization_name,
     })
+
 
 
 

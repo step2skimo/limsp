@@ -187,9 +187,10 @@
         <td>{{ sample.sample_code }}</td>
         {% for param in parameters %}
           <td>
-            {% for r in sample.results %}
-              {% if r.parameter == param.name %}
-                {{ r.value|floatformat:2 }}
+            {# Check only filtered_assignments #}
+            {% for ta in sample.filtered_assignments %}
+              {% if ta.parameter.name == param.name and ta.testresult %}
+                {{ ta.testresult.value|floatformat:2 }}
               {% endif %}
             {% endfor %}
           </td>
@@ -198,6 +199,7 @@
     {% endfor %}
   </tbody>
 </table>
+
 
 
   {% if forloop.last %}

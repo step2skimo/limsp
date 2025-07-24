@@ -433,17 +433,14 @@
         {% endif %}
       </div>
       
-      {% if nudge_message %}
-        <div class="card alert alert-nudge">
-          <div class="alert-icon"><i class="fas fa-lightbulb"></i></div>
-          <div>
-            <strong>AI Performance Nudge:</strong>
-            <p>{{ nudge_message }}</p>
-          </div>
-        </div>
-      {% endif %}
+    {% if nudge_message %}
+    <div class="bg-blue-100 border-l-4 border-blue-500 text-blue-700 p-4 rounded mb-4">
+      <p class="font-semibold">Performance Nudge</p>
+      <p>{{ nudge_message }}</p>
     </div>
-    
+    {% endif %}
+
+</div>
     <div class="card alert alert-tip">
       <div class="alert-icon"><i class="fas fa-info-circle"></i></div>
       <div>

@@ -131,6 +131,8 @@ urlpatterns = [
     path("generate_coa/<str:client_id>/", views.generate_coa_pdf, name="generate_coa"),
     path("coa/release/client/<int:client_id>/", views.release_client_coa, name="release_client_coa"),
     path('results/batch/<str:client_id>/<int:parameter_id>/', views.enter_batch_result, name='enter_batch_result'),
+    path("generate_unaccredited_coa/<str:client_id>/", views.generate_unaccredited_coa_pdf, name="generate_unaccredited_coa"),
+
 
    
 

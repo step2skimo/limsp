@@ -28,6 +28,7 @@ from lims.forms import COAInterpretationForm
 from lims.utils.calculations import calculate_cho_and_me
 from lims.utils.coa_summary_ai import generate_dynamic_summary
 from lims.utils.notifications import notify_client_on_coa_release
+import copy
 
 
 
@@ -62,52 +63,81 @@ def abs_static(path, pdf_mode=False, request=None):
     # If request is passed, build absolute URL, otherwise return relative static path
     return request.build_absolute_uri(static(path)) if request else static(path)
 
-@login_required
-def generate_coa_pdf(request, client_id):
+ACCREDITED_GROUPS = {
+    "Gross Energy",
+    "Vitamins & Contaminants",
+    "Aflatoxin",
+    "CHO",
+    "ME",
+    "Fiber",
+    "Fiber Fractions",
+    "Proximate",
+}
+
+
+def split_samples_by_accreditation(samples):
     """
-    Render Certificate of Analysis for ALL non-QC samples belonging to a client_id.
-    Supports:
-      - HTML preview (?preview=1)
-      - Column chunking for many samples (default 8 per table; override with ?chunk=12)
+    Split parameters of each sample into accredited and unaccredited lists.
     """
-    # ---------------------------------------------------------------
-    # Fetch samples
-    # ---------------------------------------------------------------
-    samples_qs = (
-        Sample.objects
-        .exclude(sample_type__istartswith="qc")
-        .filter(client__client_id=client_id)
-        .prefetch_related(
-            "testassignment_set__parameter",
-            "testassignment_set__testresult",
-            # "testassignment_set__testenvironment",  # uncomment if relation exists
-        )
-        .select_related("client")
-        .order_by("sample_code")  # stable ordering for reproducible PDFs
-    )
+    accredited_groups = {
+        "Gross Energy", "Vitamins & Contaminants", "Aflatoxin",
+        "CHO", "ME", "Fiber Fractions", "Proximate"
+    }
 
-    if not samples_qs.exists():
-        return HttpResponseNotFound("No samples found for this client.")
+    accredited_samples = []
+    unaccredited_samples = []
 
-    client = samples_qs.first().client
+    for s in samples:
+        s_accredited = copy.copy(s)
+        s_unaccredited = copy.copy(s)
 
-    # Materialize list early (we modify objects by attaching attributes)
-    samples = list(samples_qs)
+        s_accredited.filtered_assignments = []
+        s_unaccredited.filtered_assignments = []
 
-    # ---------------------------------------------------------------
-    # Build per-sample results + global parameter registry
-    # ---------------------------------------------------------------
-    parameters = {}  # param_name -> (unit, method)
+        for ta in s.testassignment_set.all():
+            group_name = ta.parameter.group.name if ta.parameter.group else None
+            if group_name in accredited_groups:
+                s_accredited.filtered_assignments.append(ta)
+            else:
+                s_unaccredited.filtered_assignments.append(ta)
+
+        if s_accredited.filtered_assignments:
+            accredited_samples.append(s_accredited)
+        if s_unaccredited.filtered_assignments:
+            unaccredited_samples.append(s_unaccredited)
+
+    return accredited_samples, unaccredited_samples
+
+
+
+def render_coa_pdf(request, client, samples, accredited=True):
+    """
+    Render the PDF for either accredited or unaccredited samples.
+    """
+    accredited_groups = {
+        "Gross Energy", "Vitamins & Contaminants", "Aflatoxin",
+        "CHO", "ME", "Fiber", "Proximate"
+    }
+    parameters = {}
 
     for sample in samples:
         sample.results = []
         sample_environment = None
         param_values = {}
 
-        for ta in sample.testassignment_set.all():
+        # Get only assignments relevant for this COA
+        assignments = getattr(sample, "filtered_assignments", sample.testassignment_set.all())
+        for ta in assignments:
+            group_name = ta.parameter.group.name if ta.parameter.group else None
+
+            # Skip if not matching current COA type
+            if accredited and group_name not in accredited_groups:
+                continue
+            if not accredited and group_name in accredited_groups:
+                continue
+
             param = ta.parameter
             res = getattr(ta, "testresult", None)
-
             if res and res.value is not None:
                 value = float(res.value)
                 param_values[param.name.lower()] = value
@@ -117,13 +147,14 @@ def generate_coa_pdf(request, client_id):
                     "value": value,
                     "unit": param.unit,
                 })
-                parameters[param.name] = (param.unit, param.method)
+                # Add parameter to parameter table
+                parameters[param.name] = (param.unit, clean_method(param.method))
 
             env = getattr(ta, "testenvironment", None)
             if env and not sample_environment:
                 sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
 
-        # ---- Derived CHO & ME ----
+        # Derived CHO & ME
         key_map = {
             "protein": "protein",
             "crude fat": "fat",
@@ -132,90 +163,48 @@ def generate_coa_pdf(request, client_id):
             "moisture": "moisture",
             "ash": "ash",
         }
-        normalized = {}
-        for raw, norm in key_map.items():
-            if raw in param_values:
-                normalized[norm] = param_values[raw]
-
+        normalized = {norm: param_values[raw] for raw, norm in key_map.items() if raw in param_values}
         required = {"protein", "fat", "fiber", "moisture", "ash"}
         if required.issubset(normalized):
             cho = round(100 - sum(normalized[k] for k in required), 2)
             me = round(((normalized["protein"] * 4) + (normalized["fat"] * 9) + (cho * 4)) * 10, 2)
-            sample.results.append({
-                "parameter": "CHO",
-                "method": "AOAC (by difference)",
-                "value": cho,
-                "unit": "%",
-            })
-            sample.results.append({
-                "parameter": "ME",
-                "method": "Calculated (Atwater factors)",
-                "value": me,
-                "unit": "kcal/kg",
-            })
+            sample.results.append({"parameter": "CHO", "method": "AOAC (by difference)", "value": cho, "unit": "%"})
+            sample.results.append({"parameter": "ME", "method": "Calculated (Atwater factors)", "value": me, "unit": "kcal/kg"})
             parameters.setdefault("CHO", ("%", "AOAC (by difference)"))
             parameters.setdefault("ME", ("kcal/kg", "Calculated (Atwater factors)"))
 
         sample.environment = sample_environment or "Ambient 25°C 50%RH"
 
-    # ---------------------------------------------------------------
-    # Parameter rows (sorted for deterministic output)
-    # ---------------------------------------------------------------
+    # Prepare parameter table
     parameter_rows = [
         {"name": name, "unit": unit, "method": clean_method(method)}
         for name, (unit, method) in sorted(parameters.items(), key=lambda x: x[0].lower())
     ]
 
-    # ---------------------------------------------------------------
-    # Summary text
-    # ---------------------------------------------------------------
+    # Summary
     interpretation = COAInterpretation.objects.filter(client=client).first()
     summary_text = interpretation.summary_text if interpretation else "Summary not available."
 
-    # ---------------------------------------------------------------
     # Weight display
-    # ---------------------------------------------------------------
     weights = [s.weight for s in samples if s.weight is not None]
-    if len(weights) == 1:
-        sample_weight_display = f"{weights[0]} g"
-    elif weights:
-        sample_weight_display = f"{min(weights)} g – {max(weights)} g"
-    else:
-        sample_weight_display = "N/A"
+    sample_weight_display = f"{min(weights)} g – {max(weights)} g" if len(weights) > 1 else (f"{weights[0]} g" if weights else "N/A")
 
-    # ---------------------------------------------------------------
-    # Sample chunking
-    # ---------------------------------------------------------------
-    try:
-        chunk_size = int(request.GET.get("chunk", 20))
-        if chunk_size < 1:
-            chunk_size = 8
-    except ValueError:
-        chunk_size = 8
+    # Chunking
+    chunk_size = int(request.GET.get("chunk", 20)) if request.GET.get("chunk", "").isdigit() else 8
+    sample_chunks = [samples[i:i + chunk_size] for i in range(0, len(samples), chunk_size)]
 
-    def chunk_list(seq, size):
-        for i in range(0, len(seq), size):
-            yield seq[i:i + size]
-
-    sample_chunks = list(chunk_list(samples, chunk_size))
-
-    #  If you want landscape automatically when many samples total:
-    # if len(samples) > 8:
-    #     force_landscape = True  # You'd then pass a flag and adjust @page in template.
-
-
-    letterhead_url = abs_static("letterheads/coa_letterhead.png", pdf_mode=True)
+    # Letterhead & signatures
+    letterhead_url = abs_static(
+        "letterheads/accredited_letterhead.png" if accredited else "letterheads/unaccredited_letterhead.jpg",
+        pdf_mode=True
+    )
     signature_1 = abs_static("images/signatures/hannah-sign.png", pdf_mode=True)
     signature_2 = abs_static("images/signatures/julius-sign.png", pdf_mode=True)
 
-
-    # ---------------------------------------------------------------
-    # Template context
-    # ---------------------------------------------------------------
     context = {
         "client": client,
-        "samples": samples,              # still used for metadata (samples.0...)
-        "sample_chunks": sample_chunks,  # used for the multi-table section
+        "samples": samples,
+        "sample_chunks": sample_chunks,
         "parameters": parameter_rows,
         "summary_text": summary_text,
         "sample_weight_display": sample_weight_display,
@@ -223,26 +212,54 @@ def generate_coa_pdf(request, client_id):
         "letterhead_url": letterhead_url,
         "signature_1": signature_1,
         "signature_2": signature_2,
-        # "force_landscape": True,  # if you decide to implement conditional orientation
     }
 
     html = render_to_string("lims/coa/coa_template.html", context)
-
-    # ---------------------------------------------------------------
-    # Preview mode
-    # ---------------------------------------------------------------
     if request.GET.get("preview"):
         return HttpResponse(html)
 
-    # ---------------------------------------------------------------
-    # PDF generation
-    # ---------------------------------------------------------------
     pdf = HTML(string=html, base_url=request.build_absolute_uri("/")).write_pdf()
-
-    filename = f"COA_{client.client_id or client.id}_{datetime.date.today().isoformat()}.pdf"
+    filename = f"COA_{client.client_id or client.id}_{'accredited' if accredited else 'unaccredited'}_{datetime.date.today().isoformat()}.pdf"
     response = HttpResponse(pdf, content_type="application/pdf")
-    response["Content-Disposition"] = f'attachment; filename="{filename}"'
+    response["Content-Disposition"] = f'attachment; filename=\"{filename}\"'
     return response
+
+
+
+@login_required
+def generate_coa_pdf(request, client_id):
+    """
+    Generate the accredited COA PDF.
+    """
+    client = get_object_or_404(Client, client_id=client_id)
+    samples = (
+        Sample.objects
+        .filter(client=client)
+        .exclude(sample_type="qc")
+        .prefetch_related("testassignment_set__parameter__group", "testassignment_set__testresult")
+    )
+
+    accredited_samples, _ = split_samples_by_accreditation(samples)
+    return render_coa_pdf(request, client, accredited_samples, accredited=True)
+
+
+@login_required
+def generate_unaccredited_coa_pdf(request, client_id):
+    """
+    Generate the unaccredited COA PDF.
+    """
+    client = get_object_or_404(Client, client_id=client_id)
+    samples = (
+        Sample.objects
+        .filter(client=client)
+        .exclude(sample_type="qc")
+        .prefetch_related("testassignment_set__parameter__group", "testassignment_set__testresult")
+    )
+
+    _, unaccredited_samples = split_samples_by_accreditation(samples)
+    return render_coa_pdf(request, client, unaccredited_samples, accredited=False)
+
+
 
 
 @login_required
@@ -278,24 +295,45 @@ def coa_dashboard(request):
         Sample.objects
         .exclude(sample_type="qc")
         .select_related("client")
+        .prefetch_related("testassignment_set__parameter")
         .order_by("-client__client_id", "-received_date")
     )
 
-    # Group by client
-    grouped = defaultdict(lambda: {"samples": [], "all_completed": True})
+    # Group samples by client
+    grouped = defaultdict(lambda: {
+        "samples": [],
+        "all_completed": True,
+        "has_unaccredited": False
+    })
 
     for sample in samples:
         client_entry = grouped[sample.client]
         client_entry["samples"].append(sample)
 
-        # If any sample is NOT approved -> all_completed = False
+        # Add assignments (without touching testassignment_set)
+        sample.assignments = [
+            {
+                "parameter": a.parameter.name,
+                "method": a.parameter.method,
+                "unit": a.parameter.unit,
+            }
+            for a in sample.testassignment_set.all()
+        ]
+
+        # Check completion status
         if sample.status != SampleStatus.APPROVED:
             client_entry["all_completed"] = False
+
+    # Determine has_unaccredited for each client
+    for client, data in grouped.items():
+        accredited, unaccredited = split_samples_by_accreditation(data["samples"])
+        data["has_unaccredited"] = bool(unaccredited)
 
     context = {
         "grouped": dict(grouped),
     }
     return render(request, "lims/coa/coa_dashboard.html", context)
+
 
 
 
@@ -309,15 +347,12 @@ def _clean_method(txt):
 @login_required
 def release_client_coa(request, client_id):
     """
-    Generate the official COA PDF for this client and email it to them.
-    - Uses the same template as the "Download COA" path (lims/coa_template.html).
-    - Marks all non-QC samples as released.
-    - Saves the generated PDF to storage (MEDIA).
+    Generate official COA PDFs (accredited and unaccredited if available)
+    and email them to the client.
     """
     if request.method != "POST":
         return HttpResponse("❌ Not a POST request", status=405)
 
-    # Adjust lookup: using DB pk here. If you later switch to business ID, update accordingly.
     client = get_object_or_404(Client, pk=client_id)
 
     # Interpretation summary
@@ -330,7 +365,7 @@ def release_client_coa(request, client_id):
         .exclude(sample_code__istartswith="qc-")
         .filter(client=client)
         .prefetch_related(
-            "testassignment_set__parameter",
+            "testassignment_set__parameter__group",
             "testassignment_set__testresult",
             "testassignment_set__testenvironment",
         )
@@ -338,138 +373,152 @@ def release_client_coa(request, client_id):
     if not samples.exists():
         return HttpResponseNotFound("No samples found for this client.")
 
-    # --------------------------------------------------
-    # Build results + parameter headers
-    # --------------------------------------------------
-    parameters = {}  # param_name -> (unit, method)
-    for sample in samples:
-        sample.results = []
-        sample_environment = None
-        param_values = {}  # raw name lowercase -> value
+    # --- Split into accredited/unaccredited ---
+    accredited_samples, unaccredited_samples = split_samples_by_accreditation(samples)
 
-        for ta in sample.testassignment_set.all():
-            param = ta.parameter
-            res = getattr(ta, "testresult", None)
+    # Function to generate PDF and return (filename, pdf_bytes)
+    def generate_pdf(samples, accredited=True):
+        # Prepare parameters and sample results
+        parameters = {}
+        for sample in samples:
+            sample.results = []
+            sample_environment = None
+            param_values = {}
 
-            if res and res.value is not None:
-                val = float(res.value)
-                param_values[param.name.lower()] = val
+            for ta in sample.testassignment_set.all():
+                group_name = ta.parameter.group.name if ta.parameter.group else None
+                if accredited and group_name not in ACCREDITED_GROUPS:
+                    continue
+                if not accredited and group_name in ACCREDITED_GROUPS:
+                    continue
+
+                param = ta.parameter
+                res = getattr(ta, "testresult", None)
+                if res and res.value is not None:
+                    val = float(res.value)
+                    param_values[param.name.lower()] = val
+                    sample.results.append({
+                        "parameter": param.name,
+                        "method": param.method,
+                        "value": val,
+                        "unit": param.unit,
+                    })
+                    parameters[param.name] = (param.unit, param.method)
+
+                env = getattr(ta, "testenvironment", None)
+                if env and sample_environment is None:
+                    sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
+
+            # Derived CHO & ME
+            key_map = {
+                "protein": "protein",
+                "crude fat": "fat",
+                "ash": "ash",
+                "moisture": "moisture",
+                "crude fibre": "fiber",
+                "crude fiber": "fiber",
+            }
+            mapped = {v: param_values[k] for k, v in key_map.items() if k in param_values}
+            if {"protein", "fat", "fiber", "moisture", "ash"}.issubset(mapped):
+                cho = round(100 - sum(mapped[k] for k in ["protein", "fat", "fiber", "moisture", "ash"]), 2)
+                me = round(((mapped["protein"] * 4) + (mapped["fat"] * 9) + (cho * 4)) * 10, 2)
                 sample.results.append({
-                    "parameter": param.name,
-                    "method": param.method,
-                    "value": val,
-                    "unit": param.unit,
+                    "parameter": "CHO",
+                    "method": "AOAC by difference",
+                    "value": cho,
+                    "unit": "%",
                 })
-                parameters[param.name] = (param.unit, param.method)
+                sample.results.append({
+                    "parameter": "ME",
+                    "method": "Calculated using Atwater factors",
+                    "value": me,
+                    "unit": "kcal/kg",
+                })
+                parameters.setdefault("CHO", ("%", "AOAC by difference"))
+                parameters.setdefault("ME", ("kcal/kg", "Calculated using Atwater factors"))
 
-            env = getattr(ta, "testenvironment", None)
-            if env and sample_environment is None:
-                sample_environment = f"{env.temperature}°C, {env.humidity}%RH"
+            sample.environment = sample_environment or "Ambient 25°C 50%RH"
 
-        # Derived CHO & ME
-        key_map = {
-            "protein": "protein",
-            "crude fat": "fat",
-            "ash": "ash",
-            "moisture": "moisture",
-            "crude fibre": "fiber",
-            "crude fiber": "fiber",
+        param_list = [
+            {"name": n, "unit": u, "method": _clean_method(m)}
+            for n, (u, m) in sorted(parameters.items(), key=lambda x: x[0].lower())
+        ]
+
+        # Weight display
+        weights = [s.weight for s in samples if s.weight is not None]
+        sample_weight_display = (
+            f"{weights[0]} g" if len(weights) == 1 else
+            f"{min(weights)} g – {max(weights)} g" if weights else "N/A"
+        )
+
+        # Letterhead and signatures
+        letterhead_path = os.path.join(
+            settings.STATIC_ROOT,
+            "letterheads",
+            "coa_letterhead.png" if accredited else "unaccredited_letterhead.jpg"
+        )
+        signature1_path = os.path.join(settings.STATIC_ROOT, "images/signatures/hannah-sign.png")
+        signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.png")
+
+        # Build PDF context
+        pdf_context = {
+            "client": client,
+            "samples": samples,
+            "sample_chunks": list(chunked_samples(samples, 20)),
+            "parameters": param_list,
+            "summary_text": summary_text,
+            "today": datetime.date.today(),
+            "letterhead_url": f"file://{letterhead_path}",
+            "signature_1": f"file://{signature1_path}",
+            "signature_2": f"file://{signature2_path}",
+            "sample_weight_display": sample_weight_display,
         }
-        mapped = {v: param_values[k] for k, v in key_map.items() if k in param_values}
-        if {"protein", "fat", "fiber", "moisture", "ash"}.issubset(mapped):
-            cho = round(100 - sum(mapped[k] for k in ["protein", "fat", "fiber", "moisture", "ash"]), 2)
-            me = round(((mapped["protein"] * 4) + (mapped["fat"] * 9) + (cho * 4)) * 10, 2)
 
-            sample.results.append({
-                "parameter": "CHO",
-                "method": "AOAC by difference",
-                "value": cho,
-                "unit": "%",
-            })
-            sample.results.append({
-                "parameter": "ME",
-                "method": "Calculated using Atwater factors",
-                "value": me,
-                "unit": "kcal/kg",
-            })
-            parameters.setdefault("CHO", ("%", "AOAC by difference"))
-            parameters.setdefault("ME", ("kcal/kg", "Calculated using Atwater factors"))
+        # Render to PDF
+        html = render_to_string("lims/coa/coa_template.html", pdf_context)
+        timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
+        filename = f"COA_{client.client_id}_{'accredited' if accredited else 'unaccredited'}_{timestamp}.pdf"
+        temp_path = os.path.join(tempfile.gettempdir(), filename)
 
-        sample.environment = sample_environment or "Ambient 25°C 50%RH"
+        HTML(string=html, base_url=settings.STATIC_ROOT).write_pdf(target=temp_path)
+        with open(temp_path, "rb") as f:
+            pdf_bytes = f.read()
 
-    # Sorted parameter header
-    param_list = [
-        {"name": n, "unit": u, "method": _clean_method(m)}
-        for n, (u, m) in sorted(parameters.items(), key=lambda x: x[0].lower())
-    ]
+        storage_path = f"coa_reports/{filename}"
+        default_storage.save(storage_path, ContentFile(pdf_bytes))
 
-    # Sample weight display
-    weights = [s.weight for s in samples if s.weight is not None]
-    if len(weights) == 1:
-        sample_weight_display = f"{weights[0]} g"
-    elif weights:
-        sample_weight_display = f"{min(weights)} g – {max(weights)} g"
-    else:
-        sample_weight_display = "N/A"
+        try:
+            os.remove(temp_path)
+        except Exception:
+            pass
 
-    # --------------------------------------------------
-    # Build PDF context (WeasyPrint needs file:// absolute paths)
-    # --------------------------------------------------
-    letterhead_path = os.path.join(settings.STATIC_ROOT, "letterheads", "coa_letterhead.png")
-    signature1_path = os.path.join(settings.STATIC_ROOT, "images/signatures/hannah-sign.png")
-    signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.png")
+        return filename, pdf_bytes
 
-    pdf_context = {
-        "client": client,
-        "samples": samples,
-        "sample_chunks": list(chunked_samples(samples, 20)),
-        "parameters": param_list,
-        "summary_text": summary_text,
-        "today": datetime.date.today(),
-        "letterhead_url": f"file://{letterhead_path}",
-        "signature_1": f"file://{signature1_path}",
-        "signature_2": f"file://{signature2_path}",
-        "sample_weight_display": sample_weight_display,
-    }
+    # --- Generate PDFs ---
+    attachments = []
+    if accredited_samples:
+        filename, pdf_bytes = generate_pdf(accredited_samples, accredited=True)
+        attachments.append((filename, pdf_bytes))
+    if unaccredited_samples:
+        filename, pdf_bytes = generate_pdf(unaccredited_samples, accredited=False)
+        attachments.append((filename, pdf_bytes))
 
-    # Render HTML & generate PDF
-    html = render_to_string("lims/coa/coa_template.html", pdf_context)
-    timestamp = timezone.now().strftime("%Y%m%d-%H%M%S")
-    filename = f"COA_{client.client_id}_{timestamp}.pdf"
-    temp_path = os.path.join(tempfile.gettempdir(), filename)
+    if not attachments:
+        return HttpResponseNotFound("No accredited or unaccredited samples found.")
 
-    HTML(string=html, base_url=settings.STATIC_ROOT).write_pdf(target=temp_path)
-
-    with open(temp_path, "rb") as f:
-        pdf_bytes = f.read()
-
-    # Save PDF to storage (MEDIA/…)
-    storage_path = f"coa_reports/{filename}"
-    default_storage.save(storage_path, ContentFile(pdf_bytes))
-
-    try:
-        os.remove(temp_path)
-    except Exception:
-        pass
-
-    # --------------------------------------------------
-    # Mark released + email
-    # --------------------------------------------------
+    # --- Mark released and send email ---
     with transaction.atomic():
         samples.update(coa_released=True)
-        # remove client.latest_coa_file if field doesn't exist
-        # if you later add one, uncomment:
         client.coa_released = True
         client.save(update_fields=["coa_released"])
 
         notify_client_on_coa_release(
             client=client,
             summary_text=summary_text,
-            pdf_bytes=pdf_bytes,
-            filename=filename,
+            attachments=attachments,  # send both PDFs
         )
 
-    messages.success(request, f"✅ COA released and emailed to {client.name}.")
+    messages.success(request, f"✅ COA(s) released and emailed to {client.name}.")
     return redirect("coa_dashboard")
 
 

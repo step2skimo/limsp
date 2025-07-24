@@ -1,45 +1,85 @@
+<!-- 🔙 Back to Analyst Dashboard -->
+<div style="margin-bottom: 20px;">
+  <a href="{% url 'analyst_dashboard' %}" style="text-decoration: none; background: #cce; padding: 8px 15px; border-radius: 5px; color: #000;">
+    ← Back to Analyst Dashboard
+  </a>
+</div>
+
+
 <h2>🧾 Submitted Results History</h2>
 
+<!-- 🔍 Filter Form -->
 <form method="get" style="margin-bottom: 20px;">
   <input type="text" name="client_id" placeholder="Client ID" value="{{ filters.client_id }}">
   <input type="date" name="from" value="{{ filters.from }}">
   <input type="date" name="to" value="{{ filters.to }}">
+  <input type="text" name="parameter" placeholder="Parameter name" value="{{ filters.parameter }}">
   <button type="submit">🔍 Filter</button>
 </form>
 
-{% for client_id, param_map in page_obj %}
-  <div style="margin-top: 30px;">
-    <h3>👤 Client ID: {{ client_id }}</h3>
+<!-- 📊 Current Filter Summary -->
+<div style="margin-bottom: 20px; background: #eef; padding: 10px; border-radius: 8px;">
+  <h4>📊 Current Filter</h4>
+  <ul style="margin-left: 15px;">
+    <li><strong>Client ID:</strong> {{ filters.client_id|default:"—" }}</li>
+    <li><strong>From:</strong> {{ filters.from|default:"—" }}</li>
+    <li><strong>To:</strong> {{ filters.to|default:"—" }}</li>
+    <li><strong>Parameter:</strong> {{ filters.parameter|default:"—" }}</li>
+  </ul>
+</div>
 
-    {% for parameter, tests in param_map.items %}
-      <details style="margin-bottom: 1em;">
-        <summary style="cursor: pointer;"><strong>🔬 {{ parameter }}</strong> ({{ tests|length }})</summary>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+<!-- ✅ Summary Stats -->
+{% if total_results > 0 %}
+  <p style="font-size: 1.1em; margin-bottom: 15px; background: #dfd; padding: 10px; border-radius: 8px;">
+    ✅ <strong>{{ total_results }}</strong> result{{ total_results|pluralize }} submitted for the selected filter{{ total_results|pluralize:"s," }}.
+  </p>
+
+  <!-- 🧮 Totals Per Parameter Across All Clients -->
+  <div style="margin-bottom: 20px; background: #f9f9f9; padding: 10px; border: 1px solid #ccc; border-radius: 8px;">
+    <h4>🧮 Total Results Per Parameter</h4>
+    <ul style="margin-left: 20px;">
+      {% for param, count in parameter_totals.items %}
+        <li><strong>{{ param }}</strong>: {{ count }} result{{ count|pluralize }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}
+
+<!-- 🧪 Grouped Results Loop -->
+{% for client_id, param_map in page_obj %}
+  <div style="margin-top: 30px; border: 1px solid #ddd; padding: 15px; border-radius: 10px;">
+    <h3>👤 <strong>Client ID:</strong> {{ client_id }}</h3>
+
+    <!-- Parameter Summary -->
+    <ul style="margin-bottom: 15px; list-style-type: square; margin-left: 20px;">
+      {% for param_name, tests in param_map.items %}
+        <li><strong>{{ param_name }}</strong>: {{ tests|length }} result{{ tests|length|pluralize }}</li>
+      {% endfor %}
+    </ul>
+
+    <!-- Detailed Result Tables Per Parameter -->
+    {% for param_name, tests in param_map.items %}
+      <details style="margin-bottom: 1.5em;">
+        <summary style="cursor: pointer; font-size: 1.1em; font-weight: bold;">🔬 {{ param_name }} ({{ tests|length }})</summary>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.95em;">
           <thead>
-            <tr style="background: #f0f0f0;">
-              <th style="padding: 8px; border: 1px solid #ccc;">Sample</th>
+            <tr style="background-color: #f5f5f5;">
+              <th style="padding: 8px; border: 1px solid #ccc;">Sample Code</th>
               <th style="padding: 8px; border: 1px solid #ccc;">Result</th>
-              <th style="padding: 8px; border: 1px solid #ccc;">TAT (days)</th>
-              <th style="padding: 8px; border: 1px solid #ccc;">Duration</th>
               <th style="padding: 8px; border: 1px solid #ccc;">Recorded On</th>
+              <th style="padding: 8px; border: 1px solid #ccc;">Turnaround Time (days)</th>
+              <th style="padding: 8px; border: 1px solid #ccc;">Duration</th>
             </tr>
           </thead>
           <tbody>
-            {% for t in tests %}
+            {% for r in tests %}
               <tr>
-                <td style="padding: 8px; border: 1px solid #ccc;">{{ t.sample.sample_code }}</td>
-                <td style="padding: 8px; border: 1px solid #ccc;">
-                  {% if t.testresult %}{{ t.testresult.value }}{% else %}—{% endif %}
-                </td>
-                <td style="padding: 8px; border: 1px solid #ccc;">{{ t.turnaround_days|default:"—" }}</td>
-                <td style="padding: 8px; border: 1px solid #ccc;">{{ t.duration|default:"—" }}</td>
-                <td style="padding: 8px; border: 1px solid #ccc;">
-                  {% if t.testresult and t.testresult.recorded_at %}
-                    {{ t.testresult.recorded_at|date:"Y-m-d H:i" }}
-                  {% else %}
-                    —
-                  {% endif %}
-                </td>
+                <td style="padding: 8px; border: 1px solid #ccc;">{{ r.sample_code }}</td>
+                <td style="padding: 8px; border: 1px solid #ccc;">{{ r.value }}</td>
+                <td style="padding: 8px; border: 1px solid #ccc;">{{ r.recorded_at|date:"Y-m-d H:i" }}</td>
+                <td style="padding: 8px; border: 1px solid #ccc;">{{ r.turnaround_days|default:"—" }}</td>
+                <td style="padding: 8px; border: 1px solid #ccc;">{{ r.duration|default:"—" }}</td>
               </tr>
             {% endfor %}
           </tbody>
@@ -48,17 +88,18 @@
     {% endfor %}
   </div>
 {% empty %}
-  <p>No results submitted yet.</p>
+  <p>No submitted results yet for the selected filters.</p>
 {% endfor %}
 
+<!-- 📄 Pagination -->
 <div style="margin-top: 20px;">
   {% if page_obj.has_previous %}
-    <a href="?page={{ page_obj.previous_page_number }}&client_id={{ filters.client_id }}&from={{ filters.from }}&to={{ filters.to }}">← Previous</a>
+    <a href="?page={{ page_obj.previous_page_number }}&client_id={{ filters.client_id }}&from={{ filters.from }}&to={{ filters.to }}&parameter={{ filters.parameter }}">← Previous</a>
   {% endif %}
 
   <strong>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</strong>
 
   {% if page_obj.has_next %}
-    <a href="?page={{ page_obj.next_page_number }}&client_id={{ filters.client_id }}&from={{ filters.from }}&to={{ filters.to }}">Next →</a>
+    <a href="?page={{ page_obj.next_page_number }}&client_id={{ filters.client_id }}&from={{ filters.from }}&to={{ filters.to }}&parameter={{ filters.parameter }}">Next →</a>
   {% endif %}
 </div>

@@ -173,6 +173,9 @@
         <a href="{% url 'equipment_dashboard' %}" class="btn btn-outline-success quick-action-btn">
     <i class="fas fa-tools"></i> Equipment Dashboard
 </a>
+  <a href="{% url 'audit_dashboard'  %}" class="btn btn btn-outline-primary">
+                <i class="fas fa-search me-1"></i> Audit Trail
+              </a>
 
     </div>
 
@@ -188,6 +191,7 @@
               <a href="{% url 'result_review_view' sample.id %}" class="btn btn-sm btn-outline-secondary">
                 <i class="fas fa-search me-1"></i> Review {{ sample.sample_code }}
               </a>
+            
             {% endfor %}
           </div>
         </div>
@@ -231,9 +235,7 @@
                         <i class="fas fa-times"></i>
                       </div>
                     </div>
-                    <a href="{% url 'audit_dashboard'  %}" class="btn btn-sm btn-outline-secondary">
-                <i class="fas fa-search me-1"></i> Audit Trail
-              </a>
+                    
                   </div>
                 </div>
               </div>

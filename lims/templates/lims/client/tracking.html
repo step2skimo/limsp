@@ -259,21 +259,36 @@
       </table>
 
       <div style="margin-top: 1.5rem;">
-        {% if block.client.coa_released %}
-          <a href="{% url 'generate_coa_pdf' block.client.client_id %}" class="btn btn-download">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 15V3M12 15L8 11M12 15L16 11M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            Download COA for {{ block.client.client_id }}
-          </a>
-        {% else %}
-          <span class="badge-warning">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0378 2.66667 10.268 4L3.33977 16C2.56995 17.3333 3.53225 19 5.07183 19Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-            COA Pending Release
-          </span>
-        {% endif %}
+    {% if block.client.coa_released %}
+    <!-- Accredited COA -->
+    <a href="{% url 'generate_coa_pdf' block.client.client_id %}" class="btn btn-download">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15V3M12 15L8 11M12 15L16 11M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download Accredited COA for {{ block.client.client_id }}
+    </a>
+
+    <!-- Unaccredited COA -->
+    {% if block.has_unaccredited %}
+    <a href="{% url 'generate_unaccredited_coa' block.client.client_id %}" class="btn btn-download btn-secondary" style="margin-left: 10px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 15V3M12 15L8 11M12 15L16 11M21 15V19C21 20.1046 20.1046 21 19 21H5C3.89543 21 3 20.1046 3 19V15" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Download Unaccredited COA
+    </a>
+    {% endif %}
+{% else %}
+    <span class="badge-warning">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 9V11M12 15H12.01M5.07183 19H18.9282C20.4678 19 21.4301 17.3333 20.6603 16L13.7321 4C12.9623 2.66667 11.0378 2.66667 10.268 4L3.33977 16C2.56995 17.3333 3.53225 19 5.07183 19Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        COA Pending Release
+    </span>
+{% endif %}
+
+</div>
+
+
       </div>
 
     {% else %}

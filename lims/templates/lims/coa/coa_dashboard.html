@@ -137,15 +137,19 @@
       </div>
 
       <div class="action-bar">
+<div class="action-bar">
     {% if client.coa_released %}
         <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
             <i class="fas fa-search"></i> Preview COA
         </a>
-       <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
-    <i class="fas fa-certificate"></i> Download COA
-</a>
-
-
+        <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+            <i class="fas fa-certificate"></i> Download COA
+        </a>
+        {% if data.has_unaccredited %}
+            <a class="btn btn-warning" href="{% url 'generate_unaccredited_coa' client.client_id %}">
+                <i class="fas fa-file-pdf"></i> Download Unaccredited COA
+            </a>
+        {% endif %}
         <span class="status-badge released already-released">
             <i class="fas fa-check-circle"></i> Already Released
         </span>
@@ -154,12 +158,14 @@
             <a class="btn" href="{% url 'preview_coa' client.client_id %}" target="_blank">
                 <i class="fas fa-search"></i> Preview COA
             </a>
-           <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
-    <i class="fas fa-certificate"></i> Download COA
-</a>
-
-
-
+            <a class="btn btn-success" href="{% url 'generate_coa' client.client_id %}">
+                <i class="fas fa-certificate"></i> Download COA
+            </a>
+            {% if data.has_unaccredited %}
+                <a class="btn btn-warning" href="{% url 'generate_unaccredited_coa' client.client_id %}">
+                    <i class="fas fa-file-pdf"></i> Download Unaccredited COA
+                </a>
+            {% endif %}
             <form method="post" action="{% url 'release_client_coa' client.id %}">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-success release-btn">
@@ -174,7 +180,6 @@
     {% endif %}
 </div>
 
-    </div>
     {% endwith %}
   {% empty %}
     <div class="empty-state">

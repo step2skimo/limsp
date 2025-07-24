@@ -6,7 +6,7 @@ from django.utils import timezone
 from lims.forms import ResultEntryForm, QCMetricsForm
 from django.contrib import messages
 from lims.forms import ResultEntryForm
-from collections import defaultdict
+from collections import defaultdict, Counter
 from django.utils.timezone import now
 from datetime import timedelta
 from lims.utils.derived import _inject_derived_result
@@ -14,15 +14,22 @@ from lims.models import User, ai
 from lims.utils.calculations import calculate_nfe_and_me
 from django.core.paginator import Paginator
 from datetime import datetime
-from collections import defaultdict
 from lims.models import *
 from lims.utils.ai_helpers import generate_efficiency_nudge
 from lims.models.ai import EfficiencySnapshot
 from django.contrib.auth import get_user_model
 from django.utils.timezone import now
+from datetime import datetime
+from django.core.paginator import Paginator
+from django.utils.dateparse import parse_date
+from collections import defaultdict
+from datetime import datetime
+from django.core.paginator import Paginator
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from lims.models import TestResult
 
 User = get_user_model()
-
 
 
 @login_required
@@ -31,11 +38,8 @@ def analyst_dashboard_view(request):
         'sample', 'sample__client', 'parameter'
     ).filter(status__in=['pending', 'rejected'], analyst=request.user)
 
-
     grouped = defaultdict(list)
-    total_samples = 0
-    total_controls = 0
-    overdue_tests = 0
+    total_samples, total_controls, overdue_tests = 0, 0, 0
     now_time = now().date()
     one_week_ago = now_time - timedelta(days=7)
 
@@ -77,23 +81,27 @@ def analyst_dashboard_view(request):
         week_start=last_week_start,
         week_end=last_week_end
     )
+
     my_snapshot = snapshots.filter(analyst=request.user).first()
     nudge_message = ""
 
-    if my_snapshot:
+    if my_snapshot and my_snapshot.average_duration:
         durations = [s.average_duration.total_seconds() for s in snapshots if s.average_duration]
         my_avg = my_snapshot.average_duration.total_seconds()
         faster_than = sum(1 for d in durations if my_avg < d)
         percentile = round((faster_than / len(durations)) * 100) if durations else 0
 
-        nudge_message = generate_efficiency_nudge(
-            request.user.get_short_name() or request.user.username,
-            my_avg,
-            percentile,
-            my_snapshot.total_tests
-        )
+        try:
+            nudge_message = generate_efficiency_nudge(
+                request.user.get_short_name() or request.user.username,
+                my_avg,
+                percentile,
+                my_snapshot.total_tests
+            )
+        except Exception as e:
+            nudge_message = f"⚠️ Couldn't generate nudge: {str(e)}"
 
-    return render(request, 'lims/analyst/analyst_dashboard.html', {
+    context = {
         'grouped_assignments': dict(grouped),
         'stats': {
             'samples': total_samples,
@@ -105,58 +113,55 @@ def analyst_dashboard_view(request):
         },
         'nudge_message': nudge_message,
         'today': today
-    })
+    }
+
+    return render(request, 'lims/analyst/analyst_dashboard.html', context)
+
+
+
 
 
 @login_required
 def result_history_view(request):
-    # Base query for completed assignments with analyst
-    assignments = TestAssignment.objects.select_related(
-        'sample', 'sample__client', 'parameter', 'testresult'
-    ).filter(
-        status='completed',
-        analyst=request.user
-    )
-
-    # Filters
     client_id = request.GET.get('client_id')
     date_from = request.GET.get('from')
     date_to = request.GET.get('to')
+    parameter = request.GET.get('parameter')
+
+    results = TestResult.objects.select_related(
+        'test_assignment__sample__client',
+        'test_assignment__parameter'
+    ).filter(recorded_by=request.user)
 
     if client_id:
-        assignments = assignments.filter(sample__client__client_id=client_id)
+        results = results.filter(test_assignment__sample__client__client_id=client_id)
 
-    # Safe filter by recorded date only if TestResult exists
-    assignments = [a for a in assignments if hasattr(a, 'testresult')]
+    if parameter:
+        results = results.filter(test_assignment__parameter__name__icontains=parameter)
 
     if date_from:
-        assignments = [
-            a for a in assignments
-            if a.testresult and a.testresult.recorded_at and a.testresult.recorded_at.date() >= datetime.strptime(date_from, "%Y-%m-%d").date()
-        ]
+        results = results.filter(recorded_at__date__gte=datetime.strptime(date_from, "%Y-%m-%d").date())
+
     if date_to:
-        assignments = [
-            a for a in assignments
-            if a.testresult and a.testresult.recorded_at and a.testresult.recorded_at.date() <= datetime.strptime(date_to, "%Y-%m-%d").date()
-        ]
+        results = results.filter(recorded_at__date__lte=datetime.strptime(date_to, "%Y-%m-%d").date())
 
-    # Annotate with turnaround time and duration
-    for a in assignments:
-        received = a.sample.received_date
-        recorded = a.testresult.recorded_at.date() if a.testresult and a.testresult.recorded_at else None
-        a.turnaround_days = (recorded - received).days if received and recorded else None
-
-        if hasattr(a.testresult, 'started_at') and a.testresult.started_at and a.testresult.recorded_at:
-            a.duration = str(a.testresult.recorded_at - a.testresult.started_at)
-        else:
-            a.duration = None
-
-    # Group: client → parameter → assignments
+    total_results = results.count()
+    parameter_totals = Counter()
     grouped = defaultdict(lambda: defaultdict(list))
-    for a in assignments:
-        client_id = a.sample.client.client_id
-        param = a.parameter.name
-        grouped[client_id][param].append(a)
+
+    # Enrich and group
+    for r in results:
+        assignment = r.test_assignment
+        sample = assignment.sample
+        r.sample_code = sample.sample_code
+        r.parameter = assignment.parameter.name
+        r.client_id = sample.client.client_id
+        received = sample.received_date
+        r.turnaround_days = (r.recorded_at.date() - received).days if received and r.recorded_at else None
+        r.duration = str(r.recorded_at - r.started_at) if r.started_at and r.recorded_at else None
+
+        parameter_totals[r.parameter] += 1
+        grouped[r.client_id][r.parameter].append(r)
 
     client_groups = list(grouped.items())
     paginator = Paginator(client_groups, 3)
@@ -168,9 +173,16 @@ def result_history_view(request):
         'filters': {
             'client_id': client_id or '',
             'from': date_from or '',
-            'to': date_to or ''
-        }
+            'to': date_to or '',
+            'parameter': parameter or '',
+        },
+        'total_results': total_results,
+        'parameter_totals': dict(parameter_totals),
     })
+
+
+
+
 
 @login_required
 def begin_parameter_analysis(request, client_id, parameter_id):

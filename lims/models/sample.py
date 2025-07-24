@@ -25,6 +25,6 @@ class Sample(models.Model):
     history = HistoricalRecords()
 
 
-def __str__(self):
-    tag = " [QC]" if self.sample_type == "QC" else ""
-    return f"{self.sample_code}{tag}"
+    def __str__(self):
+        tag = " [QC]" if self.sample_type == "QC" else ""
+        return f"{self.sample_code}{tag}"

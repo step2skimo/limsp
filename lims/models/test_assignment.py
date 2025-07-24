@@ -25,6 +25,9 @@ class TestAssignment(models.Model):
     manager_comment = models.TextField(null=True, blank=True)
     history = HistoricalRecords()
 
+    def __str__(self):
+        return f"{self.parameter.name} - {self.sample.sample_code}"
+
 class TestResult(models.Model):
     test_assignment = models.OneToOneField(TestAssignment, on_delete=models.CASCADE)
     value = models.FloatField(null=True)

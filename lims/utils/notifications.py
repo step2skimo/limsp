@@ -57,10 +57,11 @@ def notify_low_stock(manager_email, reagent_name, batch_number, number_of_bottle
 
 
 
-def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
+def notify_client_on_coa_release(*, client, summary_text, attachments=None, pdf_bytes=None, filename=None):
     """
     Email the client letting them know their COA is ready.
-    Attaches the provided PDF (already generated in release_client_coa).
+    Supports multiple PDF attachments (via 'attachments' list).
+    If 'attachments' is not provided, falls back to a single (pdf_bytes, filename).
     """
     subject = "Your Certificate of Analysis (COA) is Now Available"
     from_email = settings.DEFAULT_FROM_EMAIL
@@ -68,7 +69,7 @@ def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
     bcc_list = getattr(settings, "COA_INTERNAL_RECIPIENTS", [])
     message_id = f"<{uuid.uuid4()}@jaageelab.com>"
 
-    # Fallback public letterhead URL (just cosmetic)
+    # Fallback letterhead URL
     letterhead_url = static("letterheads/coa_letterhead.png")
 
     html_body = f"""
@@ -85,7 +86,6 @@ def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
         <hr style="border:0;height:1px;background:#ddd;">
         <p style="font-size:12px;color:#999;">Confidential COA PDF attached.</p>
         <p style="font-size:11px;color:#bbb;">If you cannot open the attachment, please reply to this email.</p>
-       
       </body>
     </html>
     """
@@ -94,7 +94,7 @@ def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
         f"Dear {client.name},\n\n"
         f"The Certificate of Analysis (COA) for your samples (Client ID: {client.client_id}) is ready.\n\n"
         f"Summary:\n{summary_text}\n\n"
-        "The PDF is attached.\n\n"
+        "The PDF(s) are attached.\n\n"
         "Thank you for choosing JaaGee Laboratory.\n"
     )
 
@@ -107,8 +107,16 @@ def notify_client_on_coa_release(*, client, summary_text, pdf_bytes, filename):
         headers={'Reply-To': 'jaageelab@gmail.com', 'Message-ID': message_id}
     )
     msg.attach_alternative(html_body, "text/html")
-    msg.attach(filename, pdf_bytes, "application/pdf")
+
+    # Attach PDFs (multiple or single)
+    if attachments:
+        for file_name, content in attachments:
+            msg.attach(file_name, content, "application/pdf")
+    elif pdf_bytes and filename:
+        msg.attach(filename, pdf_bytes, "application/pdf")
+
     msg.send()
+
 
 def notify_lab_manager_on_submission(manager_email, num_samples, organization_name, client_id, clerk_name):
     subject = "New Samples Submitted"
