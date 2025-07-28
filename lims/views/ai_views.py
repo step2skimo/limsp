@@ -1,52 +1,50 @@
-import google.generativeai as genai
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
-import os
+from lims.utils.query_dispatcher import detect_and_handle_query
 from lims.models.ai import LabAIHistory 
 from lims.lab_ai_utils import get_lab_ai_prompt
+import google.generativeai as genai
+import os
 
-# Configure Gemini
-genai.configure(api_key=os.getenv("GEMINI_API_KEY")) 
-
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 @csrf_exempt
 def ask_lab_ai(request):
-    if request.method == "POST":
-        prompt = request.POST.get("prompt", "").strip()
-        if not prompt:
-            return JsonResponse({"reply": "Please type a question."})
+    if request.method != "POST":
+        return JsonResponse({"reply": "Invalid request method."})
 
-        try:
-            # 🔐 Determine user role
-            user_role = "analyst"  # default role
-            if request.user.groups.filter(name="Manager").exists():
-                user_role = "manager"
-            elif request.user.groups.filter(name="Clerk").exists():
-                user_role = "clerk"
+    prompt = request.POST.get("prompt", "").strip()
+    if not prompt:
+        return JsonResponse({"reply": "Please type a question."})
 
-            # 🧠 Load system prompt
-            system_prompt = get_lab_ai_prompt(user_role)
+    try:
+        # 🔐 Determine role
+        user = request.user
+        role = "analyst"
+        if user.groups.filter(name="Manager").exists():
+            role = "manager"
+        elif user.groups.filter(name="Clerk").exists():
+            role = "clerk"
 
-            # ✅ Gemini: Use system_instruction (NOT history role="system")
-            model = genai.GenerativeModel(
-                model_name="gemini-1.5-flash",
-                system_instruction=system_prompt
-            )
+        # 🔍 Check if it's a DB query
+        db_reply = detect_and_handle_query(prompt, user)
 
-            chat = model.start_chat(history=[])
-            response = chat.send_message(prompt)
-            reply = response.text.strip()
+        # Build final prompt for Gemini
+        final_prompt = f"{db_reply}\n\nUser asked: {prompt}" if db_reply else prompt
 
-            # 💾 Save to database
-            LabAIHistory.objects.create(
-                user=request.user,
-                question=prompt,
-                answer=reply
-            )
+        # 💬 Gemini
+        model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",
+            system_instruction=get_lab_ai_prompt(role)
+        )
+        chat = model.start_chat(history=[])
+        response = chat.send_message(final_prompt)
+        reply = response.text.strip()
 
-            return JsonResponse({"reply": reply})
+        # 💾 Log interaction
+        LabAIHistory.objects.create(user=user, question=prompt, answer=reply)
 
-        except Exception as e:
-            return JsonResponse({"reply": f"Sorry, I hit an error: {str(e)}"})
+        return JsonResponse({"reply": reply})
 
-    return JsonResponse({"reply": "Invalid request method."})
+    except Exception as e:
+        return JsonResponse({"reply": f"An error occurred: {str(e)}"})

@@ -1,0 +1,138 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sample Intake | Print View</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      padding: 30px;
+      color: #333;
+    }
+
+    .logo {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .logo img {
+      height: 60px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 14px;
+      margin-bottom: 40px;
+    }
+
+    fieldset {
+      border: 1px solid #ccc;
+      margin-bottom: 30px;
+      padding: 15px;
+      border-radius: 6px;
+    }
+
+    legend {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+
+    .form-section {
+      margin-bottom: 20px;
+    }
+
+    .label {
+      font-weight: 600;
+    }
+
+    .value {
+      display: inline-block;
+      margin-left: 10px;
+      font-weight: normal;
+    }
+
+    .parameter-group {
+      margin-bottom: 15px;
+    }
+
+    .parameter-item {
+      margin-left: 20px;
+      font-size: 14px;
+    }
+
+    .sample-box {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 6px;
+    }
+
+    .sample-title {
+      font-weight: bold;
+      font-size: 16px;
+      margin-bottom: 10px;
+    }
+
+    .sample-parameters {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="logo">
+    <img src="{% static 'images/logo.jpg' %}" alt="Lab Logo">
+  </div>
+
+  <h1>Sample Intake Form</h1>
+  <div class="subtitle">Generated from ISO 17025 Laboratory LIMS</div>
+
+  <fieldset>
+    <legend>Client Information</legend>
+    <div class="form-section">
+      {% for field in client_form %}
+        <div><span class="label">{{ field.label }}:</span> <span class="value">______________</span></div>
+      {% endfor %}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sample Details</legend>
+    {% for form in sample_formset %}
+      <div class="sample-box">
+        <div class="sample-title">Sample {{ forloop.counter }}</div>
+        <div class="form-section">
+          {% for field in form.visible_fields %}
+            {% if field.name != 'parameters' %}
+              <div><span class="label">{{ field.label }}:</span> <span class="value">______________</span></div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        <div class="sample-parameters">
+          <strong>Selected Parameters:</strong>
+          <ul>
+            {% for group in parameter_groups %}
+              <li class="parameter-group">{{ group.name }}
+                <ul>
+                  {% for param in group.parameters %}
+                    <li class="parameter-item">{{ param.name }} (₦{{ param.default_price }})</li>
+                  {% endfor %}
+                </ul>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      </div>
+    {% endfor %}
+  </fieldset>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 from django.db import models
 from simple_history.models import HistoricalRecords
+
 class COAInterpretation(models.Model):
     client = models.ForeignKey("Client", on_delete=models.CASCADE)
     summary_text = models.TextField()

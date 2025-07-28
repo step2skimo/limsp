@@ -183,22 +183,22 @@
     </tr>
   </thead>
   <tbody>
-    {% for sample in sample_chunk %}
-      <tr>
-        <td>{{ sample.sample_code }}</td>
-        {% for param in parameters %}
-          <td>
-            {# Check only filtered_assignments #}
-            {% for ta in sample.filtered_assignments %}
-              {% if ta.parameter.name == param.name and ta.testresult %}
-                {{ ta.testresult.value|floatformat:2 }}
-              {% endif %}
-            {% endfor %}
-          </td>
-        {% endfor %}
-      </tr>
-    {% endfor %}
-  </tbody>
+  {% for sample in sample_chunk %}
+    <tr>
+      <td>{{ sample.sample_code }}</td>
+      {% for param in parameters %}
+        <td>
+          {% for result in sample.results %}
+            {% if result.parameter == param.name %}
+              {{ result.value|floatformat:2 }}
+            {% endif %}
+          {% endfor %}
+        </td>
+      {% endfor %}
+    </tr>
+  {% endfor %}
+</tbody>
+
 </table>
 
 

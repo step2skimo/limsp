@@ -11,6 +11,12 @@ from notifications.utils import notify
 from lims.utils.notifications import notify_lab_manager_on_submission, notify_client_on_submission
 from django.conf import settings
 from users.models import RoleChoices
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.utils.timezone import now
+from weasyprint import HTML, CSS
+
+
 
 User = get_user_model()
 
@@ -120,3 +126,37 @@ def sample_intake_view(request):
         'sample_formset': sample_formset,
         'parameter_groups': parameter_groups,
     })
+
+@login_required
+def download_sample_intake_pdf(request):
+    # Generate blank forms for PDF template
+    SampleFormSet = formset_factory(SampleFormWithParameters, extra=1)
+    client_form = ClientForm()
+    sample_formset = SampleFormSet(prefix='samples')
+
+    # Group parameters by category
+    group_map = defaultdict(list)
+    for param in Parameter.objects.select_related("group").all():
+        group_map[param.group.name].append(param)
+
+    parameter_groups = [{'name': k, 'parameters': v} for k, v in group_map.items()]
+
+    # Render HTML from static template
+    html_string = render_to_string('lims/clerk/sample_intake_print.html', {
+        'client_form': client_form,
+        'sample_formset': sample_formset,
+        'parameter_groups': parameter_groups,
+    })
+
+    # Render to PDF using WeasyPrint
+    html = HTML(string=html_string, base_url=request.build_absolute_uri('/'))
+    pdf = html.write_pdf()
+
+    # Optional: add timestamp to filename
+    timestamp = now().strftime('%Y%m%d_%H%M')
+    filename = f"sample_intake_print_{timestamp}.pdf"
+
+    # Return as downloadable PDF
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+    return response

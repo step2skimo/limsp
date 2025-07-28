@@ -93,6 +93,9 @@ urlpatterns = [
      path("portal/<str:token>/", views.client_tracking_view, name="client_tracking"),
      path('clients/<int:client_id>/samples/', views.view_client_samples, name='view_client_samples'),
      path('update-client-field/', views.update_client_field, name='update_client_field'),
+     path('download/sample-intake/pdf/', views.download_sample_intake_pdf, name='download_sample_intake_pdf'),
+
+   
      
 
    # test assignments and parameter management
