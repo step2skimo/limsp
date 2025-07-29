@@ -36,12 +36,13 @@ if db_path.exists():
 else:
     print("No existing db.sqlite3 found.")
 
-# 4. Run migrations
+# 4. Run migrations using the venv Python
 print("Running migrations...")
-subprocess.run(["python", "manage.py", "migrate"], check=True)
+venv_python = os.path.join(os.environ['VIRTUAL_ENV'], 'Scripts', 'python.exe')
+subprocess.run([venv_python, "manage.py", "migrate"], check=True)
 
 # 5. Load the backup fixture
 print(f"Loading backup data from {backup_file}...")
-subprocess.run(["python", "manage.py", "loaddata", str(backup_file)], check=True)
+subprocess.run([venv_python, "manage.py", "loaddata", str(backup_file)], check=True)
 
 print("✅ Database reset and data loaded successfully!")

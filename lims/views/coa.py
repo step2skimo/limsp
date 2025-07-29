@@ -190,7 +190,7 @@ def render_coa_pdf(request, client, samples, accredited=True):
     sample_weight_display = f"{min(weights)} g – {max(weights)} g" if len(weights) > 1 else (f"{weights[0]} g" if weights else "N/A")
 
     # Chunking
-    chunk_size = int(request.GET.get("chunk", 20)) if request.GET.get("chunk", "").isdigit() else 8
+    chunk_size = 20
     sample_chunks = [samples[i:i + chunk_size] for i in range(0, len(samples), chunk_size)]
 
     # Letterhead & signatures
@@ -199,7 +199,7 @@ def render_coa_pdf(request, client, samples, accredited=True):
         pdf_mode=True
     )
     signature_1 = abs_static("images/signatures/hannah-sign.png", pdf_mode=True)
-    signature_2 = abs_static("images/signatures/julius-sign.png", pdf_mode=True)
+    signature_2 = abs_static("images/signatures/julius-sign.jpg", pdf_mode=True)
 
     context = {
         "client": client,
@@ -458,7 +458,7 @@ def release_client_coa(request, client_id):
             "coa_letterhead.png" if accredited else "unaccredited_letterhead.jpg"
         )
         signature1_path = os.path.join(settings.STATIC_ROOT, "images/signatures/hannah-sign.png")
-        signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.png")
+        signature2_path = os.path.join(settings.STATIC_ROOT, "images/signatures/julius-sign.jpg")
 
         # Build PDF context
         pdf_context = {
@@ -776,7 +776,7 @@ def preview_coa(request, client_id):
         "letterhead_url": request.build_absolute_uri('/static/letterheads/coa_letterhead.png'),
 
          "signature_1": request.build_absolute_uri('/static/images/signatures/hannah-sign.png'),
-         "signature_2": request.build_absolute_uri('/static/images/signatures/julius-sign.png'),
+         "signature_2": request.build_absolute_uri('/static/images/signatures/julius-sign.jpg'),
          "sample_weight_display": sample_weight_display,
     }
 

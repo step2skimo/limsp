@@ -12,7 +12,6 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument("--clients", type=int, default=1, help="Number of clients to create")
-        parser.add_argument("--max-samples", type=int, default=10, help="Max samples per client")
         parser.add_argument("--clear", action="store_true", help="Clear old demo data first")
 
     def handle(self, *args, **options):
@@ -23,10 +22,11 @@ class Command(BaseCommand):
             Sample.objects.all().delete()
             Client.objects.all().delete()
 
-        # ✅ Ensure ParameterGroup exists
+        # ✅ Ensure ParameterGroups exist
         proximate_group, _ = ParameterGroup.objects.get_or_create(name="Proximate")
+        oil_group, _ = ParameterGroup.objects.get_or_create(name="Oil Analysis")
 
-        # ✅ Ensure proximate parameters exist
+        # ✅ Proximate parameters
         proximate_params = [
             ("Moisture", "%", "Oven (AOAC 930.15 2000)", "≤ 12%", 4000),
             ("Ash", "%", "Furnace (AOAC 942.05, 2000)", "≤ 5%", 4000),
@@ -35,7 +35,17 @@ class Command(BaseCommand):
             ("Protein", "%", "Kjeldahl (AOAC 942.05 2000)", "≥ 10%", 4000),
         ]
 
+        # ✅ Oil Analysis parameters
+        oil_analysis_params = [
+            ("Total Free Fatty Acid", "% oleic acid", "Titrimetric", "-", 3000),
+            ("Peroxide Value", "meq O2/kg", "Titrimetric", "-", 4000),
+            ("Iodine Value", "g I2/100g", "Titrimetric", "-", 4000),
+            ("Saponification Value", "mg KOH/g", "Titrimetric", "-", 3500),
+            ("Acid/Titratable Acid Value", "mg KOH/g", "Titrimetric", "-", 3000),
+        ]
+
         param_objs = []
+
         for name, unit, method, limit, price in proximate_params:
             param, _ = Parameter.objects.get_or_create(
                 name=name,
@@ -44,6 +54,19 @@ class Command(BaseCommand):
                     "method": method,
                     "limit": limit,
                     "group": proximate_group,
+                    "default_price": price,
+                }
+            )
+            param_objs.append(param)
+
+        for name, unit, method, limit, price in oil_analysis_params:
+            param, _ = Parameter.objects.get_or_create(
+                name=name,
+                defaults={
+                    "unit": unit,
+                    "method": method,
+                    "limit": limit,
+                    "group": oil_group,
                     "default_price": price,
                 }
             )
@@ -60,11 +83,11 @@ class Command(BaseCommand):
                 address="123 Lab Street",
                 email=f"client{c+1}@example.com",
                 phone="08012345678",
-                client_id=f"JGLSP{2500 + c+1}"
+                client_id=f"JGLSP{2500 + c+2}"
             )
             self.stdout.write(f"Created client: {client.name}")
 
-            for i in range(options["max_samples"]):
+            for i in range(20):  # Always generate 20 samples
                 sample = Sample.objects.create(
                     client=client,
                     sample_code=f"SMP{c+1}{i+1:03d}",
@@ -88,6 +111,6 @@ class Command(BaseCommand):
                         recorded_by=analyst
                     )
 
-            self.stdout.write(self.style.SUCCESS(f"Created {options['max_samples']} samples for {client.name}"))
+            self.stdout.write(self.style.SUCCESS(f"Created 20 samples for {client.name}"))
 
         self.stdout.write(self.style.SUCCESS("✅ COA demo data seeded successfully!"))
