@@ -38,15 +38,10 @@ def generate_client_id():
     return f"{prefix}{str(number).zfill(7)}"
 
 
-
-
 def generate_token():
     today = timezone.now().date()
     count_today = Client.objects.filter(created__date=today).count() + 1
     return f"JGL-{today.strftime('%Y%m%d')}-{count_today:04d}"
-
-
-
 
 
 @csrf_protect

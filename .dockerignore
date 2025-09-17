@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+*.pyo
+*.db
+*.sqlite3
+*.log
+
+# Environment & virtualenv
+.env
+venv/
+*.egg-info/
+
+# OS & IDE
+.vscode/
+.idea/
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Node stuff (if present)
+node_modules/
+
+# Media/static (if generated locally)
+staticfiles/
+media/
