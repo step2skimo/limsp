@@ -1,13 +1,4 @@
 
-{% load static %}
 
 
-<h2>📊 QC Trends – All Parameters</h2>
-
-{% for parameter in parameters %}
-  <div style="margin-bottom: 40px;">
-    <h3>{{ parameter.name }} Control Chart</h3>
-    {% include 'lims/qc/partials/chart_block.html' with parameter=parameter %}
-  </div>
-{% endfor %}
-
+{% include "lims/qc/partials/qc_chart.html" %}

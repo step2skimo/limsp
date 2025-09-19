@@ -151,8 +151,13 @@ def enter_batch_result(request, client_id, parameter_id):
         .select_related('sample', 'parameter')
     )
 
+    # ✅ Prevent crash if analysis not started
     if not assignments.exists():
-        messages.error(request, "❌ No assignments found for this client and parameter.")
+        messages.error(
+            request,
+            "⚠️ No analysis started for this client/parameter. "
+            "Please click 'Start Analysis' first."
+        )
         return redirect("analyst_dashboard")
 
     parameter = assignments[0].parameter
@@ -178,7 +183,6 @@ def enter_batch_result(request, client_id, parameter_id):
     qc_form = None
     if control_assignment:
         qc_instance = getattr(control_assignment, "qc_metrics", None)
-
         initial_data = {}
         if control_spec:
             initial_data.update({
@@ -193,8 +197,13 @@ def enter_batch_result(request, client_id, parameter_id):
             initial=initial_data
         )
 
-    # ✅ Environment Form
+    # ✅ Environment Form with proper equipment queryset
     env_form = TestEnvironmentForm(request.POST or None)
+    if hasattr(env_form.fields["instrument"], "queryset"):
+        env_form.fields["instrument"].queryset = Equipment.objects.filter(
+            parameters_supported=parameter,
+            is_active=True
+        )
 
     # ✅ Promote client if all assignments completed
     def promote_if_complete(client, parameter, analyst_name):
@@ -211,7 +220,9 @@ def enter_batch_result(request, client_id, parameter_id):
 
             managers = User.objects.filter(groups__name="Manager", is_active=True)
             for manager in managers:
-                notify_manager_on_result_submission(manager.email, analyst_name, client.client_id, parameter.name)
+                notify_manager_on_result_submission(
+                    manager.email, analyst_name, client.client_id, parameter.name
+                )
 
     # ✅ Handle POST submission
     if request.method == "POST":
@@ -260,7 +271,11 @@ def enter_batch_result(request, client_id, parameter_id):
                 promote_if_complete(client, parameter, request.user.get_full_name())
 
                 messages.success(request, "✅ Batch result submitted successfully.")
-                return redirect("result_success_batch", client_id=client.client_id, parameter_id=parameter.id)
+                return redirect(
+                    "result_success_batch",
+                    client_id=client.client_id,
+                    parameter_id=parameter.id
+                )
         else:
             messages.error(request, "❌ Please correct the errors below.")
 

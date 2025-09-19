@@ -18,10 +18,43 @@ from collections import defaultdict
 @login_required
 @user_passes_test(lambda u: u.is_manager)
 def qc_overview_all_parameters(request):
-    parameters = Parameter.objects.filter(control_spec__isnull=False)
+    parameters = Parameter.objects.filter(control_spec__isnull=False).select_related('control_spec')
+    chart_parameters = []
+
+    for param in parameters:
+        spec = param.control_spec
+        assignments = (
+            TestAssignment.objects
+            .filter(parameter=param, is_control=True, qc_metrics__isnull=False)
+            .select_related('sample', 'qc_metrics', 'analyst')
+            .order_by('sample__received_date')
+        )
+
+        if not assignments:
+            continue
+
+        labels = [a.sample.sample_code for a in assignments]
+        values = [a.qc_metrics.measured_value for a in assignments]
+        ownership = [
+            (a.analyst.get_full_name() if a.analyst and a.analyst.get_full_name()
+             else a.analyst.username if a.analyst else "Unassigned")
+            for a in assignments
+        ]
+
+        chart_parameters.append({
+            'parameter_id': param.id,
+            'name': param.name,
+            'labels': labels,
+            'values': values,
+            'ownership': ownership,
+            'min': spec.min_acceptable,
+            'max': spec.max_acceptable
+        })
+
     return render(request, "lims/qc/manager_qc_overview.html", {
-        "parameters": parameters
+        "chart_parameters": chart_parameters
     })
+
 
 
 
