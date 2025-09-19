@@ -484,8 +484,6 @@ def release_client_coa(request, client_id):
         with open(temp_path, "rb") as f:
             pdf_bytes = f.read()
 
-        storage_path = f"coa_reports/{filename}"
-        default_storage.save(storage_path, ContentFile(pdf_bytes))
 
         try:
             os.remove(temp_path)
