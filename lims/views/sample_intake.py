@@ -31,9 +31,9 @@ def generate_client_id():
         try:
             number = int(last_client[len(prefix):]) + 1
         except ValueError:
-            number = 2500112
+            number = 2500162
     else:
-        number = 2500112
+        number = 2500162
     
     return f"{prefix}{str(number).zfill(7)}"
 
