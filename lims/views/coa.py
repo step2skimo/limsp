@@ -29,7 +29,7 @@ from lims.utils.calculations import calculate_cho_and_me
 from lims.utils.coa_summary_ai import generate_dynamic_summary
 from lims.utils.notifications import notify_client_on_coa_release
 import copy
-
+from django.contrib.staticfiles import finders
 
 
 logger = logging.getLogger(__name__)
@@ -446,7 +446,7 @@ def release_client_coa(request, client_id):
 
             # --- Find assets via staticfiles ---
             letterhead = finders.find(
-                "letterheads/coa_letterhead.png" if accredited else "letterheads/unaccredited_letterhead.jpg"
+                "letterheads/accredited_letterhead.png" if accredited else "letterheads/unaccredited_letterhead.jpg"
             )
             sig1 = finders.find("images/signatures/hannah-sign.png")
             sig2 = finders.find("images/signatures/julius-sign.jpg")
